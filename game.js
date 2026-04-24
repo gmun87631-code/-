@@ -1,0 +1,7148 @@
+﻿const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+const muteButton = document.getElementById("muteButton");
+const difficultySelect = document.getElementById("difficultySelect");
+const screenModeSelect = document.getElementById("screenModeSelect");
+const stageSelect = document.getElementById("stageSelect");
+const languageSelect = document.getElementById("languageSelect");
+const stageLockText = document.getElementById("stageLockText");
+const playButton = document.getElementById("playButton");
+const lobbyButton = document.getElementById("lobbyButton");
+const lobbyOverlay = document.getElementById("lobbyOverlay");
+const authPanel = document.getElementById("authPanel");
+const lobbyPanel = document.getElementById("lobbyPanel");
+const loginNicknameInput = document.getElementById("loginNickname");
+const loginPasswordInput = document.getElementById("loginPassword");
+const signupNicknameInput = document.getElementById("signupNickname");
+const signupPasswordInput = document.getElementById("signupPassword");
+const loginButton = document.getElementById("loginButton");
+const signupButton = document.getElementById("signupButton");
+const logoutButton = document.getElementById("logoutButton");
+const authMessage = document.getElementById("authMessage");
+const accountSummary = document.getElementById("accountSummary");
+const accountTitleBadge = document.getElementById("accountTitleBadge");
+const openPatchNotesButton = document.getElementById("openPatchNotesButton");
+const patchNotesPanel = document.getElementById("patchNotesPanel");
+const closePatchNotesButton = document.getElementById("closePatchNotesButton");
+const patchNotesList = document.getElementById("patchNotesList");
+const betaRewardPanel = document.getElementById("betaRewardPanel");
+const betaRewardStatus = document.getElementById("betaRewardStatus");
+const betaRewardCharacterList = document.getElementById("betaRewardCharacterList");
+const betaRewardSkinList = document.getElementById("betaRewardSkinList");
+const claimBetaRewardButton = document.getElementById("claimBetaRewardButton");
+const openShopButton = document.getElementById("openShopButton");
+const shopStatus = document.getElementById("shopStatus");
+const coinBalance = document.getElementById("coinBalance");
+const shopSeasonBadge = document.getElementById("shopSeasonBadge");
+const shopPanel = document.getElementById("shopPanel");
+const shopCatalogList = document.getElementById("shopCatalogList");
+const shopTabCharacters = document.getElementById("shopTabCharacters");
+const shopTabSkins = document.getElementById("shopTabSkins");
+const shopTabBoxes = document.getElementById("shopTabBoxes");
+const characterCollection = document.getElementById("characterCollection");
+const skinCollection = document.getElementById("skinCollection");
+const equippedCharacterBadge = document.getElementById("equippedCharacterBadge");
+const equippedSkinBadge = document.getElementById("equippedSkinBadge");
+const lootboxPanel = document.getElementById("lootboxPanel");
+const lootboxStage = document.getElementById("lootboxStage");
+const lootboxBox = document.getElementById("lootboxBox");
+const lootboxStageText = document.getElementById("lootboxStageText");
+const lootboxResults = document.getElementById("lootboxResults");
+const closeLootboxButton = document.getElementById("closeLootboxButton");
+const lootboxSummary = document.getElementById("lootboxSummary");
+const lootboxResultGrid = document.getElementById("lootboxResultGrid");
+const metaDescription = document.getElementById("metaDescription");
+
+const GAME_WIDTH = canvas.width;
+const GAME_HEIGHT = canvas.height;
+const TILE = 32;
+const FLOOR_Y = 15 * TILE;
+const GRAVITY = 2000;
+const SERPENT_POOL_SURFACE_OFFSET = 18;
+const SERPENT_POOL_BOTTOM_MARGIN = 2;
+const PLAYER_STAND_H = 30;
+const PLAYER_CROUCH_H = 20;
+const ACCOUNT_KEY = "starling-sprint-accounts-v1";
+const CURRENT_ACCOUNT_KEY = "starling-sprint-current-account-v1";
+const LANGUAGE_KEY = "starling-sprint-language-v1";
+const BETA_REWARDS_ACTIVE = true;
+const STARLING_JUMP_MULTIPLIER = 1.12;
+const PATCH_NOTES = [
+  {
+    version: "Beta v0.4",
+    date: "2026-04-24",
+    items: [
+      "상자 시스템 추가 및 개봉 연출 개선",
+      "사이버, 공허의 왕, 데저트, 포레스트, 스톤 스킨 추가",
+      "프리미엄 상자 천장 시스템과 신화 전용 효과음 추가",
+      "주간 상자 물가 변동 및 캐릭터 세일 시스템 추가",
+      "패치노트 누락 및 최신 버전 표시 버그 수정",
+    ],
+  },
+  {
+    version: "Beta v0.3",
+    date: "2026-04-24",
+    items: [
+      "언어 시스템 추가",
+      "베타 보상 시스템 추가",
+      "패치노트 시스템 추가",
+    ],
+  },
+  {
+    version: "Beta v0.2",
+    date: "2026-04-24",
+    items: [
+      "상점과 컬렉션 연동 추가",
+      "체인저, 가디언, 어쌔신 밸런스 조정",
+      "스테이지 순차 해금 복구",
+    ],
+  },
+  {
+    version: "Beta v0.1",
+    date: "2026-04-22",
+    items: [
+      "기본 플레이 루프와 계정 시스템 정리",
+      "캐릭터 및 스킨 장착 구조 정리",
+    ],
+  },
+];
+const LATEST_PATCH_NOTES_VERSION = PATCH_NOTES[0]?.version || "";
+const ADMIN_NICKNAME = "어드민계정";
+const ADMIN_TITLE = "별빛 통치자";
+const ADMIN_PASSWORD_RESET = "ks54259671";
+const BETA_ACCOUNT_NICKNAME = "베타";
+const BETA_ACCOUNT_COINS = 999999;
+const CHANGER_RULES = {
+  swapCooldown: 2.4,
+  transferInvulnerability: 1.1,
+  effectDuration: 0.34,
+};
+const GUARDIAN_RULES = {
+  speedMultiplier: 0.88,
+  passiveInvulnerability: 0.7,
+  shieldDuration: 2,
+  shieldCooldown: 10,
+};
+const CHARACTER_DEFS = {
+  starling: {
+    name: "Starling",
+    summary: "Balanced runner",
+    purchasable: false,
+    defaultOwned: true,
+    price: 0,
+  },
+  guardian: {
+    name: "Guardian",
+    summary: "Once-per-run survival protector",
+    purchasable: true,
+    defaultOwned: false,
+    price: 500,
+  },
+  changer: {
+    name: "Changer",
+    summary: "Clone survival specialist",
+    purchasable: true,
+    defaultOwned: false,
+    price: 750,
+  },
+  assassin: {
+    name: "Assassin",
+    summary: "Stealth specialist",
+    purchasable: true,
+    defaultOwned: false,
+    price: 1000,
+  },
+};
+const SKIN_DEFS = {
+  classic: {
+    name: "Classic",
+    summary: "Default look",
+    purchasable: false,
+    defaultOwned: true,
+    price: 0,
+    tier: "general",
+  },
+  desert: {
+    name: "Desert",
+    summary: "Sand-toned travel wear",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "general",
+  },
+  forest: {
+    name: "Forest",
+    summary: "Muted green woodland colors",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "general",
+  },
+  stone: {
+    name: "Stone",
+    summary: "Plain gray stone-like armor colors",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "general",
+  },
+  angelDemon: {
+    name: "Angel vs Demon",
+    summary: "Changer-only dual form skin",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "mythic",
+  },
+  cyber: {
+    name: "Cyber",
+    summary: "Black suit with neon glow lines",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "epic",
+  },
+  voidKing: {
+    name: "Void King",
+    summary: "A silent ruler split by crimson void energy",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "legendary",
+  },
+  admin: {
+    name: "Admin",
+    summary: "Crown of control",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "special",
+  },
+};
+const SHOP_CATALOG = {
+  characters: Object.keys(CHARACTER_DEFS),
+  skins: Object.keys(SKIN_DEFS),
+};
+const LOOT_BOX_DEFS = {
+  basic: {
+    id: "basic",
+    price: 700,
+    probabilities: [
+      { rarity: "general", weight: 75 },
+      { rarity: "rare", weight: 25 },
+    ],
+  },
+  advanced: {
+    id: "advanced",
+    price: 1400,
+    probabilities: [
+      { rarity: "rare", weight: 65 },
+      { rarity: "epic", weight: 33 },
+      { rarity: "legendary", weight: 2 },
+    ],
+  },
+  premium: {
+    id: "premium",
+    price: 2000,
+    probabilities: [
+      { rarity: "epic", weight: 80 },
+      { rarity: "legendary", weight: 19 },
+      { rarity: "mythic", weight: 1 },
+    ],
+  },
+};
+const LOOT_BOX_ORDER = Object.keys(LOOT_BOX_DEFS);
+const LOOTBOX_ELIGIBLE_SKINS = SHOP_CATALOG.skins.filter((item) => !["classic", "admin"].includes(item));
+const LOOTBOX_ANIMATION_DURATION = 5;
+const PREMIUM_BOX_PITY_TARGET = 20;
+const BOX_PRICE_VARIANCE = 100;
+const STAGE_BOX_REWARD_CHANCES = {
+  easy: [],
+  normal: [
+    { boxId: "advanced", chance: 0.03 },
+  ],
+  hard: [
+    { boxId: "premium", chance: 0.01 },
+    { boxId: "advanced", chance: 0.05 },
+  ],
+};
+const ASSASSIN_RULES = {
+  speedMultiplier: 1.12,
+  stealthDuration: 3,
+  stealthCooldown: 10,
+  stealthSpeedMultiplier: 0.82,
+  assassinationCooldown: 0.7,
+  strikeWindup: 0.05,
+  qteDuration: 2.4,
+  qteBossDuration: 3.3,
+  qteTapGain: 0.14,
+  qteBossTapGain: 0.055,
+  qteDrainRate: 0.15,
+  qteBossDrainRate: 0.2,
+  qteRangeX: 72,
+  qteRangeY: 64,
+  bossDamage: 100,
+  frontalFailStun: 0.42,
+  jumpGlanceBounce: -210,
+};
+const PLAYER_SPRITE_RENDER_SCALE = 0.5;
+const STRINGS = {
+  en: {
+    meta_description: "Starling Sprint is an original retro-inspired 2D side-scrolling platformer with multiple stages, difficulty settings, special enemies, and arcade-style action.",
+    hero_eyebrow: "Original Retro Platformer",
+    language_label: "Language",
+    control_move: "A/D or Left/Right Move",
+    control_jump: "W, Up, or Space Double Jump",
+    control_skill: "E Skill / Q Skill",
+    control_restart: "R Restart",
+    canvas_label: "Starling Sprint game canvas",
+    auth_eyebrow: "Account",
+    auth_title: "Join The Lobby",
+    auth_copy: "Create an account or sign in. Nicknames must be unique in this browser and 20 characters or fewer.",
+    signin_title: "Sign In",
+    signup_title: "Create Account",
+    nickname_label: "Nickname",
+    password_label: "Password",
+    login_button: "Login",
+    create_button: "Create",
+    lobby_eyebrow: "Lobby",
+    lobby_title: "Choose Your Route",
+    logout_button: "Logout",
+    play_title: "Play",
+    play_copy: "Start the selected stage with your current settings.",
+    play_button: "Play",
+    shop_button: "Shop",
+    stage_select_title: "Stage Select",
+    stage_label: "Stage",
+    settings_title: "Settings",
+    difficulty_label: "Difficulty",
+    screen_label: "Screen",
+    collection_eyebrow: "Collection",
+    collection_title: "Characters & Skins",
+    shop_heading: "Shop",
+    shop_tabs_label: "Shop tabs",
+    characters_tab: "Characters",
+    skins_tab: "Skins",
+    boxes_tab: "Boxes",
+    footer_copy: "Collect sun shards, stomp critters, and reach the beacon gate.",
+    lobby_button: "Lobby",
+    difficulty_easy: "Easy",
+    difficulty_normal: "Normal",
+    difficulty_hard: "Hard",
+    screen_fullscreen: "Fullscreen",
+    screen_classic: "Classic",
+    mute_on: "On",
+    mute_off: "Off",
+    admin_title: "Star Sovereign",
+    auth_signin_prompt: "Sign in to start playing.",
+    auth_account_not_found: "Account not found.",
+    auth_welcome_back: "Welcome back, {nickname}.",
+    auth_enter_nickname: "Enter a nickname first.",
+    auth_enter_password: "Enter a password first.",
+    auth_nickname_taken: "That nickname is already taken in this browser.",
+    auth_admin_created: "Admin account created.",
+    auth_account_created: "Account created.",
+    auth_enter_both: "Enter both nickname and password.",
+    auth_incorrect: "Nickname or password is incorrect.",
+    auth_signed_out: "Signed out. Sign in to continue.",
+    auth_signin_before_play: "Sign in before playing.",
+    auth_signin_shop: "Sign in to open the shop.",
+    patch_notes_button: "Patch Notes",
+    patch_notes_eyebrow: "Updates",
+    patch_notes_title: "Patch Notes",
+    patch_notes_confirm: "Confirm",
+    beta_eyebrow: "Tester Benefit",
+    beta_title: "Beta Reward",
+    beta_badge: "BETA",
+    beta_character_pick: "Choose 1 Character",
+    beta_skin_pick: "Choose 1 Skin",
+    beta_reward_copy: "Choose 1 free character and 1 free skin. This reward is granted only once per beta account.",
+    beta_reward_claimed: "Beta reward claimed successfully.",
+    beta_reward_button: "Select",
+    beta_reward_selected: "Selected",
+    beta_claim_button: "Claim Reward",
+    beta_claim_disabled: "Choose 1 character and 1 skin first.",
+    account_guest: "Guest",
+    account_admin: "Admin account",
+    account_player: "Player account",
+    account_summary: "{nickname} | {tag} | Score {score}",
+    account_title_badge: "Title | {title}",
+    shop_status_admin: "Admin account unlocked: every character and skin is ready, including limited items.",
+    shop_status_player: "Spend coins to unlock characters, then use boxes to collect rare skins.",
+    coins_label: "Coins: {coins}",
+    season_limited_live: "LIMITED season live now",
+    season_standard: "Standard skin lineup",
+    equipped_label: "Equipped: {name}",
+    equipped_with_summary: "Equipped | {summary}",
+    equip_button: "Equip",
+    equipped_button: "Equipped",
+    tag_limited: "LIMITED",
+    tag_character: "CHARACTER",
+    tag_general: "GENERAL",
+    tag_mythic: "MYTHIC",
+    tag_rare: "RARE",
+    tag_epic: "EPIC",
+    tag_legendary: "LEGENDARY",
+    price_coins: "{price} coins",
+    box_inventory: "Owned {count}",
+    box_batch_button: "Open x{count}",
+    box_buy_and_open: "Buy & Open x{count}",
+    box_duplicate_refund: "Duplicate! Coin refund",
+    box_status_inventory: "Uses box inventory first. Missing opens consume coins.",
+    premium_pity_status: "Guaranteed legendary in {count} more opens",
+    box_status_result: "{count} items opened | Refund {refund} coins",
+    box_reward_gain: "{name} box acquired!",
+    box_opening: "The box is opening...",
+    lootbox_result_eyebrow: "Boxes",
+    lootbox_result_title: "Opening Results",
+    lootbox_confirm: "Confirm",
+    box_basic_name: "Basic Box",
+    box_basic_summary: "Mostly general and rare skins.",
+    box_advanced_name: "Advanced Box",
+    box_advanced_summary: "Reliable rare-plus skin box.",
+    box_premium_name: "Premium Box",
+    box_premium_summary: "Best odds for legendary and mythic skins.",
+    rarity_general: "General",
+    rarity_rare: "Rare",
+    rarity_epic: "Epic",
+    rarity_legendary: "Legendary",
+    rarity_mythic: "Mythic",
+    default_character: "Default character",
+    admin_only: "Admin only",
+    default_skin: "Default skin",
+    owned_character: "Owned character",
+    owned_skin: "Owned skin",
+    shop_owned: "Owned",
+    shop_unavailable: "Unavailable",
+    shop_season_over: "Season ended",
+    shop_not_enough: "Not enough coins",
+    shop_buy: "Buy {price}",
+    this_week_price: "This week {price}",
+    price_up: "▲ +{amount}",
+    price_down: "▼ -{amount}",
+    price_flat: "No change",
+    sale_badge: "SALE",
+    sale_rate: "{rate}% off",
+    sale_price: "{sale} ({base})",
+    weekly_sale_copy: "This week sale {rate}%",
+    stage_locked: "{name} (Locked)",
+    stage_ready_one: "Stage 1 is ready. Clear it to unlock Stage 2.",
+    stage_unlocked_next: "Unlocked through Stage {current}. Clear it to unlock Stage {next}.",
+    stage_all_unlocked: "All stages unlocked. Pick any route.",
+    collectible_shards: "Shards",
+    collectible_buttons: "Buttons",
+    hud_score: "Score {score}",
+    hud_lives: "Lives {lives}",
+    hud_stage: "Stage {current}/{total}",
+    hud_difficulty: "Difficulty {difficulty}",
+    hud_jumps: "Jumps {current}/{total}",
+    hud_clock: "Clock {time}",
+    hud_stage_rank: "Stage Rank x{value}",
+    hud_return_lobby: "Esc or Lobby button to return",
+    hud_factory_hint: "Press every button before time runs out",
+    hud_character: "Character {name}",
+    changer_status_ready_cd: "Clone Ready | Swap CD {time}s",
+    changer_status_ready: "Clone Ready | Swap Ready",
+    changer_status_spent: "Clone spent | No recast",
+    changer_status_prompt: "E Clone | Q Swap",
+    guardian_status_shield: "Shield {time}s | Passive {state}",
+    guardian_status_cooldown: "Q Cooldown {time}s | Passive {state}",
+    guardian_status_ready: "Q Shield Ready | Passive {state}",
+    passive_ready: "Ready",
+    passive_spent: "Spent",
+    assassin_status_stealth: "Stealth {time}s | Q {cooldown}s",
+    assassin_status_stealth_cd: "Stealth CD {time}s | Q {cooldown}s",
+    assassin_status_q_cd: "Q Cooldown {time}s",
+    assassin_status_ready: "Stealth Ready | Q Ready",
+    changer_hint: "One clone per run | Q works only while clone lives",
+    guardian_hint: "Q shield 2s | passive blocks one death",
+    assassin_hint: "E stealth (3s) | Q assassinate | no stomp kills",
+    stage_objective_factory: "Press {count} buttons to power the lever.",
+    stage_objective_normal: "Collect {count} shards and reach the gate.",
+    center_stage_clear: "Stage Clear",
+    center_next_stage: "Press Enter for the next stage.",
+    center_now_entering: "Now entering {name}",
+    center_all_clear: "All Stages Clear",
+    center_all_clear_copy: "You completed the full route.",
+    center_game_over: "Game Over",
+    center_game_over_copy: "The critters won this round.",
+    center_restart: "Press R to restart",
+    assassinate_silent_kill: "Silent Kill",
+    assassinate_clash: "Assassination Clash",
+    assassinate_locking: "Locking the strike...",
+    assassinate_boss_copy: "Mash Q fast. Bosses need a much stronger break.",
+    assassinate_enemy_copy: "Mash Q before the enemy overpowers you.",
+    assassinate_time: "Time {time}s",
+    claw_title: "Claw Machine Escape",
+    claw_copy: "Click the lever to pull and fill the meter.",
+    claw_pull: "PULL!",
+    dance_title: "Dance Machine",
+    dance_copy: "Follow the lit arrow. Press WASD (6 steps).",
+    dance_ready: "Ready...",
+    nightmare_title: "Nightmare Ambush",
+    nightmare_countdown: "Get ready. The nightmare is closing in.",
+    nightmare_copy: "Press Space or Enter inside the red zone before time runs out.",
+    character_starling_name: "Starling",
+    character_starling_summary: "Balanced runner",
+    character_guardian_name: "Guardian",
+    character_guardian_summary: "Once-per-run survival protector",
+    character_changer_name: "Changer",
+    character_changer_summary: "Clone survival specialist",
+    character_assassin_name: "Assassin",
+    character_assassin_summary: "Stealth specialist",
+    skin_classic_name: "Classic",
+    skin_classic_summary: "Default look",
+    skin_desert_name: "Desert",
+    skin_desert_summary: "Warm sand-colored outfit",
+    skin_forest_name: "Forest",
+    skin_forest_summary: "Calm woodland green outfit",
+    skin_stone_name: "Stone",
+    skin_stone_summary: "Solid gray stone palette",
+    skin_angelDemon_name: "Angel vs Demon",
+    skin_angelDemon_summary: "Changer-only dual form skin",
+    skin_cyber_name: "Cyber",
+    skin_cyber_summary: "Dark neon combat suit",
+    skin_voidKing_name: "Void King",
+    skin_voidKing_summary: "Ancient black armor split by crimson void cracks",
+    skin_admin_name: "Admin",
+    skin_admin_summary: "Crown of control",
+    stage_1_name: "Stage 1 - Sun Meadow",
+    stage_2_name: "Stage 2 - Crystal Canopy",
+    stage_3_name: "Stage 3 - Ember Skyline",
+    stage_4_name: "Stage 4 - Neon Arcade",
+    stage_5_name: "Stage 5 - Clockwork Factory",
+  },
+  ko: {
+    meta_description: "스타링 스프린트는 여러 스테이지, 난이도 설정, 특수 적, 아케이드 감각의 액션을 담은 오리지널 레트로풍 2D 횡스크롤 플랫폼 게임입니다.",
+    hero_eyebrow: "오리지널 레트로 플랫폼 게임",
+    language_label: "언어",
+    control_move: "A/D 또는 좌/우 이동",
+    control_jump: "W, 위쪽, 또는 스페이스 이단 점프",
+    control_skill: "E 스킬 / Q 스킬",
+    control_restart: "R 다시 시작",
+    canvas_label: "스타링 스프린트 게임 화면",
+    auth_eyebrow: "계정",
+    auth_title: "로비 입장",
+    auth_copy: "계정을 만들거나 로그인하세요. 닉네임은 이 브라우저 안에서 고유해야 하며 20자 이하여야 합니다.",
+    signin_title: "로그인",
+    signup_title: "계정 생성",
+    nickname_label: "닉네임",
+    password_label: "비밀번호",
+    login_button: "로그인",
+    create_button: "생성",
+    lobby_eyebrow: "로비",
+    lobby_title: "출발 경로 선택",
+    logout_button: "로그아웃",
+    play_title: "플레이",
+    play_copy: "현재 설정으로 선택한 스테이지를 시작합니다.",
+    play_button: "플레이",
+    shop_button: "상점",
+    stage_select_title: "스테이지 선택",
+    stage_label: "스테이지",
+    settings_title: "설정",
+    difficulty_label: "난이도",
+    screen_label: "화면",
+    collection_eyebrow: "컬렉션",
+    collection_title: "캐릭터 & 스킨",
+    shop_heading: "상점",
+    shop_tabs_label: "상점 탭",
+    characters_tab: "캐릭터",
+    skins_tab: "스킨",
+    boxes_tab: "상자",
+    footer_copy: "태양 파편을 모으고, 몬스터를 밟아 쓰러뜨리며, 비콘 게이트에 도달하세요.",
+    lobby_button: "로비",
+    difficulty_easy: "쉬움",
+    difficulty_normal: "보통",
+    difficulty_hard: "어려움",
+    screen_fullscreen: "전체 화면",
+    screen_classic: "클래식",
+    mute_on: "켜짐",
+    mute_off: "꺼짐",
+    admin_title: "별빛 통치자",
+    auth_signin_prompt: "플레이를 시작하려면 로그인하세요.",
+    auth_account_not_found: "계정을 찾을 수 없습니다.",
+    auth_welcome_back: "{nickname}님, 다시 오신 것을 환영합니다.",
+    auth_enter_nickname: "닉네임을 먼저 입력하세요.",
+    auth_enter_password: "비밀번호를 먼저 입력하세요.",
+    auth_nickname_taken: "이 브라우저에서는 이미 사용 중인 닉네임입니다.",
+    auth_admin_created: "어드민 계정이 생성되었습니다.",
+    auth_account_created: "계정이 생성되었습니다.",
+    auth_enter_both: "닉네임과 비밀번호를 모두 입력하세요.",
+    auth_incorrect: "닉네임 또는 비밀번호가 올바르지 않습니다.",
+    auth_signed_out: "로그아웃되었습니다. 계속하려면 다시 로그인하세요.",
+    auth_signin_before_play: "플레이 전에 먼저 로그인하세요.",
+    auth_signin_shop: "상점을 열려면 로그인하세요.",
+    patch_notes_button: "패치노트",
+    patch_notes_eyebrow: "업데이트",
+    patch_notes_title: "패치노트",
+    patch_notes_confirm: "확인",
+    beta_eyebrow: "테스터 혜택",
+    beta_title: "베타 보상",
+    beta_badge: "BETA",
+    beta_character_pick: "캐릭터 1개 선택",
+    beta_skin_pick: "스킨 1개 선택",
+    beta_reward_copy: "무료 캐릭터 1개와 무료 스킨 1개를 선택하세요. 이 보상은 베타 계정당 1회만 지급됩니다.",
+    beta_reward_claimed: "베타 보상이 지급되었습니다.",
+    beta_reward_button: "선택",
+    beta_reward_selected: "선택됨",
+    beta_claim_button: "보상 받기",
+    beta_claim_disabled: "캐릭터 1개와 스킨 1개를 먼저 선택하세요.",
+    account_guest: "게스트",
+    account_admin: "어드민 계정",
+    account_player: "플레이어 계정",
+    account_summary: "{nickname} | {tag} | 점수 {score}",
+    account_title_badge: "칭호 | {title}",
+    shop_status_admin: "어드민 계정 해금 완료: 한정 아이템을 포함한 모든 캐릭터와 스킨을 바로 사용할 수 있습니다.",
+    shop_status_player: "코인으로 캐릭터를 해금하고, 상자로 희귀 스킨을 수집하세요.",
+    coins_label: "코인: {coins}",
+    season_limited_live: "LIMITED 시즌 진행 중",
+    season_standard: "기본 스킨 라인업",
+    equipped_label: "장착 중: {name}",
+    equipped_with_summary: "장착 중 · {summary}",
+    equip_button: "장착",
+    equipped_button: "장착 중",
+    tag_limited: "LIMITED",
+    tag_character: "캐릭터",
+    tag_general: "일반",
+    tag_mythic: "신화",
+    tag_rare: "레어",
+    tag_epic: "에픽",
+    tag_legendary: "전설",
+    price_coins: "{price} 코인",
+    box_inventory: "보유 {count}",
+    box_batch_button: "{count}개 열기",
+    box_buy_and_open: "{count}개 구매 후 열기",
+    box_duplicate_refund: "중복! 코인 환급",
+    box_status_inventory: "보유 상자를 먼저 사용하고 부족분만 코인을 소모합니다.",
+    premium_pity_status: "전설 확정까지 {count}회 남음",
+    box_status_result: "{count}개 개봉 완료 | 환급 {refund} 코인",
+    box_reward_gain: "{name} 획득!",
+    box_opening: "상자가 열리는 중...",
+    lootbox_result_eyebrow: "상자",
+    lootbox_result_title: "개봉 결과",
+    lootbox_confirm: "확인",
+    box_basic_name: "기본 상자",
+    box_basic_summary: "일반과 레어 스킨 중심 상자입니다.",
+    box_advanced_name: "고급 상자",
+    box_advanced_summary: "레어 이상 스킨을 안정적으로 노릴 수 있습니다.",
+    box_premium_name: "프리미엄 상자",
+    box_premium_summary: "전설과 신화 확률이 가장 높은 상자입니다.",
+    rarity_general: "일반",
+    rarity_rare: "레어",
+    rarity_epic: "에픽",
+    rarity_legendary: "전설",
+    rarity_mythic: "신화",
+    default_character: "기본 지급 캐릭터",
+    admin_only: "어드민 전용",
+    default_skin: "기본 지급 스킨",
+    owned_character: "보유 캐릭터",
+    owned_skin: "보유 스킨",
+    shop_owned: "보유 중",
+    shop_unavailable: "구매 불가",
+    shop_season_over: "시즌 종료",
+    shop_not_enough: "코인 부족",
+    shop_buy: "구매 {price}",
+    this_week_price: "이번 주 가격 {price}",
+    price_up: "▲ +{amount}",
+    price_down: "▼ -{amount}",
+    price_flat: "변동 없음",
+    sale_badge: "SALE",
+    sale_rate: "{rate}% 할인",
+    sale_price: "{sale} ({base})",
+    weekly_sale_copy: "이번 주 할인 {rate}%",
+    stage_locked: "{name} (잠김)",
+    stage_ready_one: "스테이지 1 준비 완료. 클리어하면 스테이지 2가 해금됩니다.",
+    stage_unlocked_next: "현재 스테이지 {current}까지 해금됨. 클리어하면 스테이지 {next}가 해금됩니다.",
+    stage_all_unlocked: "모든 스테이지가 해금되었습니다. 원하는 경로를 선택하세요.",
+    collectible_shards: "파편",
+    collectible_buttons: "버튼",
+    hud_score: "점수 {score}",
+    hud_lives: "목숨 {lives}",
+    hud_stage: "스테이지 {current}/{total}",
+    hud_difficulty: "난이도 {difficulty}",
+    hud_jumps: "점프 {current}/{total}",
+    hud_clock: "시간 {time}",
+    hud_stage_rank: "스테이지 배율 x{value}",
+    hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
+    hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
+    hud_character: "캐릭터 {name}",
+    changer_status_ready_cd: "분신 준비 완료 | 교체 대기 {time}초",
+    changer_status_ready: "분신 준비 완료 | 교체 가능",
+    changer_status_spent: "분신 사용 완료 | 재생성 불가",
+    changer_status_prompt: "E 분신 생성 | Q 위치 교체",
+    guardian_status_shield: "방패 {time}초 | 패시브 {state}",
+    guardian_status_cooldown: "Q 쿨타임 {time}초 | 패시브 {state}",
+    guardian_status_ready: "Q 방패 준비 완료 | 패시브 {state}",
+    passive_ready: "준비됨",
+    passive_spent: "소모됨",
+    assassin_status_stealth: "은신 {time}초 | Q {cooldown}초",
+    assassin_status_stealth_cd: "은신 쿨타임 {time}초 | Q {cooldown}초",
+    assassin_status_q_cd: "Q 쿨타임 {time}초",
+    assassin_status_ready: "은신 준비 완료 | Q 준비 완료",
+    changer_hint: "한 판에 분신 1회만 생성 가능 | Q는 분신이 살아 있을 때만 사용 가능",
+    guardian_hint: "Q 방패 2초 | 패시브로 죽음 1회 무효화",
+    assassin_hint: "E 은신 (3초) | Q 암살 | 점프 처치 불가",
+    stage_objective_factory: "버튼 {count}개를 눌러 레버에 전력을 공급하세요.",
+    stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
+    center_stage_clear: "스테이지 클리어",
+    center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
+    center_now_entering: "다음 구역: {name}",
+    center_all_clear: "모든 스테이지 클리어",
+    center_all_clear_copy: "전체 루트를 완주했습니다.",
+    center_game_over: "게임 오버",
+    center_game_over_copy: "이번 판은 몬스터들이 승리했습니다.",
+    center_restart: "R을 눌러 다시 시작",
+    assassinate_silent_kill: "침묵 암살",
+    assassinate_clash: "암살 대치",
+    assassinate_locking: "일격을 고정하는 중...",
+    assassinate_boss_copy: "Q를 빠르게 연타하세요. 보스는 훨씬 강한 돌파가 필요합니다.",
+    assassinate_enemy_copy: "적이 밀어붙이기 전에 Q를 연타하세요.",
+    assassinate_time: "시간 {time}초",
+    claw_title: "집게 탈출",
+    claw_copy: "레버를 클릭해 게이지를 채우세요.",
+    claw_pull: "당기기!",
+    dance_title: "댄스 머신",
+    dance_copy: "빛나는 화살표를 따라가세요. WASD 입력 (6단계).",
+    dance_ready: "준비...",
+    nightmare_title: "악몽 습격",
+    nightmare_countdown: "준비하세요. 악몽이 다가오고 있습니다.",
+    nightmare_copy: "시간이 끝나기 전에 빨간 구역 안에서 Space 또는 Enter를 누르세요.",
+    character_starling_name: "스타링",
+    character_starling_summary: "균형 잡힌 러너",
+    character_guardian_name: "가디언",
+    character_guardian_summary: "한 판에 한 번 죽음을 버티는 생존형 수호자",
+    character_changer_name: "체인저",
+    character_changer_summary: "분신 생존 특화 캐릭터",
+    character_assassin_name: "어쌔신",
+    character_assassin_summary: "은신 특화 캐릭터",
+    skin_classic_name: "기본외형",
+    skin_classic_summary: "기본 외형",
+    skin_desert_name: "데저트",
+    skin_desert_summary: "따뜻한 모래색 기반 외형",
+    skin_forest_name: "포레스트",
+    skin_forest_summary: "차분한 숲빛 기반 외형",
+    skin_stone_name: "스톤",
+    skin_stone_summary: "단단한 회색 석재 팔레트",
+    skin_angelDemon_name: "천사 대 악마",
+    skin_angelDemon_summary: "체인저 전용 이중 형태 스킨",
+    skin_cyber_name: "사이버",
+    skin_cyber_summary: "검정 바탕의 네온 전투 슈트",
+    skin_voidKing_name: "공허의 왕",
+    skin_voidKing_summary: "심홍 공허의 균열이 흐르는 고대 흑갑 스킨",
+    skin_admin_name: "관리자",
+    skin_admin_summary: "통치의 왕관",
+    stage_1_name: "스테이지 1 - 태양 초원",
+    stage_2_name: "스테이지 2 - 수정 수림",
+    stage_3_name: "스테이지 3 - 불꽃 스카이라인",
+    stage_4_name: "스테이지 4 - 네온 아케이드",
+    stage_5_name: "스테이지 5 - 시계 공장",
+  },
+};
+let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ko";
+
+const keys = {
+  left: false,
+  right: false,
+  jump: false,
+  jumpQueued: false,
+  crouch: false,
+};
+
+const audioState = {
+  muted: false,
+  context: null,
+  music: {
+    dance: null,
+  },
+  sfx: {
+    mythicNodes: [],
+  },
+};
+
+const camera = { x: 0 };
+const authMessageState = {
+  key: "auth_signin_prompt",
+  vars: {},
+  raw: "",
+  isError: false,
+};
+
+const level = {
+  solids: [],
+  collectibles: [],
+  enemies: [],
+  serpentEnemies: [],
+  frostProjectiles: [],
+  hazards: [],
+  goal: { x: 0, y: 0, w: 2 * TILE, h: 6 * TILE },
+  start: { x: 2 * TILE, y: 11 * TILE },
+  widthTiles: 134,
+  theme: "meadow",
+  name: "",
+};
+
+const DIFFICULTIES = {
+  easy: {
+    label: "Easy",
+    enemySpeed: 0.85,
+    lives: 5,
+    lifeLoss: 1,
+    maxJumps: 3,
+    jumpVelocity: -720,
+    airJumpVelocity: -720,
+    shardGoal: 11,
+    enemyBonus: 0,
+    collectibleBonus: 1.1,
+  },
+  normal: {
+    label: "Normal",
+    enemySpeed: 1,
+    lives: 3,
+    lifeLoss: 1,
+    maxJumps: 2,
+    jumpVelocity: -720,
+    airJumpVelocity: -720,
+    shardGoal: 22,
+    enemyBonus: 1,
+    collectibleBonus: 1,
+  },
+  hard: {
+    label: "Hard",
+    enemySpeed: 1.3,
+    lives: 2,
+    lifeLoss: 2,
+    maxJumps: 2,
+    jumpVelocity: -720,
+    airJumpVelocity: -620,
+    shardGoal: 33,
+    enemyBonus: 2,
+    collectibleBonus: 0.95,
+  },
+};
+
+const STAGE_DEFS = [
+  {
+    name: "Stage 1 - Sun Meadow",
+    widthTiles: 134,
+    theme: "meadow",
+    start: { x: 2, y: 11 },
+    goal: { x: 126, y: 9 },
+    groundSegments: [
+      [0, 10], [12, 17], [20, 24], [27, 34], [37, 43], [46, 53], [56, 61],
+      [64, 73], [76, 83], [86, 94], [96, 104], [107, 114], [116, 133],
+    ],
+    platforms: [
+      [7, 12, 3], [15, 10, 2], [22, 11, 2], [30, 9, 4], [40, 10, 2], [48, 8, 3],
+      [58, 10, 2], [67, 8, 3], [79, 9, 2], [89, 11, 3], [98, 8, 3], [110, 9, 2], [119, 8, 4],
+    ],
+    hazards: [
+      [10, 2], [17, 3], [24, 3], [34, 3], [43, 3], [53, 3], [61, 3], [73, 3], [83, 3], [94, 2], [104, 3], [114, 2],
+    ],
+    collectibles: [
+      { row: [8, 10, 4] }, { row: [23, 9, 3] }, { row: [31, 7, 4] }, { row: [49, 6, 4] },
+      { row: [67, 6, 4] }, { row: [90, 9, 3] }, { row: [99, 6, 4] }, { row: [120, 6, 3] },
+      { point: [5, 13] }, { point: [38, 13] }, { point: [70, 13] }, { point: [108, 13] },
+    ],
+    enemies: [
+      [14, 14], [32, 8], [41, 14], [58, 14], [68, 7], [88, 14], [100, 7], [120, 14],
+    ],
+    serpentSpawns: [],
+  },
+  {
+    name: "Stage 2 - Crystal Canopy",
+    widthTiles: 146,
+    theme: "forest",
+    start: { x: 2, y: 11 },
+    goal: { x: 138, y: 8 },
+    groundSegments: [
+      [0, 8], [10, 14], [17, 21], [24, 29], [32, 38], [41, 46], [50, 58],
+      [61, 67], [70, 74], [77, 84], [88, 95], [98, 105], [108, 115], [118, 145],
+    ],
+    platforms: [
+      [6, 12, 2], [12, 10, 3], [18, 8, 2], [26, 9, 3], [34, 7, 3], [43, 10, 2],
+      [52, 8, 3], [63, 11, 2], [72, 8, 3], [81, 6, 4], [92, 9, 3], [101, 7, 2],
+      [110, 10, 3], [123, 8, 3], [132, 6, 4],
+    ],
+    hazards: [
+      [8, 2], [14, 3], [21, 3], [29, 3], [38, 3], [46, 4], [58, 3], [67, 3], [74, 3], [84, 4], [95, 3], [105, 3], [115, 3],
+    ],
+    collectibles: [
+      { row: [6, 10, 3] }, { row: [18, 6, 4] }, { row: [34, 5, 5] }, { row: [52, 6, 4] },
+      { row: [72, 6, 4] }, { row: [92, 7, 4] }, { row: [111, 8, 3] }, { row: [132, 4, 4] },
+      { point: [4, 13] }, { point: [40, 13] }, { point: [90, 13] }, { point: [126, 13] },
+    ],
+    enemies: [
+      [12, 14], [19, 7], [35, 6], [44, 14], [53, 7], [72, 14], [82, 5], [101, 6], [112, 14], [133, 5],
+    ],
+    serpentSpawns: [14, 46, 84, 115],
+  },
+  {
+    name: "Stage 3 - Ember Skyline",
+    widthTiles: 160,
+    theme: "sunset",
+    start: { x: 2, y: 11 },
+    goal: { x: 152, y: 7 },
+    groundSegments: [
+      [0, 7], [10, 15], [18, 22], [25, 30], [33, 37], [40, 46], [49, 53], [56, 62],
+      [65, 70], [73, 78], [81, 88], [91, 95], [98, 104], [108, 114], [118, 125], [128, 159],
+    ],
+    platforms: [
+      [5, 12, 2], [13, 10, 2], [19, 8, 3], [27, 7, 3], [34, 10, 2], [42, 8, 3], [50, 6, 3],
+      [58, 9, 2], [67, 7, 3], [76, 5, 4], [86, 8, 2], [94, 6, 3], [103, 9, 2], [112, 7, 3],
+      [122, 5, 4], [134, 8, 3], [145, 6, 4],
+    ],
+    hazards: [
+      [7, 3], [15, 3], [22, 3], [30, 3], [37, 3], [46, 3], [53, 3], [62, 3], [70, 3], [78, 3], [88, 3], [95, 3], [104, 4], [114, 4], [125, 3],
+    ],
+    collectibles: [
+      { row: [5, 10, 3] }, { row: [20, 6, 4] }, { row: [42, 6, 4] }, { row: [58, 7, 3] },
+      { row: [76, 3, 5] }, { row: [94, 4, 4] }, { row: [122, 3, 5] }, { row: [146, 4, 3] },
+      { point: [11, 13] }, { point: [64, 13] }, { point: [108, 13] }, { point: [140, 13] },
+    ],
+    enemies: [
+      [13, 14], [20, 7], [35, 14], [42, 7], [50, 5], [68, 6], [76, 4], [86, 14], [95, 5], [112, 6], [123, 4], [146, 5],
+    ],
+    serpentSpawns: [15, 46, 78, 114, 125],
+  },
+  {
+    name: "Stage 4 - Neon Arcade",
+    widthTiles: 172,
+    theme: "arcade",
+    start: { x: 2, y: 11 },
+    goal: { x: 164, y: 8 },
+    groundSegments: [
+      [0, 6], [9, 14], [17, 23], [26, 33], [36, 44], [47, 55], [58, 66],
+      [69, 76], [79, 88], [92, 100], [104, 112], [116, 126], [130, 139],
+      [142, 151], [154, 171],
+    ],
+    platforms: [
+      [5, 12, 2], [11, 10, 3], [19, 8, 3], [28, 9, 2], [32, 7, 3], [40, 10, 2],
+      [48, 8, 4], [60, 11, 2], [66, 7, 3], [74, 6, 4], [84, 9, 2], [90, 7, 3],
+      [102, 8, 3], [110, 6, 4], [120, 9, 2], [128, 7, 3], [140, 6, 4],
+      [150, 10, 2], [158, 8, 3],
+    ],
+    hazards: [
+      [6, 3], [14, 3], [23, 3], [33, 3], [44, 3], [55, 3], [66, 3], [76, 3],
+      [88, 4], [100, 4], [112, 4], [126, 4], [139, 3], [151, 3],
+    ],
+    collectibles: [
+      { row: [11, 8, 3] }, { row: [19, 6, 4] }, { row: [32, 5, 4] }, { row: [48, 6, 5] },
+      { row: [66, 5, 4] }, { row: [74, 4, 5] }, { row: [90, 5, 4] }, { row: [110, 4, 5] },
+      { row: [128, 5, 4] }, { row: [140, 4, 5] }, { row: [158, 6, 3] },
+      { point: [3, 13] }, { point: [36, 13] }, { point: [79, 13] }, { point: [116, 13] }, { point: [154, 13] },
+    ],
+    enemies: [
+      [9, 14], [20, 7], [27, 14], [40, 14], [49, 7], [60, 14], [66, 6],
+      [84, 14], [90, 6], [104, 14], [120, 8], [140, 5], [158, 14],
+    ],
+    serpentSpawns: [14, 55, 100, 139],
+  },
+  {
+    name: "Stage 5 - Clockwork Factory",
+    widthTiles: 184,
+    theme: "factory",
+    start: { x: 2, y: 11 },
+    goal: { x: 176, y: 8 },
+    groundSegments: [
+      [0, 8], [11, 18], [21, 27], [30, 38], [42, 50], [53, 60], [63, 72],
+      [76, 85], [89, 98], [102, 109], [113, 121], [125, 133], [137, 146],
+      [150, 159], [163, 171], [174, 183],
+    ],
+    platforms: [
+      [6, 12, 2], [14, 10, 3], [23, 8, 3], [34, 9, 2], [45, 7, 4], [56, 10, 2],
+      [66, 8, 3], [79, 6, 4], [92, 9, 2], [104, 7, 3], [116, 5, 4], [128, 8, 3],
+      [140, 6, 4], [153, 9, 2], [165, 7, 3],
+    ],
+    hazards: [
+      [8, 3], [18, 3], [27, 3], [38, 4], [50, 3], [60, 3], [72, 4], [85, 4],
+      [98, 4], [109, 4], [121, 4], [133, 4], [146, 4], [159, 4], [171, 3],
+    ],
+    collectibles: [
+      { row: [14, 8, 3] }, { row: [23, 6, 4] }, { row: [45, 5, 4] }, { row: [66, 6, 4] },
+      { row: [79, 4, 5] }, { row: [104, 5, 4] }, { row: [116, 3, 5] }, { row: [140, 4, 4] },
+      { row: [165, 5, 3] },
+      { point: [4, 13] }, { point: [41, 13] }, { point: [89, 13] }, { point: [129, 13] }, { point: [168, 13] },
+    ],
+    enemies: [
+      [12, 14], [24, 7], [57, 14], [80, 5], [105, 14], [129, 7], [154, 14],
+    ],
+    excavators: [
+      [31, 13, "right", 48, 144],
+      [52, 12, "left", 40, 128],
+      [73, 13, "right", 56, 152],
+      [98, 12, "left", 48, 144],
+      [122, 13, "right", 56, 160],
+      [147, 12, "left", 48, 144],
+    ],
+    serpentSpawns: [],
+  },
+];
+
+const player = createPlayer();
+
+let gameState = "playing";
+let score = 0;
+let lives = 3;
+let collectedCount = 0;
+let lastTime = 0;
+let currentStageIndex = 0;
+let worldWidth = 134 * TILE;
+let activeDifficultyKey = difficultySelect.value;
+let difficulty = DIFFICULTIES[activeDifficultyKey];
+let stageMessageTimer = 0;
+let selectedStageIndex = Number(stageSelect.value);
+let unlockedStageIndex = 0;
+let screenMode = screenModeSelect.value;
+let factoryTimeRemaining = 0;
+let frozenTimeRemaining = 0;
+let lastSavedStateJson = "";
+const accountState = {
+  currentNickname: null,
+  isAdmin: false,
+  hasBetaReward: false,
+  lastSeenPatchNoteVersion: "",
+};
+const shopState = {
+  ownedCharacters: ["starling"],
+  ownedSkins: ["classic"],
+  coins: 0,
+  premiumBoxCounter: 0,
+  weeklyBoxPriceWeek: "",
+  weeklyCharacterSaleWeek: "",
+  boxPrices: {
+    basic: LOOT_BOX_DEFS.basic.price,
+    advanced: LOOT_BOX_DEFS.advanced.price,
+    premium: LOOT_BOX_DEFS.premium.price,
+  },
+  characterSales: {},
+  boxInventory: {
+    basic: 0,
+    advanced: 0,
+    premium: 0,
+  },
+  equippedCharacter: "starling",
+  equippedSkin: "classic",
+};
+const shopUiState = {
+  activeTab: "character",
+};
+const betaRewardState = {
+  selectedCharacter: null,
+  selectedSkin: null,
+};
+const patchNotesState = {
+  open: false,
+};
+const lootBoxState = {
+  active: false,
+  revealReady: false,
+  timer: 0,
+  boxId: "",
+  count: 0,
+  results: [],
+  refund: 0,
+  revealTimeoutId: null,
+};
+const changerState = {
+  clone: null,
+  cloneUsedThisRun: false,
+  swapCooldown: 0,
+  effectTimer: 0,
+  effectFrom: null,
+  effectTo: null,
+};
+const nightmareEvent = {
+  active: false,
+  countdown: false,
+  countdownTimer: 0,
+  timer: 0,
+  triggerTimer: 8,
+  targetStart: 0.44,
+  targetWidth: 0.18,
+  marker: 0,
+  markerDir: 1,
+  markerSpeed: 1.25,
+  flash: 0,
+};
+
+const danceEvent = {
+  active: false,
+  countdown: false,
+  countdownTimer: 0,
+  triggerTimer: 8,
+  sequence: [],
+  index: 0,
+  stepTimer: 0,
+  stepTimeLimit: 1.15,
+  flash: 0,
+};
+
+const clawEscapeEvent = {
+  active: false,
+  meter: 0,
+  flash: 0,
+  button: { x: 0, y: 0, w: 0, h: 0 },
+};
+const assassinationEvent = {
+  active: false,
+  mode: "",
+  targetType: "",
+  target: null,
+  targetBounds: null,
+  timer: 0,
+  gauge: 0,
+  flash: 0,
+  successText: "",
+};
+
+function currentShardTarget() {
+  if (level.theme === "factory") {
+    return 12;
+  }
+  return difficulty.shardGoal;
+}
+
+function t(key, vars = {}) {
+  const dict = STRINGS[currentLanguage] || STRINGS.en;
+  const fallback = STRINGS.en || {};
+  const template = dict[key] ?? fallback[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? `{${name}}`));
+}
+
+function getDifficultyLabel(key = activeDifficultyKey) {
+  return t(`difficulty_${key}`);
+}
+
+function getScreenModeLabel(mode) {
+  return t(`screen_${mode}`);
+}
+
+function getStageDisplayName(index) {
+  return t(`stage_${index + 1}_name`);
+}
+
+function getCharacterDisplayName(value) {
+  return t(`character_${value}_name`);
+}
+
+function getSkinDisplayName(value) {
+  return t(`skin_${value}_name`);
+}
+
+function getCharacterSummary(value) {
+  return t(`character_${value}_summary`);
+}
+
+function getSkinSummary(value) {
+  return t(`skin_${value}_summary`);
+}
+
+function currentCollectibleLabel() {
+  return level.theme === "factory" ? t("collectible_buttons") : t("collectible_shards");
+}
+
+function formatCatalogName(value) {
+  if (CHARACTER_DEFS[value]) {
+    return getCharacterDisplayName(value);
+  }
+  if (SKIN_DEFS[value]) {
+    return getSkinDisplayName(value);
+  }
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getCatalogSummary(type, value) {
+  if (type === "character") {
+    return CHARACTER_DEFS[value] ? getCharacterSummary(value) : t("owned_character");
+  }
+  return SKIN_DEFS[value] ? getSkinSummary(value) : t("owned_skin");
+}
+
+function getDefaultOwnedCharacters() {
+  return Object.entries(CHARACTER_DEFS)
+    .filter(([, def]) => def.defaultOwned)
+    .map(([key]) => key);
+}
+
+function getDefaultOwnedSkins() {
+  return Object.entries(SKIN_DEFS)
+    .filter(([, def]) => def.defaultOwned)
+    .map(([key]) => key);
+}
+
+function createDefaultBoxInventory() {
+  return {
+    basic: 0,
+    advanced: 0,
+    premium: 0,
+  };
+}
+
+function createDefaultBoxPrices() {
+  return {
+    basic: LOOT_BOX_DEFS.basic.price,
+    advanced: LOOT_BOX_DEFS.advanced.price,
+    premium: LOOT_BOX_DEFS.premium.price,
+  };
+}
+
+function normalizeBoxPrices(source) {
+  const prices = createDefaultBoxPrices();
+  if (!source || typeof source !== "object") {
+    return prices;
+  }
+  for (const boxId of LOOT_BOX_ORDER) {
+    const base = LOOT_BOX_DEFS[boxId].price;
+    const value = Math.floor(source[boxId] || base);
+    prices[boxId] = Math.max(base - BOX_PRICE_VARIANCE, Math.min(base + BOX_PRICE_VARIANCE, value));
+  }
+  return prices;
+}
+
+function normalizeCharacterSales(source) {
+  const sales = {};
+  if (!source || typeof source !== "object") {
+    return sales;
+  }
+  for (const [characterId, rate] of Object.entries(source)) {
+    if (!CHARACTER_DEFS[characterId]?.purchasable) {
+      continue;
+    }
+    const safeRate = Math.max(10, Math.min(30, Math.floor(rate || 0)));
+    if (safeRate > 0) {
+      sales[characterId] = safeRate;
+    }
+  }
+  return sales;
+}
+
+function getWeeklyEconomyStamp(date = new Date()) {
+  const local = new Date(date);
+  local.setHours(0, 0, 0, 0);
+  local.setDate(local.getDate() - local.getDay());
+  const year = local.getFullYear();
+  const month = String(local.getMonth() + 1).padStart(2, "0");
+  const day = String(local.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function shuffleArray(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getBoxCurrentPrice(boxId) {
+  return shopState.boxPrices?.[boxId] || LOOT_BOX_DEFS[boxId].price;
+}
+
+function getBoxPriceDelta(boxId) {
+  return getBoxCurrentPrice(boxId) - LOOT_BOX_DEFS[boxId].price;
+}
+
+function getCharacterSaleRate(characterId) {
+  return Math.max(0, Math.floor(shopState.characterSales?.[characterId] || 0));
+}
+
+function isCharacterOnSale(characterId) {
+  return getCharacterSaleRate(characterId) > 0;
+}
+
+function getCharacterCurrentPrice(characterId) {
+  const basePrice = CHARACTER_DEFS[characterId]?.price || 0;
+  const saleRate = getCharacterSaleRate(characterId);
+  if (!saleRate) {
+    return basePrice;
+  }
+  return Math.max(0, Math.floor(basePrice * (100 - saleRate) / 100));
+}
+
+function formatPriceDelta(delta) {
+  if (delta > 0) {
+    return t("price_up", { amount: delta });
+  }
+  if (delta < 0) {
+    return t("price_down", { amount: Math.abs(delta) });
+  }
+  return t("price_flat");
+}
+
+function generateWeeklyBoxPrices() {
+  const prices = {};
+  for (const boxId of LOOT_BOX_ORDER) {
+    const base = LOOT_BOX_DEFS[boxId].price;
+    prices[boxId] = base + Math.floor(Math.random() * (BOX_PRICE_VARIANCE * 2 + 1)) - BOX_PRICE_VARIANCE;
+  }
+  return prices;
+}
+
+function generateWeeklyCharacterSales() {
+  const purchasableCharacters = SHOP_CATALOG.characters.filter((item) => CHARACTER_DEFS[item]?.purchasable);
+  const shuffled = shuffleArray(purchasableCharacters);
+  const saleCount = Math.min(shuffled.length, 1 + Math.floor(Math.random() * 2));
+  const sales = {};
+  for (let index = 0; index < saleCount; index += 1) {
+    sales[shuffled[index]] = 10 + Math.floor(Math.random() * 21);
+  }
+  return sales;
+}
+
+function syncWeeklyEconomy() {
+  const stamp = getWeeklyEconomyStamp();
+  let changed = false;
+
+  if (shopState.weeklyBoxPriceWeek !== stamp) {
+    shopState.boxPrices = generateWeeklyBoxPrices();
+    shopState.weeklyBoxPriceWeek = stamp;
+    changed = true;
+  }
+
+  if (shopState.weeklyCharacterSaleWeek !== stamp) {
+    shopState.characterSales = generateWeeklyCharacterSales();
+    shopState.weeklyCharacterSaleWeek = stamp;
+    changed = true;
+  }
+
+  if (changed) {
+    savePersistentProgress(true);
+  }
+}
+
+function normalizeBoxInventory(source) {
+  const inventory = createDefaultBoxInventory();
+  if (!source || typeof source !== "object") {
+    return inventory;
+  }
+  for (const boxId of LOOT_BOX_ORDER) {
+    inventory[boxId] = Math.max(0, Math.floor(source[boxId] || 0));
+  }
+  return inventory;
+}
+
+function getBoxDisplayName(boxId) {
+  return t(`box_${boxId}_name`);
+}
+
+function getBoxSummary(boxId) {
+  return t(`box_${boxId}_summary`);
+}
+
+function getRarityLabel(rarity) {
+  return t(`rarity_${rarity}`);
+}
+
+function getRarityTagKey(rarity) {
+  switch (rarity) {
+    case "mythic":
+      return "tag_mythic";
+    case "legendary":
+      return "tag_legendary";
+    case "epic":
+      return "tag_epic";
+    case "rare":
+      return "tag_rare";
+    default:
+      return "tag_general";
+  }
+}
+
+function getSkinRarity(skinId) {
+  const tier = SKIN_DEFS[skinId]?.tier;
+  if (["rare", "epic", "legendary", "mythic"].includes(tier)) {
+    return tier;
+  }
+  return "general";
+}
+
+function getPremiumPityRemaining() {
+  return Math.max(0, PREMIUM_BOX_PITY_TARGET - Math.max(0, Math.floor(shopState.premiumBoxCounter || 0)));
+}
+
+function getRandomSkinFromAllowedRarities(rarities) {
+  const allowed = rarities.flatMap((rarity) => getEligibleSkinsByRarity(rarity));
+  const candidates = [...new Set(allowed)];
+  if (candidates.length === 0) {
+    return null;
+  }
+  const skinId = candidates[Math.floor(Math.random() * candidates.length)];
+  return {
+    skinId,
+    rarity: getSkinRarity(skinId),
+  };
+}
+
+function getEligibleSkinsByRarity(rarity) {
+  return LOOTBOX_ELIGIBLE_SKINS.filter((skinId) => getSkinRarity(skinId) === rarity);
+}
+
+function rollWeightedEntry(entries) {
+  const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  if (totalWeight <= 0) {
+    return entries[0] || null;
+  }
+  let roll = Math.random() * totalWeight;
+  for (const entry of entries) {
+    roll -= entry.weight;
+    if (roll <= 0) {
+      return entry;
+    }
+  }
+  return entries[entries.length - 1] || null;
+}
+
+function rollLootBoxSkin(boxId) {
+  const boxDef = LOOT_BOX_DEFS[boxId];
+  if (!boxDef) {
+    return null;
+  }
+
+  const availableProbabilities = boxDef.probabilities.filter((entry) => getEligibleSkinsByRarity(entry.rarity).length > 0);
+  const rarityEntry = rollWeightedEntry(availableProbabilities.length > 0 ? availableProbabilities : boxDef.probabilities);
+  const rarity = rarityEntry?.rarity || "general";
+  const pool = getEligibleSkinsByRarity(rarity);
+  const allowedFallbackPool = (availableProbabilities.length > 0 ? availableProbabilities : boxDef.probabilities)
+    .flatMap((entry) => getEligibleSkinsByRarity(entry.rarity));
+  const fallbackPool = allowedFallbackPool.length > 0
+    ? [...new Set(allowedFallbackPool)]
+    : ["classic"];
+  const candidates = pool.length > 0 ? pool : fallbackPool;
+  const skinId = candidates[Math.floor(Math.random() * candidates.length)];
+  return {
+    skinId,
+    rarity: getSkinRarity(skinId),
+  };
+}
+
+function hasLimitedSkins() {
+  return Object.values(SKIN_DEFS).some((def) => Number.isInteger(def.limitedAct));
+}
+
+function isLimitedSkin(value) {
+  return Number.isInteger(SKIN_DEFS[value]?.limitedAct);
+}
+
+function isLimitedSkinAvailable(value) {
+  return !isLimitedSkin(value);
+}
+
+function getSeasonLabel() {
+  return hasLimitedSkins() ? t("season_limited_live") : t("season_standard");
+}
+
+function awardCoins(amount) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return;
+  }
+  shopState.coins += Math.floor(amount);
+}
+
+function getShopActionLabel({ owned, purchasable, available, canAfford, price }) {
+  if (owned) {
+    return t("shop_owned");
+  }
+  if (!purchasable) {
+    return t("shop_unavailable");
+  }
+  if (!available) {
+    return t("shop_season_over");
+  }
+  if (!canAfford) {
+    return t("shop_not_enough");
+  }
+  return t("shop_buy", { price });
+}
+
+function updateMuteButtonLabel() {
+  const stateLabel = audioState.muted ? t("mute_on") : t("mute_off");
+  muteButton.textContent = currentLanguage === "ko"
+    ? `음소거: ${stateLabel}`
+    : `Mute: ${stateLabel}`;
+}
+
+function renderAuthMessageState() {
+  authMessage.textContent = authMessageState.key
+    ? t(authMessageState.key, authMessageState.vars)
+    : authMessageState.raw;
+  authMessage.style.color = authMessageState.isError ? "#ffb6a8" : "#fff2ad";
+}
+
+function applyLanguage(nextLanguage) {
+  currentLanguage = nextLanguage === "en" ? "en" : "ko";
+  localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+  document.documentElement.lang = currentLanguage;
+  document.title = "Starling Sprint";
+  if (metaDescription) {
+    metaDescription.setAttribute("content", t("meta_description"));
+  }
+  if (languageSelect) {
+    languageSelect.value = currentLanguage;
+    languageSelect.querySelector('option[value="en"]').textContent = "English";
+    languageSelect.querySelector('option[value="ko"]').textContent = "\uD55C\uAD6D\uC5B4";
+  }
+
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+    node.setAttribute("aria-label", t(node.dataset.i18nAriaLabel));
+  });
+
+  difficultySelect.querySelector('option[value="easy"]').textContent = getDifficultyLabel("easy");
+  difficultySelect.querySelector('option[value="normal"]').textContent = getDifficultyLabel("normal");
+  difficultySelect.querySelector('option[value="hard"]').textContent = getDifficultyLabel("hard");
+  screenModeSelect.querySelector('option[value="fullscreen"]').textContent = getScreenModeLabel("fullscreen");
+  screenModeSelect.querySelector('option[value="classic"]').textContent = getScreenModeLabel("classic");
+  updateMuteButtonLabel();
+
+  for (const option of stageSelect.options) {
+    option.textContent = getStageDisplayName(Number(option.value));
+  }
+
+  if (shopTabCharacters?.parentElement) {
+    shopTabCharacters.parentElement.setAttribute("aria-label", t("shop_tabs_label"));
+  }
+
+  if (Number.isInteger(currentStageIndex) && STAGE_DEFS[currentStageIndex]) {
+    level.name = getStageDisplayName(currentStageIndex);
+  }
+
+  renderAuthMessageState();
+  updateStageSelectLocks();
+  syncLobbyAccountUI();
+  if (lootBoxState.active) {
+    if (lootBoxState.revealReady) {
+      renderLootBoxResultGrid();
+    } else if (lootboxStageText) {
+      lootboxStageText.textContent = `${getBoxDisplayName(lootBoxState.boxId)} · ${t("box_opening")}`;
+    }
+  } else if (lootboxStageText) {
+    lootboxStageText.textContent = t("box_opening");
+  }
+}
+
+function isAssassinEquipped() {
+  return shopState.equippedCharacter === "assassin";
+}
+
+function isChangerEquipped() {
+  return shopState.equippedCharacter === "changer";
+}
+
+function isGuardianEquipped() {
+  return shopState.equippedCharacter === "guardian";
+}
+
+function isChangerAngelDemonSkinEquipped() {
+  return isChangerEquipped() && shopState.equippedSkin === "angelDemon";
+}
+
+function isCyberSkinEquipped() {
+  return shopState.equippedSkin === "cyber";
+}
+
+function isVoidKingSkinEquipped() {
+  return shopState.equippedSkin === "voidKing";
+}
+
+function getSimpleSkinPalette() {
+  if (shopState.equippedSkin === "desert") {
+    return {
+      primary: "#c89256",
+      secondary: "#8d6236",
+      dark: "#4c3725",
+      accent: "#e6c58a",
+      glow: "#fff0c8",
+    };
+  }
+  if (shopState.equippedSkin === "forest") {
+    return {
+      primary: "#4f8a57",
+      secondary: "#355f3c",
+      dark: "#1d3524",
+      accent: "#9fc47d",
+      glow: "#dff2c7",
+    };
+  }
+  if (shopState.equippedSkin === "stone") {
+    return {
+      primary: "#8f98a4",
+      secondary: "#67707b",
+      dark: "#313740",
+      accent: "#c9d0d8",
+      glow: "#eef3f7",
+    };
+  }
+  return null;
+}
+
+function getStartingLives() {
+  if (isAssassinEquipped() && difficulty.label !== "Hard") {
+    return Math.max(1, difficulty.lives - 1);
+  }
+  return difficulty.lives;
+}
+
+function normalizeNickname(value) {
+  return value.trim().slice(0, 20);
+}
+
+function readAuthFieldValue(input) {
+  return typeof input?.value === "string" ? input.value : "";
+}
+
+function getAuthDom() {
+  return {
+    loginNickname: document.getElementById("loginNickname"),
+    loginPassword: document.getElementById("loginPassword"),
+    signupNickname: document.getElementById("signupNickname"),
+    signupPassword: document.getElementById("signupPassword"),
+    loginButton: document.getElementById("loginButton"),
+    signupButton: document.getElementById("signupButton"),
+    logoutButton: document.getElementById("logoutButton"),
+  };
+}
+
+function getLoginCredentials() {
+  const authDom = getAuthDom();
+  return {
+    nickname: normalizeNickname(readAuthFieldValue(authDom.loginNickname)),
+    password: readAuthFieldValue(authDom.loginPassword).trim().slice(0, 20),
+  };
+}
+
+function getSignupCredentials() {
+  const authDom = getAuthDom();
+  return {
+    nickname: normalizeNickname(readAuthFieldValue(authDom.signupNickname)),
+    password: readAuthFieldValue(authDom.signupPassword).trim().slice(0, 20),
+  };
+}
+
+function getAccountByNickname(accounts, nickname) {
+  if (!nickname || !accounts || typeof accounts !== "object") {
+    return null;
+  }
+  return accounts[nickname] || null;
+}
+
+function readAccounts() {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    if (!raw) {
+      return {};
+    }
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") {
+      return {};
+    }
+    let changed = false;
+    for (const account of Object.values(data)) {
+      changed = ensureAccountMeta(account) || changed;
+    }
+    if (changed) {
+      localStorage.setItem(ACCOUNT_KEY, JSON.stringify(data));
+    }
+    return syncBetaAccountCoins(data);
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeAccounts(accounts) {
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(accounts));
+}
+
+function syncAdminAccountPassword(accounts) {
+  const adminAccount = accounts[ADMIN_NICKNAME];
+  if (!adminAccount || adminAccount.password === ADMIN_PASSWORD_RESET) {
+    return accounts;
+  }
+  adminAccount.password = ADMIN_PASSWORD_RESET;
+  writeAccounts(accounts);
+  return accounts;
+}
+
+function ensureAccountMeta(account) {
+  if (!account || typeof account !== "object") {
+    return false;
+  }
+  let changed = false;
+  if (typeof account.hasBetaReward !== "boolean") {
+    account.hasBetaReward = false;
+    changed = true;
+  }
+  if (typeof account.lastSeenPatchNoteVersion !== "string") {
+    account.lastSeenPatchNoteVersion = "";
+    changed = true;
+  }
+  return changed;
+}
+
+function syncBetaAccountCoins(accounts) {
+  const betaAccount = accounts?.[BETA_ACCOUNT_NICKNAME];
+  if (!betaAccount || typeof betaAccount !== "object") {
+    return accounts;
+  }
+
+  betaAccount.progress = betaAccount.progress || createDefaultProgress();
+  betaAccount.progress.shopState = betaAccount.progress.shopState || createDefaultProgress().shopState;
+
+  if ((betaAccount.progress.shopState.coins || 0) >= BETA_ACCOUNT_COINS) {
+    return accounts;
+  }
+
+  betaAccount.progress.shopState.coins = BETA_ACCOUNT_COINS;
+  writeAccounts(accounts);
+  return accounts;
+}
+
+function createDefaultProgress() {
+  return {
+    score: 0,
+    unlockedStageIndex: 0,
+    selectedStageIndex: 0,
+    activeDifficultyKey: difficultySelect.value,
+    screenMode: screenModeSelect.value,
+    shopState: {
+      ownedCharacters: getDefaultOwnedCharacters(),
+      ownedSkins: getDefaultOwnedSkins(),
+      coins: 0,
+      premiumBoxCounter: 0,
+      weeklyBoxPriceWeek: "",
+      weeklyCharacterSaleWeek: "",
+      boxPrices: createDefaultBoxPrices(),
+      characterSales: {},
+      boxInventory: createDefaultBoxInventory(),
+      equippedCharacter: "starling",
+      equippedSkin: "classic",
+    },
+  };
+}
+
+function setAuthMessage(message, isError = false) {
+  authMessageState.key = null;
+  authMessageState.vars = {};
+  authMessageState.raw = message;
+  authMessageState.isError = isError;
+  renderAuthMessageState();
+}
+
+function setAuthMessageKey(key, vars = {}, isError = false) {
+  authMessageState.key = key;
+  authMessageState.vars = vars;
+  authMessageState.raw = "";
+  authMessageState.isError = isError;
+  renderAuthMessageState();
+}
+
+function applyShopEntitlements() {
+  shopState.boxInventory = normalizeBoxInventory(shopState.boxInventory);
+  shopState.boxPrices = normalizeBoxPrices(shopState.boxPrices);
+  shopState.characterSales = normalizeCharacterSales(shopState.characterSales);
+  shopState.premiumBoxCounter = Math.max(0, Math.floor(shopState.premiumBoxCounter || 0));
+  shopState.weeklyBoxPriceWeek = typeof shopState.weeklyBoxPriceWeek === "string" ? shopState.weeklyBoxPriceWeek : "";
+  shopState.weeklyCharacterSaleWeek = typeof shopState.weeklyCharacterSaleWeek === "string" ? shopState.weeklyCharacterSaleWeek : "";
+  if (accountState.isAdmin) {
+    shopState.ownedCharacters = [...SHOP_CATALOG.characters];
+    shopState.ownedSkins = [...SHOP_CATALOG.skins];
+    shopState.coins = Math.max(0, Math.floor(shopState.coins || 0));
+    shopState.equippedSkin = "admin";
+  } else {
+    shopState.ownedCharacters = shopState.ownedCharacters.filter((item) => SHOP_CATALOG.characters.includes(item));
+    shopState.ownedSkins = shopState.ownedSkins.filter((item) => SHOP_CATALOG.skins.includes(item));
+    shopState.coins = Math.max(0, Math.floor(shopState.coins || 0));
+    if (shopState.ownedCharacters.length === 0) {
+      shopState.ownedCharacters = getDefaultOwnedCharacters();
+    }
+    if (shopState.ownedSkins.length === 0) {
+      shopState.ownedSkins = getDefaultOwnedSkins();
+    }
+  }
+
+  if (!shopState.ownedCharacters.includes(shopState.equippedCharacter)) {
+    shopState.equippedCharacter = shopState.ownedCharacters[0];
+  }
+  if (!shopState.ownedSkins.includes(shopState.equippedSkin)) {
+    shopState.equippedSkin = shopState.ownedSkins[0];
+  }
+}
+
+function syncLobbyAccountUI() {
+  const nickname = accountState.currentNickname || t("account_guest");
+  const adminTag = accountState.isAdmin ? t("account_admin") : t("account_player");
+  shopStatus.textContent = accountState.isAdmin
+    ? t("shop_status_admin")
+    : t("shop_status_player");
+  accountSummary.textContent = t("account_summary", {
+    nickname,
+    tag: adminTag,
+    score: score.toString().padStart(5, "0"),
+  });
+  accountTitleBadge.textContent = accountState.isAdmin
+    ? t("account_title_badge", { title: t("admin_title") })
+    : "";
+  accountTitleBadge.classList.toggle("hidden", !accountState.isAdmin);
+  openPatchNotesButton?.classList.toggle("hidden", !accountState.currentNickname);
+  coinBalance.textContent = t("coins_label", { coins: shopState.coins });
+  shopSeasonBadge.textContent = getSeasonLabel();
+  shopSeasonBadge.classList.toggle("hidden", !hasLimitedSkins());
+  equippedCharacterBadge.textContent = t("equipped_label", { name: formatCatalogName(shopState.equippedCharacter) });
+  equippedSkinBadge.textContent = t("equipped_label", { name: formatCatalogName(shopState.equippedSkin) });
+  renderBetaRewardPanel();
+  renderCollectionList(characterCollection, shopState.ownedCharacters, shopState.equippedCharacter, "character");
+  renderCollectionList(skinCollection, shopState.ownedSkins, shopState.equippedSkin, "skin");
+  syncWeeklyEconomy();
+  renderShopCatalog();
+}
+
+function showAuthPanel(showAuth) {
+  authPanel.classList.toggle("hidden", !showAuth);
+  lobbyPanel.classList.toggle("hidden", showAuth);
+}
+
+function renderCollectionList(container, ownedItems, equippedItem, type) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  for (const item of ownedItems) {
+    const card = document.createElement("div");
+    card.className = `collection-item${item === equippedItem ? " active" : ""}`;
+
+    const meta = document.createElement("div");
+    meta.className = "collection-meta";
+    const title = document.createElement("strong");
+    title.textContent = formatCatalogName(item);
+    const sub = document.createElement("span");
+    if (item === equippedItem) {
+      sub.textContent = t("equipped_with_summary", { summary: getCatalogSummary(type, item) });
+    }
+    sub.textContent = item === equippedItem
+      ? t("equipped_with_summary", { summary: getCatalogSummary(type, item) })
+      : getCatalogSummary(type, item);
+    meta.append(title, sub);
+    if (item === equippedItem) {
+      sub.textContent = t("equipped_with_summary", { summary: getCatalogSummary(type, item) });
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = item === equippedItem ? t("equipped_button") : t("equip_button");
+    button.disabled = item === equippedItem;
+    button.addEventListener("click", () => {
+      if (type === "character") {
+        shopState.equippedCharacter = item;
+      } else {
+        shopState.equippedSkin = item;
+      }
+      syncLobbyAccountUI();
+      savePersistentProgress(true);
+    });
+
+    card.append(meta, button);
+    container.append(card);
+  }
+}
+
+function renderShopCatalog() {
+  if (!shopCatalogList) {
+    return;
+  }
+
+  const isCharacterTab = shopUiState.activeTab === "character";
+  const isSkinTab = shopUiState.activeTab === "skin";
+  const isBoxTab = shopUiState.activeTab === "box";
+
+  shopTabCharacters.classList.toggle("active", isCharacterTab);
+  shopTabCharacters.setAttribute("aria-pressed", String(isCharacterTab));
+  shopTabSkins.classList.toggle("active", isSkinTab);
+  shopTabSkins.setAttribute("aria-pressed", String(isSkinTab));
+  shopTabBoxes?.classList.toggle("active", isBoxTab);
+  shopTabBoxes?.setAttribute("aria-pressed", String(isBoxTab));
+  shopCatalogList.classList.toggle("box-catalog", isBoxTab);
+  shopCatalogList.innerHTML = "";
+
+  if (isBoxTab) {
+    renderLootBoxShopCatalog();
+    return;
+  }
+
+  const defs = isCharacterTab ? CHARACTER_DEFS : SKIN_DEFS;
+  const items = isCharacterTab ? SHOP_CATALOG.characters : SHOP_CATALOG.skins;
+  const ownedItems = isCharacterTab ? shopState.ownedCharacters : shopState.ownedSkins;
+  for (const item of items) {
+    const def = defs[item];
+    const owned = accountState.isAdmin || ownedItems.includes(item);
+    const limited = !isCharacterTab && isLimitedSkin(item);
+    const available = accountState.isAdmin || !limited || isLimitedSkinAvailable(item);
+
+    const card = document.createElement("div");
+    card.className = `store-item${def.tier === "special" || def.tier === "mythic" ? " premium" : ""}`;
+
+    const meta = document.createElement("div");
+    meta.className = "store-meta";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "store-title-row";
+    const title = document.createElement("strong");
+    title.textContent = formatCatalogName(item);
+    titleRow.append(title);
+
+    const typeTag = document.createElement("span");
+    typeTag.className = `tag ${limited ? "limited" : "general"}`;
+    typeTag.textContent = limited
+      ? t("tag_limited")
+      : isCharacterTab
+        ? t("tag_character")
+        : t(getRarityTagKey(getSkinRarity(item)));
+    titleRow.append(typeTag);
+
+    const subline = document.createElement("div");
+    subline.className = "store-subline";
+    const summary = document.createElement("span");
+    summary.textContent = getCatalogSummary(shopUiState.activeTab, item);
+    subline.append(summary);
+
+    const price = document.createElement("span");
+    price.className = "store-price";
+    if (def.purchasable) {
+      if (isCharacterTab && isCharacterOnSale(item)) {
+        price.textContent = t("sale_price", {
+          sale: t("price_coins", { price: getCharacterCurrentPrice(item) }),
+          base: t("price_coins", { price: def.price }),
+        });
+      } else {
+        price.textContent = t("price_coins", { price: def.price });
+      }
+    } else {
+      price.textContent = isCharacterTab ? t("default_character") : item === "admin" ? t("admin_only") : t("default_skin");
+    }
+    subline.append(price);
+
+    if (isCharacterTab && isCharacterOnSale(item)) {
+      const saleTag = document.createElement("span");
+      saleTag.className = "tag limited";
+      saleTag.textContent = `${t("sale_badge")} · ${t("sale_rate", { rate: getCharacterSaleRate(item) })}`;
+      subline.append(saleTag);
+    }
+
+    meta.append(titleRow, subline);
+
+    const action = document.createElement("button");
+    action.type = "button";
+    if (owned) {
+      action.textContent = "\uBCF4\uC720 \uC911";
+      action.disabled = true;
+    } else if (!def.purchasable) {
+      action.textContent = "\uAD6C\uB9E4 \uBD88\uAC00";
+      action.disabled = true;
+    } else if (!available) {
+      action.textContent = "\uC2DC\uC98C \uC885\uB8CC";
+      action.disabled = true;
+    } else if (!accountState.isAdmin && shopState.coins < (isCharacterTab ? getCharacterCurrentPrice(item) : def.price)) {
+      action.textContent = "\uCF54\uC778 \uBD80\uC871";
+      action.disabled = true;
+    } else {
+      action.textContent = `\uAD6C\uB9E4 ${def.price}`;
+      action.addEventListener("click", () => purchaseShopItem(shopUiState.activeTab, item));
+    }
+
+    action.textContent = getShopActionLabel({
+      owned,
+      purchasable: def.purchasable,
+      available,
+      canAfford: accountState.isAdmin || shopState.coins >= (isCharacterTab ? getCharacterCurrentPrice(item) : def.price),
+      price: isCharacterTab ? getCharacterCurrentPrice(item) : def.price,
+    });
+    card.append(meta, action);
+    shopCatalogList.append(card);
+  }
+}
+
+function renderLootBoxShopCatalog() {
+  for (const boxId of LOOT_BOX_ORDER) {
+    const def = LOOT_BOX_DEFS[boxId];
+    const card = document.createElement("article");
+    card.className = `lootbox-shop-card ${boxId}`;
+
+    const headerPlate = document.createElement("div");
+    headerPlate.className = "lootbox-shop-header";
+    const title = document.createElement("strong");
+    title.textContent = getBoxDisplayName(boxId);
+    headerPlate.append(title);
+
+    const rarityPlate = document.createElement("div");
+    rarityPlate.className = "lootbox-shop-rarity";
+    rarityPlate.textContent = def.probabilities.map((entry) => getRarityLabel(entry.rarity)).join(" / ");
+
+    const artWrap = document.createElement("div");
+    artWrap.className = "lootbox-shop-art";
+    const aura = document.createElement("div");
+    aura.className = "lootbox-shop-aura";
+    const box = document.createElement("div");
+    box.className = `lootbox-shop-box ${boxId}`;
+    box.innerHTML = `
+      <span class="box-lid"></span>
+      <span class="box-body"></span>
+      <span class="box-band left"></span>
+      <span class="box-band right"></span>
+      <span class="box-rivet tl"></span>
+      <span class="box-rivet tr"></span>
+      <span class="box-rivet bl"></span>
+      <span class="box-rivet br"></span>
+      <span class="box-core"></span>
+      <span class="box-side-glow"></span>
+    `;
+    artWrap.append(aura, box);
+
+    const summary = document.createElement("p");
+    summary.className = "lootbox-shop-summary";
+    summary.textContent = getBoxSummary(boxId);
+
+    const statPanel = document.createElement("div");
+    statPanel.className = "lootbox-shop-stat";
+    const price = document.createElement("span");
+    price.className = "store-price";
+    const currentPrice = getBoxCurrentPrice(boxId);
+    price.textContent = t("this_week_price", { price: t("price_coins", { price: currentPrice }) });
+    const owned = document.createElement("span");
+    owned.className = "store-price";
+    owned.textContent = t("box_inventory", {
+      count: shopState.boxInventory[boxId] || 0,
+    });
+    statPanel.append(price, owned);
+
+    const infoPanel = document.createElement("div");
+    infoPanel.className = "lootbox-shop-info";
+    const weeklyPriceCopy = formatPriceDelta(getBoxPriceDelta(boxId));
+    infoPanel.textContent = boxId === "premium"
+      ? `${t("box_status_inventory")} · ${weeklyPriceCopy} · ${t("premium_pity_status", { count: getPremiumPityRemaining() })}`
+      : `${t("box_status_inventory")} · ${weeklyPriceCopy}`;
+
+    const actions = document.createElement("div");
+    actions.className = `store-actions lootbox-shop-actions ${boxId}`;
+    for (const count of [1, 5, 10]) {
+      const ownedBoxes = shopState.boxInventory[boxId] || 0;
+      const missingCount = Math.max(0, count - ownedBoxes);
+      const requiredCoins = missingCount * currentPrice;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = ownedBoxes >= count
+        ? t("box_batch_button", { count })
+        : t("box_buy_and_open", { count });
+      button.disabled = !accountState.isAdmin && shopState.coins < requiredCoins;
+      button.addEventListener("click", () => {
+        openLootBoxes(boxId, count);
+      });
+      actions.append(button);
+    }
+
+    card.append(headerPlate, rarityPlate, artWrap, summary, statPanel, infoPanel, actions);
+    shopCatalogList.append(card);
+  }
+}
+
+function purchaseShopItem(type, item) {
+  const defs = type === "character" ? CHARACTER_DEFS : SKIN_DEFS;
+  const ownedItems = type === "character" ? shopState.ownedCharacters : shopState.ownedSkins;
+  const def = defs[item];
+  if (!def || !def.purchasable || ownedItems.includes(item)) {
+    return;
+  }
+  if (type === "skin" && isLimitedSkin(item) && !accountState.isAdmin && !isLimitedSkinAvailable(item)) {
+    return;
+  }
+  const currentPrice = type === "character" ? getCharacterCurrentPrice(item) : def.price;
+  if (!accountState.isAdmin && shopState.coins < currentPrice) {
+    return;
+  }
+
+  if (!accountState.isAdmin) {
+    shopState.coins -= currentPrice;
+  }
+
+  ownedItems.push(item);
+  if (type === "character") {
+    shopState.equippedCharacter = item;
+  } else {
+    shopState.equippedSkin = item;
+  }
+
+  syncLobbyAccountUI();
+  savePersistentProgress(true);
+}
+
+function openLootBoxes(boxId, count) {
+  if (!accountState.currentNickname || lootBoxState.active || !LOOT_BOX_DEFS[boxId] || count <= 0) {
+    return;
+  }
+
+  const boxDef = LOOT_BOX_DEFS[boxId];
+  const ownedBoxes = shopState.boxInventory[boxId] || 0;
+  const consumeFromInventory = Math.min(count, ownedBoxes);
+  const purchaseCount = count - consumeFromInventory;
+  const currentPrice = getBoxCurrentPrice(boxId);
+  const requiredCoins = purchaseCount * currentPrice;
+  if (!accountState.isAdmin && shopState.coins < requiredCoins) {
+    return;
+  }
+
+  if (!accountState.isAdmin) {
+    shopState.coins -= requiredCoins;
+    shopState.boxInventory[boxId] = ownedBoxes - consumeFromInventory;
+  }
+
+  const tempOwned = new Set(shopState.ownedSkins);
+  const results = [];
+  let refund = 0;
+  let premiumCounter = Math.max(0, Math.floor(shopState.premiumBoxCounter || 0));
+  for (let index = 0; index < count; index += 1) {
+    let roll = null;
+    if (boxId === "premium") {
+      premiumCounter += 1;
+      if (premiumCounter >= PREMIUM_BOX_PITY_TARGET) {
+        roll = getRandomSkinFromAllowedRarities(["legendary"]);
+      }
+    }
+    roll = roll || rollLootBoxSkin(boxId);
+    if (!roll) {
+      continue;
+    }
+
+    if (boxId === "premium") {
+      if (["legendary", "mythic"].includes(roll.rarity)) {
+        premiumCounter = 0;
+      }
+    }
+
+    const duplicate = accountState.isAdmin || tempOwned.has(roll.skinId);
+    if (duplicate) {
+      refund += Math.floor(currentPrice * 0.55);
+    } else {
+      tempOwned.add(roll.skinId);
+    }
+    results.push({
+      ...roll,
+      duplicate,
+    });
+  }
+  if (boxId === "premium") {
+    shopState.premiumBoxCounter = premiumCounter;
+  }
+
+  lootBoxState.active = true;
+  lootBoxState.revealReady = false;
+  lootBoxState.timer = LOOTBOX_ANIMATION_DURATION;
+  lootBoxState.boxId = boxId;
+  lootBoxState.count = count;
+  lootBoxState.results = results;
+  lootBoxState.refund = refund;
+
+  lootboxPanel?.classList.remove("hidden");
+  lootboxStage?.classList.remove("hidden");
+  lootboxResults?.classList.add("hidden");
+  if (lootboxBox) {
+    lootboxBox.className = `lootbox-box ${boxId} shake`;
+    lootboxBox.innerHTML = `
+      <span class="box-lid"></span>
+      <span class="box-body"></span>
+      <span class="box-band left"></span>
+      <span class="box-band right"></span>
+      <span class="box-rivet tl"></span>
+      <span class="box-rivet tr"></span>
+      <span class="box-rivet bl"></span>
+      <span class="box-rivet br"></span>
+      <span class="box-core"></span>
+      <span class="box-side-glow"></span>
+      <span class="box-stage-aura"></span>
+    `;
+  }
+  if (lootboxStageText) {
+    lootboxStageText.textContent = `${getBoxDisplayName(boxId)} · ${t("box_opening")}`;
+  }
+  playSound("boxShake");
+  syncLobbyAccountUI();
+  savePersistentProgress(true);
+}
+
+function revealLootBoxResults() {
+  if (!lootBoxState.active || lootBoxState.revealReady) {
+    return;
+  }
+
+  lootBoxState.revealReady = true;
+  if (lootboxBox) {
+    lootboxBox.classList.remove("shake");
+    lootboxBox.classList.add("open");
+  }
+  playSound("boxOpen");
+
+  for (const result of lootBoxState.results) {
+    if (!result.duplicate && !accountState.isAdmin && !shopState.ownedSkins.includes(result.skinId)) {
+      shopState.ownedSkins.push(result.skinId);
+    }
+  }
+  if (!accountState.isAdmin) {
+    shopState.coins += lootBoxState.refund;
+  }
+
+  renderLootBoxResultGrid();
+  if (lootBoxState.revealTimeoutId) {
+    clearTimeout(lootBoxState.revealTimeoutId);
+  }
+  lootBoxState.revealTimeoutId = setTimeout(() => {
+    lootboxStage?.classList.add("hidden");
+    lootboxResults?.classList.remove("hidden");
+    const revealSound = getLootBoxRevealSound(lootBoxState.results);
+    playSound("resultReveal");
+    if (revealSound !== "resultReveal") {
+      playSound(revealSound);
+    }
+    lootBoxState.revealTimeoutId = null;
+  }, 280);
+  syncLobbyAccountUI();
+  savePersistentProgress(true);
+}
+
+function renderLootBoxResultGrid() {
+  if (!lootboxResultGrid || !lootboxSummary) {
+    return;
+  }
+
+  lootboxResultGrid.innerHTML = "";
+  for (const result of lootBoxState.results) {
+    const card = document.createElement("div");
+    card.className = `lootbox-result-card ${result.rarity}`;
+
+    const title = document.createElement("strong");
+    title.textContent = getSkinDisplayName(result.skinId);
+
+    const rarity = document.createElement("span");
+    rarity.textContent = getRarityLabel(result.rarity);
+
+    card.append(title, rarity);
+
+    if (result.duplicate) {
+      const refund = document.createElement("span");
+      refund.textContent = `${t("box_duplicate_refund")} +${Math.floor(getBoxCurrentPrice(lootBoxState.boxId) * 0.55)}`;
+      card.append(refund);
+    }
+
+    lootboxResultGrid.append(card);
+  }
+
+  lootboxSummary.textContent = t("box_status_result", {
+    count: lootBoxState.results.length,
+    refund: lootBoxState.refund,
+  });
+}
+
+function closeLootBoxPanel() {
+  if (lootBoxState.revealTimeoutId) {
+    clearTimeout(lootBoxState.revealTimeoutId);
+  }
+  stopMythicRevealSound();
+  lootBoxState.active = false;
+  lootBoxState.revealReady = false;
+  lootBoxState.timer = 0;
+  lootBoxState.boxId = "";
+  lootBoxState.count = 0;
+  lootBoxState.results = [];
+  lootBoxState.refund = 0;
+  lootBoxState.revealTimeoutId = null;
+  lootboxPanel?.classList.add("hidden");
+  lootboxStage?.classList.remove("hidden");
+  lootboxResults?.classList.add("hidden");
+  if (lootboxBox) {
+    lootboxBox.className = "lootbox-box";
+    lootboxBox.innerHTML = "";
+  }
+}
+
+function skipLootBoxAnimation() {
+  if (!lootBoxState.active) {
+    return;
+  }
+  lootBoxState.timer = 0;
+  revealLootBoxResults();
+}
+
+function updateLootBoxAnimation(dt) {
+  if (!lootBoxState.active || lootBoxState.revealReady) {
+    return;
+  }
+  lootBoxState.timer = Math.max(0, lootBoxState.timer - dt);
+  if (lootBoxState.timer <= 0) {
+    revealLootBoxResults();
+  }
+}
+
+function awardLootBox(boxId, amount = 1) {
+  if (!LOOT_BOX_DEFS[boxId] || amount <= 0) {
+    return;
+  }
+  shopState.boxInventory[boxId] = (shopState.boxInventory[boxId] || 0) + amount;
+  setAuthMessage(t("box_reward_gain", { name: getBoxDisplayName(boxId) }));
+  savePersistentProgress(true);
+}
+
+function rollStageClearBoxReward() {
+  const rewards = STAGE_BOX_REWARD_CHANCES[activeDifficultyKey] || [];
+  for (const reward of rewards) {
+    if (Math.random() < reward.chance) {
+      awardLootBox(reward.boxId, 1);
+      break;
+    }
+  }
+}
+
+function getLootBoxRevealSound(results) {
+  let bestRank = -1;
+  let bestType = "resultReveal";
+  const rarityRanks = {
+    general: 0,
+    rare: 1,
+    epic: 2,
+    legendary: 3,
+    mythic: 4,
+  };
+  const raritySoundMap = {
+    general: "resultReveal",
+    rare: "resultReveal",
+    epic: "resultRevealEpic",
+    legendary: "resultRevealLegendary",
+    mythic: "resultRevealMythic",
+  };
+
+  for (const result of results) {
+    const rank = rarityRanks[result.rarity] ?? 0;
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestType = raritySoundMap[result.rarity] || "resultReveal";
+    }
+  }
+
+  return bestType;
+}
+
+function createSaveData() {
+  return {
+    score,
+    unlockedStageIndex,
+    selectedStageIndex,
+    activeDifficultyKey,
+    screenMode,
+    shopState: {
+      ownedCharacters: [...shopState.ownedCharacters],
+      ownedSkins: [...shopState.ownedSkins],
+      coins: shopState.coins,
+      premiumBoxCounter: shopState.premiumBoxCounter,
+      weeklyBoxPriceWeek: shopState.weeklyBoxPriceWeek,
+      weeklyCharacterSaleWeek: shopState.weeklyCharacterSaleWeek,
+      boxPrices: { ...normalizeBoxPrices(shopState.boxPrices) },
+      characterSales: { ...normalizeCharacterSales(shopState.characterSales) },
+      boxInventory: { ...normalizeBoxInventory(shopState.boxInventory) },
+      equippedCharacter: shopState.equippedCharacter,
+      equippedSkin: shopState.equippedSkin,
+    },
+  };
+}
+
+function savePersistentProgress(force = false) {
+  if (!accountState.currentNickname) {
+    return;
+  }
+
+  try {
+    const nextStateJson = JSON.stringify(createSaveData());
+    if (!force && nextStateJson === lastSavedStateJson) {
+      return;
+    }
+    const accounts = readAccounts();
+    const account = accounts[accountState.currentNickname];
+    if (!account) {
+      return;
+    }
+    account.progress = JSON.parse(nextStateJson);
+    writeAccounts(accounts);
+    lastSavedStateJson = nextStateJson;
+  } catch (_) {
+    // Ignore storage failures so gameplay keeps working.
+  }
+}
+
+function loadPersistentProgress() {
+  try {
+    const currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+    const accounts = syncAdminAccountPassword(readAccounts());
+    if (!currentNickname || !accounts[currentNickname]) {
+      accountState.currentNickname = null;
+      accountState.isAdmin = false;
+      accountState.hasBetaReward = false;
+      accountState.lastSeenPatchNoteVersion = "";
+      applyShopEntitlements();
+      setAuthMessageKey("auth_signin_prompt");
+      lastSavedStateJson = "";
+      return;
+    }
+
+    accountState.currentNickname = currentNickname;
+    accountState.isAdmin = Boolean(accounts[currentNickname].isAdmin);
+    accountState.hasBetaReward = Boolean(accounts[currentNickname].hasBetaReward);
+    accountState.lastSeenPatchNoteVersion = accounts[currentNickname].lastSeenPatchNoteVersion || "";
+    const data = accounts[currentNickname].progress || createDefaultProgress();
+    if (typeof data.score === "number") {
+      score = Math.max(0, Math.floor(data.score));
+    }
+    if (typeof data.unlockedStageIndex === "number") {
+      unlockedStageIndex = Math.max(0, Math.min(STAGE_DEFS.length - 1, Math.floor(data.unlockedStageIndex)));
+    }
+    if (typeof data.selectedStageIndex === "number") {
+      selectedStageIndex = Math.max(0, Math.min(STAGE_DEFS.length - 1, Math.floor(data.selectedStageIndex)));
+    }
+    if (typeof data.activeDifficultyKey === "string" && DIFFICULTIES[data.activeDifficultyKey]) {
+      activeDifficultyKey = data.activeDifficultyKey;
+      difficulty = DIFFICULTIES[activeDifficultyKey];
+    }
+    if (typeof data.screenMode === "string" && ["fullscreen", "classic"].includes(data.screenMode)) {
+      screenMode = data.screenMode;
+    }
+
+    if (data.shopState && typeof data.shopState === "object") {
+      if (Array.isArray(data.shopState.ownedCharacters) && data.shopState.ownedCharacters.length > 0) {
+        shopState.ownedCharacters = [...new Set(data.shopState.ownedCharacters)];
+      }
+      if (Array.isArray(data.shopState.ownedSkins) && data.shopState.ownedSkins.length > 0) {
+        shopState.ownedSkins = [...new Set(data.shopState.ownedSkins)];
+      }
+      if (typeof data.shopState.coins === "number") {
+        shopState.coins = Math.max(0, Math.floor(data.shopState.coins));
+      }
+      if (typeof data.shopState.premiumBoxCounter === "number") {
+        shopState.premiumBoxCounter = Math.max(0, Math.floor(data.shopState.premiumBoxCounter));
+      }
+      if (typeof data.shopState.weeklyBoxPriceWeek === "string") {
+        shopState.weeklyBoxPriceWeek = data.shopState.weeklyBoxPriceWeek;
+      }
+      if (typeof data.shopState.weeklyCharacterSaleWeek === "string") {
+        shopState.weeklyCharacterSaleWeek = data.shopState.weeklyCharacterSaleWeek;
+      }
+      if (data.shopState.boxPrices && typeof data.shopState.boxPrices === "object") {
+        shopState.boxPrices = normalizeBoxPrices(data.shopState.boxPrices);
+      }
+      if (data.shopState.characterSales && typeof data.shopState.characterSales === "object") {
+        shopState.characterSales = normalizeCharacterSales(data.shopState.characterSales);
+      }
+      if (data.shopState.boxInventory && typeof data.shopState.boxInventory === "object") {
+        shopState.boxInventory = normalizeBoxInventory(data.shopState.boxInventory);
+      }
+      if (typeof data.shopState.equippedCharacter === "string") {
+        shopState.equippedCharacter = data.shopState.equippedCharacter;
+      }
+      if (typeof data.shopState.equippedSkin === "string") {
+        shopState.equippedSkin = data.shopState.equippedSkin;
+      }
+    }
+
+    applyShopEntitlements();
+
+    difficultySelect.value = activeDifficultyKey;
+    screenModeSelect.value = screenMode;
+    stageSelect.value = String(selectedStageIndex);
+    showAuthPanel(false);
+    syncLobbyAccountUI();
+    lastSavedStateJson = JSON.stringify(createSaveData());
+  } catch (_) {
+    accountState.currentNickname = null;
+    accountState.isAdmin = false;
+    accountState.hasBetaReward = false;
+    accountState.lastSeenPatchNoteVersion = "";
+    applyShopEntitlements();
+    setAuthMessageKey("auth_signin_prompt");
+    lastSavedStateJson = "";
+  }
+}
+
+function resetProgressState() {
+  score = 0;
+  lives = getStartingLives();
+  collectedCount = 0;
+  currentStageIndex = 0;
+  selectedStageIndex = 0;
+  unlockedStageIndex = 0;
+  screenMode = screenModeSelect.value;
+  factoryTimeRemaining = 0;
+  shopState.ownedCharacters = getDefaultOwnedCharacters();
+  shopState.ownedSkins = getDefaultOwnedSkins();
+  shopState.coins = 0;
+  shopState.premiumBoxCounter = 0;
+  shopState.weeklyBoxPriceWeek = "";
+  shopState.weeklyCharacterSaleWeek = "";
+  shopState.boxPrices = createDefaultBoxPrices();
+  shopState.characterSales = {};
+  shopState.boxInventory = createDefaultBoxInventory();
+  shopState.equippedCharacter = "starling";
+  shopState.equippedSkin = "classic";
+  accountState.hasBetaReward = false;
+  accountState.lastSeenPatchNoteVersion = "";
+  betaRewardState.selectedCharacter = null;
+  betaRewardState.selectedSkin = null;
+  clearGuardianState(true);
+  clearChangerState(true);
+  resetNightmareEvent();
+  resetAssassinationEvent();
+}
+
+function applyAccountProgress(progress) {
+  score = Math.max(0, Math.floor(progress.score ?? 0));
+  unlockedStageIndex = Math.max(0, Math.min(STAGE_DEFS.length - 1, Math.floor(progress.unlockedStageIndex ?? 0)));
+  selectedStageIndex = Math.max(0, Math.min(STAGE_DEFS.length - 1, Math.floor(progress.selectedStageIndex ?? 0)));
+  activeDifficultyKey = typeof progress.activeDifficultyKey === "string" && DIFFICULTIES[progress.activeDifficultyKey]
+    ? progress.activeDifficultyKey
+    : difficultySelect.value;
+  difficulty = DIFFICULTIES[activeDifficultyKey];
+  screenMode = typeof progress.screenMode === "string" && ["fullscreen", "classic"].includes(progress.screenMode)
+    ? progress.screenMode
+    : screenModeSelect.value;
+
+  const savedShopState = progress.shopState || {};
+  shopState.ownedCharacters = Array.isArray(savedShopState.ownedCharacters) ? [...new Set(savedShopState.ownedCharacters)] : getDefaultOwnedCharacters();
+  shopState.ownedSkins = Array.isArray(savedShopState.ownedSkins) ? [...new Set(savedShopState.ownedSkins)] : getDefaultOwnedSkins();
+  shopState.coins = typeof savedShopState.coins === "number" ? Math.max(0, Math.floor(savedShopState.coins)) : 0;
+  shopState.premiumBoxCounter = typeof savedShopState.premiumBoxCounter === "number" ? Math.max(0, Math.floor(savedShopState.premiumBoxCounter)) : 0;
+  shopState.weeklyBoxPriceWeek = typeof savedShopState.weeklyBoxPriceWeek === "string" ? savedShopState.weeklyBoxPriceWeek : "";
+  shopState.weeklyCharacterSaleWeek = typeof savedShopState.weeklyCharacterSaleWeek === "string" ? savedShopState.weeklyCharacterSaleWeek : "";
+  shopState.boxPrices = normalizeBoxPrices(savedShopState.boxPrices);
+  shopState.characterSales = normalizeCharacterSales(savedShopState.characterSales);
+  shopState.boxInventory = normalizeBoxInventory(savedShopState.boxInventory);
+  shopState.equippedCharacter = typeof savedShopState.equippedCharacter === "string" ? savedShopState.equippedCharacter : "starling";
+  shopState.equippedSkin = typeof savedShopState.equippedSkin === "string" ? savedShopState.equippedSkin : "classic";
+  applyShopEntitlements();
+
+  difficultySelect.value = activeDifficultyKey;
+  screenModeSelect.value = screenMode;
+  stageSelect.value = String(selectedStageIndex);
+  updateStageSelectLocks();
+  applyScreenMode();
+  syncLobbyAccountUI();
+  lastSavedStateJson = JSON.stringify(createSaveData());
+}
+
+function loginToAccount(nickname) {
+  const accounts = readAccounts();
+  const account = getAccountByNickname(accounts, nickname);
+  if (!account) {
+    setAuthMessageKey("auth_account_not_found", {}, true);
+    return;
+  }
+
+  account.isAdmin = Boolean(account.isAdmin) || nickname === ADMIN_NICKNAME;
+  ensureAccountMeta(account);
+  writeAccounts(accounts);
+  accountState.currentNickname = nickname;
+  accountState.isAdmin = Boolean(account.isAdmin);
+  accountState.hasBetaReward = Boolean(account.hasBetaReward);
+  accountState.lastSeenPatchNoteVersion = account.lastSeenPatchNoteVersion || "";
+  localStorage.setItem(CURRENT_ACCOUNT_KEY, nickname);
+  applyAccountProgress(account.progress || createDefaultProgress());
+  lives = getStartingLives();
+  gameState = "lobby";
+  stageMessageTimer = 0;
+  showAuthPanel(false);
+  setAuthMessageKey("auth_welcome_back", { nickname });
+  loginPasswordInput.value = "";
+  signupPasswordInput.value = "";
+  openLobby();
+  savePersistentProgress(true);
+}
+
+function registerAccount() {
+  const { nickname, password } = getSignupCredentials();
+  if (!nickname) {
+    setAuthMessageKey("auth_enter_nickname", {}, true);
+    return;
+  }
+  if (!password) {
+    setAuthMessageKey("auth_enter_password", {}, true);
+    return;
+  }
+
+  const accounts = readAccounts();
+  if (getAccountByNickname(accounts, nickname)) {
+    setAuthMessageKey("auth_nickname_taken", {}, true);
+    return;
+  }
+
+  accounts[nickname] = {
+    password,
+    isAdmin: nickname === ADMIN_NICKNAME,
+    hasBetaReward: false,
+    lastSeenPatchNoteVersion: "",
+    progress: createDefaultProgress(),
+  };
+  writeAccounts(accounts);
+  signupNicknameInput.value = "";
+  signupPasswordInput.value = "";
+  setAuthMessageKey(accounts[nickname].isAdmin ? "auth_admin_created" : "auth_account_created");
+  loginToAccount(nickname);
+}
+
+function attemptLogin() {
+  const { nickname, password } = getLoginCredentials();
+  if (!nickname || !password) {
+    setAuthMessageKey("auth_enter_both", {}, true);
+    return;
+  }
+
+  const accounts = readAccounts();
+  const account = getAccountByNickname(accounts, nickname);
+  if (!account || account.password !== password) {
+    setAuthMessageKey("auth_incorrect", {}, true);
+    return;
+  }
+
+  loginToAccount(nickname);
+}
+
+function logoutAccount() {
+  savePersistentProgress(true);
+  accountState.currentNickname = null;
+  accountState.isAdmin = false;
+  accountState.hasBetaReward = false;
+  accountState.lastSeenPatchNoteVersion = "";
+  betaRewardState.selectedCharacter = null;
+  betaRewardState.selectedSkin = null;
+  localStorage.removeItem(CURRENT_ACCOUNT_KEY);
+  resetProgressState();
+  applyShopEntitlements();
+  showAuthPanel(true);
+  setAuthMessageKey("auth_signed_out");
+  loginNicknameInput.value = "";
+  loginPasswordInput.value = "";
+  openLobby();
+}
+
+function handleLoginSubmit() {
+  attemptLogin();
+}
+
+function handleRegisterSubmit() {
+  registerAccount();
+}
+
+function bindEnterKey(input, handler) {
+  if (!input) {
+    return;
+  }
+  input.onkeydown = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handler();
+    }
+  };
+}
+
+function renderPatchNotes() {
+  if (!patchNotesList) {
+    return;
+  }
+  patchNotesList.innerHTML = "";
+
+  for (const note of PATCH_NOTES) {
+    const card = document.createElement("article");
+    card.className = "patch-note-entry";
+
+    const title = document.createElement("h4");
+    title.textContent = note.version;
+    card.append(title);
+
+    if (note.date) {
+      const date = document.createElement("p");
+      date.textContent = note.date;
+      card.append(date);
+    }
+
+    const list = document.createElement("ul");
+    for (const item of note.items) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.append(li);
+    }
+    card.append(list);
+    patchNotesList.append(card);
+  }
+}
+
+function setLastSeenPatchNotes(version) {
+  if (!accountState.currentNickname) {
+    return;
+  }
+  accountState.lastSeenPatchNoteVersion = version;
+  const accounts = readAccounts();
+  const account = getAccountByNickname(accounts, accountState.currentNickname);
+  if (!account) {
+    return;
+  }
+  account.lastSeenPatchNoteVersion = version;
+  writeAccounts(accounts);
+}
+
+function openPatchNotes(markSeen = false) {
+  if (!patchNotesPanel) {
+    return;
+  }
+  renderPatchNotes();
+  patchNotesState.open = true;
+  patchNotesPanel.classList.remove("hidden");
+  if (markSeen && LATEST_PATCH_NOTES_VERSION) {
+    setLastSeenPatchNotes(LATEST_PATCH_NOTES_VERSION);
+  }
+}
+
+function closePatchNotes(markSeen = true) {
+  if (!patchNotesPanel) {
+    return;
+  }
+  patchNotesState.open = false;
+  patchNotesPanel.classList.add("hidden");
+  if (markSeen && LATEST_PATCH_NOTES_VERSION) {
+    setLastSeenPatchNotes(LATEST_PATCH_NOTES_VERSION);
+  }
+}
+
+function maybeShowLatestPatchNotes() {
+  if (!accountState.currentNickname || !LATEST_PATCH_NOTES_VERSION) {
+    return;
+  }
+  if (accountState.lastSeenPatchNoteVersion === LATEST_PATCH_NOTES_VERSION) {
+    return;
+  }
+  openPatchNotes(false);
+}
+
+function isBetaRewardPending() {
+  return Boolean(
+    BETA_REWARDS_ACTIVE &&
+    accountState.currentNickname &&
+    !accountState.isAdmin &&
+    !accountState.hasBetaReward
+  );
+}
+
+function getBetaRewardCharacterOptions() {
+  return SHOP_CATALOG.characters.filter((item) => CHARACTER_DEFS[item]?.purchasable);
+}
+
+function getBetaRewardSkinOptions() {
+  return SHOP_CATALOG.skins.filter((item) => item !== "admin" && item !== "classic");
+}
+
+function renderBetaRewardChoices(container, options, selectedValue, type) {
+  if (!container) {
+    return;
+  }
+  container.innerHTML = "";
+
+  for (const item of options) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `beta-choice-item${selectedValue === item ? " active" : ""}`;
+    button.addEventListener("click", () => {
+      if (type === "character") {
+        betaRewardState.selectedCharacter = item;
+      } else {
+        betaRewardState.selectedSkin = item;
+      }
+      renderBetaRewardPanel();
+    });
+
+    const meta = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = formatCatalogName(item);
+    const summary = document.createElement("span");
+    summary.textContent = getCatalogSummary(type, item);
+    meta.append(title, summary);
+
+    const check = document.createElement("span");
+    check.className = "beta-choice-check";
+    check.textContent = selectedValue === item ? "OK" : "+";
+
+    button.append(meta, check);
+    container.append(button);
+  }
+}
+
+function renderBetaRewardPanel() {
+  if (!betaRewardPanel) {
+    return;
+  }
+
+  const visible = isBetaRewardPending();
+  betaRewardPanel.classList.toggle("hidden", !visible);
+  if (!visible) {
+    return;
+  }
+
+  const characterOptions = getBetaRewardCharacterOptions();
+  const skinOptions = getBetaRewardSkinOptions();
+  if (!characterOptions.includes(betaRewardState.selectedCharacter)) {
+    betaRewardState.selectedCharacter = null;
+  }
+  if (!skinOptions.includes(betaRewardState.selectedSkin)) {
+    betaRewardState.selectedSkin = null;
+  }
+
+  betaRewardStatus.textContent = t("beta_reward_copy");
+  renderBetaRewardChoices(betaRewardCharacterList, characterOptions, betaRewardState.selectedCharacter, "character");
+  renderBetaRewardChoices(betaRewardSkinList, skinOptions, betaRewardState.selectedSkin, "skin");
+  claimBetaRewardButton.textContent = t("beta_claim_button");
+  claimBetaRewardButton.disabled = !betaRewardState.selectedCharacter || !betaRewardState.selectedSkin;
+  claimBetaRewardButton.title = claimBetaRewardButton.disabled ? t("beta_claim_disabled") : "";
+}
+
+function claimBetaReward() {
+  if (!isBetaRewardPending() || !betaRewardState.selectedCharacter || !betaRewardState.selectedSkin) {
+    return;
+  }
+
+  if (!shopState.ownedCharacters.includes(betaRewardState.selectedCharacter)) {
+    shopState.ownedCharacters.push(betaRewardState.selectedCharacter);
+  }
+  if (!shopState.ownedSkins.includes(betaRewardState.selectedSkin)) {
+    shopState.ownedSkins.push(betaRewardState.selectedSkin);
+  }
+
+  shopState.equippedCharacter = betaRewardState.selectedCharacter;
+  shopState.equippedSkin = betaRewardState.selectedSkin;
+  accountState.hasBetaReward = true;
+  betaRewardState.selectedCharacter = null;
+  betaRewardState.selectedSkin = null;
+
+  const accounts = readAccounts();
+  const account = getAccountByNickname(accounts, accountState.currentNickname);
+  if (account) {
+    account.hasBetaReward = true;
+    account.progress = createSaveData();
+    writeAccounts(accounts);
+  }
+
+  setAuthMessageKey("beta_reward_claimed");
+  applyShopEntitlements();
+  syncLobbyAccountUI();
+  savePersistentProgress(true);
+}
+
+function initializeAuthControls() {
+  const authDom = getAuthDom();
+  if (authDom.loginButton) {
+    authDom.loginButton.onclick = () => {
+      handleLoginSubmit();
+    };
+  }
+  if (authDom.signupButton) {
+    authDom.signupButton.onclick = () => {
+      handleRegisterSubmit();
+    };
+  }
+  if (authDom.logoutButton) {
+    authDom.logoutButton.onclick = () => {
+      logoutAccount();
+    };
+  }
+  if (openPatchNotesButton) {
+    openPatchNotesButton.onclick = () => {
+      openPatchNotes(false);
+    };
+  }
+  if (closePatchNotesButton) {
+    closePatchNotesButton.onclick = () => {
+      closePatchNotes(true);
+    };
+  }
+  if (claimBetaRewardButton) {
+    claimBetaRewardButton.onclick = () => {
+      claimBetaReward();
+    };
+  }
+  bindEnterKey(authDom.loginNickname, handleLoginSubmit);
+  bindEnterKey(authDom.loginPassword, handleLoginSubmit);
+  bindEnterKey(authDom.signupNickname, handleRegisterSubmit);
+  bindEnterKey(authDom.signupPassword, handleRegisterSubmit);
+}
+
+function formatStageTimer(totalSeconds) {
+  const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function stageDifficultyFactor(stageIndex) {
+  return 1 + stageIndex * 0.1;
+}
+
+function applyScreenMode() {
+  document.body.classList.toggle("classic-mode", screenMode === "classic");
+}
+
+function resetNightmareEvent() {
+  nightmareEvent.active = false;
+  nightmareEvent.countdown = false;
+  nightmareEvent.countdownTimer = 0;
+  nightmareEvent.timer = 0;
+  nightmareEvent.triggerTimer = 7 + Math.random() * 8;
+  nightmareEvent.targetStart = 0.4 + Math.random() * 0.22;
+  nightmareEvent.targetWidth = 0.18;
+  nightmareEvent.marker = Math.random();
+  nightmareEvent.markerDir = Math.random() > 0.5 ? 1 : -1;
+  nightmareEvent.markerSpeed = 1 + Math.random() * 0.25;
+  nightmareEvent.flash = 0;
+
+  resetDanceEvent();
+}
+
+function triggerNightmareEvent() {
+  nightmareEvent.countdown = true;
+  nightmareEvent.countdownTimer = 3;
+  nightmareEvent.active = false;
+  nightmareEvent.timer = 10;
+  nightmareEvent.targetStart = 0.38 + Math.random() * 0.28;
+  nightmareEvent.targetWidth = 0.2;
+  nightmareEvent.marker = Math.random();
+  nightmareEvent.markerDir = Math.random() > 0.5 ? 1 : -1;
+  nightmareEvent.markerSpeed = 1.05 + Math.random() * 0.25;
+  nightmareEvent.flash = 1;
+  playSound("nightmare");
+}
+
+function resolveNightmareEvent(success) {
+  if (!nightmareEvent.active && !nightmareEvent.countdown) {
+    return;
+  }
+
+  nightmareEvent.active = false;
+  nightmareEvent.countdown = false;
+  if (success) {
+    score += 600 + currentStageIndex * 100;
+    awardCoins(18 + currentStageIndex * 2);
+    player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
+    resetNightmareEvent();
+    return;
+  }
+
+  if (consumeGuardianPassive()) {
+    resetNightmareEvent();
+    return;
+  }
+
+  lives = 0;
+  gameState = "gameover";
+  player.vx = 0;
+  player.vy = 0;
+  resetNightmareEvent();
+}
+
+function resetDanceEvent() {
+  danceEvent.active = false;
+  danceEvent.countdown = false;
+  danceEvent.countdownTimer = 0;
+  danceEvent.triggerTimer = 7 + Math.random() * 8;
+  danceEvent.sequence.length = 0;
+  danceEvent.index = 0;
+  danceEvent.stepTimer = 0;
+  danceEvent.flash = 0;
+  stopDanceMusic();
+}
+
+function triggerDanceEvent() {
+  danceEvent.countdown = true;
+  danceEvent.countdownTimer = 3;
+  danceEvent.active = false;
+  danceEvent.sequence.length = 0;
+  danceEvent.index = 0;
+  danceEvent.flash = 1;
+
+  keys.left = false;
+  keys.right = false;
+  keys.jump = false;
+  keys.jumpQueued = false;
+  keys.crouch = false;
+
+  const steps = ["left", "up", "down", "right"];
+  for (let i = 0; i < 6; i += 1) {
+    const next = steps[Math.floor(Math.random() * steps.length)];
+    danceEvent.sequence.push(next);
+  }
+  playSound("coin");
+}
+
+function resolveDanceEvent(success) {
+  if (!danceEvent.active && !danceEvent.countdown) {
+    return;
+  }
+
+  danceEvent.active = false;
+  danceEvent.countdown = false;
+  stopDanceMusic();
+
+  if (success) {
+    score += 650 + currentStageIndex * 110;
+    awardCoins(20 + currentStageIndex * 2);
+    player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
+    resetDanceEvent();
+    return;
+  }
+
+  if (consumeGuardianPassive()) {
+    resetDanceEvent();
+    return;
+  }
+
+  lives = 0;
+  gameState = "gameover";
+  player.vx = 0;
+  player.vy = 0;
+  resetDanceEvent();
+}
+
+function resetClawEscapeEvent() {
+  clawEscapeEvent.active = false;
+  clawEscapeEvent.meter = 0;
+  clawEscapeEvent.flash = 0;
+  clawEscapeEvent.button = { x: 0, y: 0, w: 0, h: 0 };
+}
+
+function triggerClawEscapeEvent() {
+  clawEscapeEvent.active = true;
+  clawEscapeEvent.meter = 0;
+  clawEscapeEvent.flash = 1;
+  playSound("coin");
+}
+
+function resolveClawEscapeEvent() {
+  if (!clawEscapeEvent.active) {
+    return;
+  }
+  clawEscapeEvent.active = false;
+  playSound("clear");
+  gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
+  resetClawEscapeEvent();
+}
+
+function createPlayer() {
+  return {
+    x: 0,
+    y: 0,
+    w: 26,
+    h: PLAYER_STAND_H,
+    vx: 0,
+    vy: 0,
+    speed: 250,
+    jumpVelocity: -720,
+    airJumpVelocity: -720,
+    onGround: false,
+    facing: 1,
+    stompBounce: -420,
+    invulnerableTime: 0,
+    stunTimer: 0,
+    animationTime: 0,
+    state: "idle",
+    maxJumps: 2,
+    jumpsRemaining: 2,
+    standH: PLAYER_STAND_H,
+    crouchH: PLAYER_CROUCH_H,
+    crouching: false,
+    stealthActive: false,
+    stealthTimer: 0,
+    stealthCooldown: 0,
+    assassinationCooldown: 0,
+    guardianPassiveReady: true,
+    guardianShieldTimer: 0,
+    guardianShieldCooldown: 0,
+    guardianFlash: 0,
+    cloneTransferFlash: 0,
+  };
+}
+
+function clearChangerState(resetUsage = false) {
+  changerState.clone = null;
+  if (resetUsage) {
+    changerState.cloneUsedThisRun = false;
+  }
+  changerState.swapCooldown = 0;
+  changerState.effectTimer = 0;
+  changerState.effectFrom = null;
+  changerState.effectTo = null;
+}
+
+function clearGuardianState(resetPassive = false) {
+  if (resetPassive) {
+    player.guardianPassiveReady = true;
+  }
+  player.guardianShieldTimer = 0;
+  player.guardianShieldCooldown = 0;
+  player.guardianFlash = 0;
+}
+
+function resetPlayerPosition() {
+  player.speed = isGuardianEquipped()
+    ? 250 * GUARDIAN_RULES.speedMultiplier
+    : isAssassinEquipped()
+      ? 250 * ASSASSIN_RULES.speedMultiplier
+      : 250;
+  player.maxJumps = difficulty.maxJumps;
+  player.jumpVelocity = difficulty.jumpVelocity;
+  player.airJumpVelocity = difficulty.airJumpVelocity;
+  if (shopState.equippedCharacter === "starling") {
+    player.jumpVelocity *= STARLING_JUMP_MULTIPLIER;
+    player.airJumpVelocity *= STARLING_JUMP_MULTIPLIER;
+  }
+  player.x = level.start.x;
+  player.y = level.start.y;
+  player.vx = 0;
+  player.vy = 0;
+  player.onGround = false;
+  player.invulnerableTime = 1.2;
+  player.stunTimer = 0;
+  player.jumpsRemaining = player.maxJumps;
+  player.crouching = false;
+  player.h = player.standH;
+  player.stealthActive = false;
+  player.stealthTimer = 0;
+  player.stealthCooldown = 0;
+  player.assassinationCooldown = 0;
+  clearGuardianState();
+  player.cloneTransferFlash = 0;
+  clearChangerState();
+}
+
+function loadStage(stageIndex, preserveScore = true) {
+  currentStageIndex = stageIndex;
+  selectedStageIndex = stageIndex;
+  stageSelect.value = String(stageIndex);
+  const stageDef = STAGE_DEFS[stageIndex];
+
+  level.solids.length = 0;
+  level.collectibles.length = 0;
+  level.enemies.length = 0;
+  level.serpentEnemies.length = 0;
+  level.hazards.length = 0;
+
+  level.widthTiles = stageDef.widthTiles;
+  level.theme = stageDef.theme;
+  level.name = getStageDisplayName(stageIndex);
+  level.start = { x: stageDef.start.x * TILE, y: stageDef.start.y * TILE };
+  level.goal = { x: stageDef.goal.x * TILE, y: stageDef.goal.y * TILE, w: 2 * TILE, h: 6 * TILE };
+  worldWidth = level.widthTiles * TILE;
+
+  if (!preserveScore) {
+    score = 0;
+  }
+  collectedCount = 0;
+  factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
+
+  // Each stage is defined as data so we can scale the route count cleanly.
+  for (const [start, end] of stageDef.groundSegments) {
+    addGround(start, end);
+  }
+  for (const [x, y, width] of stageDef.platforms) {
+    addPlatform(x, y, width);
+  }
+  for (const [x, width] of stageDef.hazards) {
+    addHazard(x, width);
+  }
+  for (const item of stageDef.collectibles) {
+    if (level.theme === "factory" && level.collectibles.length >= currentShardTarget()) {
+      break;
+    }
+    if (item.row) {
+      const remaining = currentShardTarget() - level.collectibles.length;
+      addCollectibleRow(item.row[0], item.row[1], level.theme === "factory" ? Math.min(item.row[2], remaining) : item.row[2]);
+    } else {
+      addCollectible(item.point[0], item.point[1]);
+    }
+  }
+
+  for (const enemy of stageDef.enemies) {
+    addEnemy(enemy[0], enemy[1]);
+  }
+  for (const excavator of stageDef.excavators || []) {
+    addExcavatorEnemy(excavator[0], excavator[1], excavator[2], excavator[3], excavator[4]);
+  }
+  for (const serpentSpawn of stageDef.serpentSpawns || []) {
+    addSerpentEnemy(serpentSpawn);
+  }
+
+  // Difficulty tweaks enemy count without needing a separate copy of every map.
+  const bonusEnemies = difficulty.enemyBonus;
+  for (let i = 0; i < bonusEnemies && stageDef.enemies.length > 0; i += 1) {
+    const seed = stageDef.enemies[(i * 2 + stageIndex) % stageDef.enemies.length];
+    addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]));
+  }
+
+  resetPlayerPosition();
+  camera.x = 0;
+  stageMessageTimer = 2.2;
+}
+
+function addGround(startTile, endTile) {
+  const topOffset = level.theme === "factory" ? 8 : 0;
+  const topHeight = level.theme === "factory" ? TILE - topOffset : TILE;
+  for (let x = startTile; x <= endTile; x += 1) {
+    level.solids.push({ x: x * TILE, y: FLOOR_Y + topOffset, w: TILE, h: topHeight });
+    level.solids.push({ x: x * TILE, y: FLOOR_Y + TILE, w: TILE, h: TILE });
+    level.solids.push({ x: x * TILE, y: FLOOR_Y + TILE * 2, w: TILE, h: TILE });
+  }
+}
+
+function addPlatform(tileX, tileY, widthTiles) {
+  const topOffset = level.theme === "factory" ? 10 : 0;
+  const topHeight = level.theme === "factory" ? TILE - topOffset : TILE;
+  for (let x = 0; x < widthTiles; x += 1) {
+    level.solids.push({ x: (tileX + x) * TILE, y: tileY * TILE + topOffset, w: TILE, h: topHeight });
+  }
+}
+
+function addHazard(startTile, widthTiles) {
+  level.hazards.push({
+    x: startTile * TILE,
+    y: FLOOR_Y + TILE * 0.75,
+    w: widthTiles * TILE,
+    h: TILE * 1.5,
+  });
+}
+
+function addCollectible(tileX, tileY) {
+  if (level.theme === "factory") {
+    const x = tileX * TILE + 6;
+    const hintY = tileY * TILE;
+    let surfaceY = FLOOR_Y;
+    for (const solid of level.solids) {
+      const overlapsColumn = x + 10 >= solid.x && x + 10 <= solid.x + solid.w;
+      if (!overlapsColumn || solid.y < hintY) {
+        continue;
+      }
+      surfaceY = Math.min(surfaceY, solid.y);
+    }
+
+    level.collectibles.push({
+      x,
+      y: surfaceY - 14,
+      w: 20,
+      h: 14,
+      bob: Math.random() * Math.PI * 2,
+      collected: false,
+      style: "button",
+    });
+    return;
+  }
+
+  level.collectibles.push({
+    x: tileX * TILE + 6,
+    y: tileY * TILE + 6,
+    w: 20,
+    h: 20,
+    bob: Math.random() * Math.PI * 2,
+    collected: false,
+  });
+}
+
+function addCollectibleRow(startTileX, tileY, count) {
+  for (let i = 0; i < count; i += 1) {
+    addCollectible(startTileX + i, tileY);
+  }
+}
+
+function addEnemy(tileX, tileY) {
+  const x = tileX * TILE + 3;
+  const y = tileY * TILE + 2;
+  const stageFactor = stageDifficultyFactor(currentStageIndex);
+  level.enemies.push({
+    type: "walker",
+    x,
+    y,
+    w: 26,
+    h: 26,
+    vx: 70 * difficulty.enemySpeed * stageFactor,
+    vy: 0,
+    leftBound: x - TILE * 2,
+    rightBound: x + TILE * 2,
+    alive: true,
+    squishTimer: 0,
+    animationTime: Math.random() * 2,
+  });
+}
+
+function isHazardColumn(tileX) {
+  const sampleX = tileX * TILE + TILE * 0.5;
+  const sampleY = FLOOR_Y + TILE;
+  return hasHazardAt(sampleX, sampleY);
+}
+
+function findSafeExcavatorTile(tileX) {
+  const searchOffsets = [0, -1, 1, -2, 2, -3, 3];
+  for (const offset of searchOffsets) {
+    const candidateTileX = tileX + offset;
+    if (candidateTileX < 0 || candidateTileX >= level.widthTiles) {
+      continue;
+    }
+
+    const bodyTiles = [candidateTileX, candidateTileX + 1];
+    const blocked = bodyTiles.some((bodyTileX) => isHazardColumn(bodyTileX));
+    if (!blocked) {
+      return candidateTileX;
+    }
+  }
+  return null;
+}
+
+function addExcavatorEnemy(tileX, tileY, facing = "right", minRange = 48, maxRange = 144) {
+  const safeTileX = findSafeExcavatorTile(tileX);
+  if (safeTileX === null) {
+    return;
+  }
+
+  const x = safeTileX * TILE;
+  const y = tileY * TILE + TILE - 8;
+  const direction = facing === "left" ? -1 : 1;
+  const armBaseY = y + 16;
+  level.enemies.push({
+    type: "excavator",
+    x,
+    y,
+    w: 40,
+    h: 40,
+    facing: direction,
+    minRange,
+    maxRange,
+    armLength: minRange * 0.35,
+    targetArmLength: minRange * 0.35,
+    attackArmLength: maxRange,
+    armSpeed: 170,
+    state: "idle",
+    cooldown: 0.8 + Math.random() * 0.45,
+    telegraphTimer: 0,
+    animationTime: Math.random() * 2,
+    alive: true,
+    squishTimer: 0,
+    armBaseY,
+    reachY: armBaseY - 24,
+  });
+}
+
+function addSerpentEnemy(tileX) {
+  const stageFactor = stageDifficultyFactor(currentStageIndex);
+  level.serpentEnemies.push({
+    type: "seaMonster",
+    x: tileX * TILE + TILE * 0.5,
+    homeX: tileX * TILE + TILE * 0.5,
+    baseY: FLOOR_Y + TILE * 1.45,
+    waterTop: FLOOR_Y + TILE * 0.75 + SERPENT_POOL_SURFACE_OFFSET,
+    w: 58,
+    h: 140,
+    phase: Math.random() * Math.PI * 2,
+    rise: 0,
+    maxRise: 104 + currentStageIndex * 14,
+    speed: (2 + currentStageIndex * 0.2) * difficulty.enemySpeed * stageFactor,
+    state: "idle",
+    alive: true,
+    cooldown: 0.4 + Math.random() * 1.1,
+    stunTimer: 0,
+    animationTime: Math.random() * 2,
+    strikeX: tileX * TILE + TILE * 0.5,
+    strikeY: FLOOR_Y - 56,
+    strikeProgress: 0,
+    retreatSpeed: 170,
+    aggroWidth: 54 + currentStageIndex * 10,
+  });
+}
+
+function getSerpentHitbox(serpent) {
+  const headX = serpent.homeX + (serpent.strikeX - serpent.homeX) * serpent.strikeProgress;
+  const headY = serpent.baseY - serpent.rise + (serpent.strikeY - (serpent.baseY - serpent.rise)) * serpent.strikeProgress;
+  return {
+    x: headX - 32,
+    y: headY - 34,
+    w: 64,
+    h: 54,
+  };
+}
+
+function hazardHasSerpent(hazard) {
+  return level.serpentEnemies.some((serpent) => serpent.homeX >= hazard.x && serpent.homeX <= hazard.x + hazard.w);
+}
+
+function restartGame() {
+  difficulty = DIFFICULTIES[activeDifficultyKey];
+  score = 0;
+  collectedCount = 0;
+  lives = getStartingLives();
+  gameState = "playing";
+  clearGuardianState(true);
+  clearChangerState(true);
+  resetNightmareEvent();
+  resetAssassinationEvent();
+  loadStage(Math.min(selectedStageIndex, unlockedStageIndex), true);
+}
+
+function nextStage() {
+  if (currentStageIndex < STAGE_DEFS.length - 1) {
+    unlockedStageIndex = Math.max(unlockedStageIndex, currentStageIndex + 1);
+    updateStageSelectLocks();
+    gameState = "playing";
+    clearGuardianState(true);
+    clearChangerState(true);
+    resetNightmareEvent();
+    loadStage(currentStageIndex + 1, true);
+  } else {
+    unlockedStageIndex = STAGE_DEFS.length - 1;
+    updateStageSelectLocks();
+    resetNightmareEvent();
+    gameState = "finished";
+  }
+}
+
+function openLobby() {
+  gameState = "lobby";
+  lobbyOverlay.classList.remove("hidden");
+  resetNightmareEvent();
+  resetAssassinationEvent();
+  if (!lootBoxState.active) {
+    closeLootBoxPanel();
+  }
+  showAuthPanel(!accountState.currentNickname);
+  syncLobbyAccountUI();
+  if (accountState.currentNickname) {
+    maybeShowLatestPatchNotes();
+  } else {
+    closePatchNotes(false);
+    closeLootBoxPanel();
+  }
+}
+
+function closeLobby() {
+  lobbyOverlay.classList.add("hidden");
+}
+
+function updateStageSelectLocks() {
+  for (const option of stageSelect.options) {
+    const stageIndex = Number(option.value);
+    option.disabled = stageIndex > unlockedStageIndex;
+    option.textContent = stageIndex > unlockedStageIndex
+      ? t("stage_locked", { name: getStageDisplayName(stageIndex) })
+      : getStageDisplayName(stageIndex);
+  }
+
+  if (selectedStageIndex > unlockedStageIndex) {
+    selectedStageIndex = unlockedStageIndex;
+    stageSelect.value = String(selectedStageIndex);
+  }
+
+  if (unlockedStageIndex === 0) {
+    stageLockText.textContent = t("stage_ready_one");
+  } else if (unlockedStageIndex < STAGE_DEFS.length - 1) {
+    stageLockText.textContent = t("stage_unlocked_next", {
+      current: unlockedStageIndex + 1,
+      next: unlockedStageIndex + 2,
+    });
+  } else {
+    stageLockText.textContent = t("stage_all_unlocked");
+  }
+}
+
+function ensureAudioContext() {
+  if (!audioState.context) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      audioState.context = new AudioContext();
+    }
+  }
+
+  if (audioState.context && audioState.context.state === "suspended") {
+    audioState.context.resume().catch(() => {});
+  }
+}
+
+function midiToHz(midi) {
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+function stopDanceMusic() {
+  const existing = audioState.music.dance;
+  if (!existing) {
+    return;
+  }
+
+  if (existing.timerId) {
+    clearInterval(existing.timerId);
+  }
+
+  const audioContext = audioState.context;
+  if (audioContext && existing.gain) {
+    const now = audioContext.currentTime;
+    try {
+      existing.gain.gain.cancelScheduledValues(now);
+      existing.gain.gain.setValueAtTime(existing.gain.gain.value || 0.0001, now);
+      existing.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    } catch (_) {
+      // Ignore if the node has already been disconnected.
+    }
+  }
+
+  audioState.music.dance = null;
+}
+
+function startDanceMusic() {
+  if (audioState.muted) {
+    return;
+  }
+
+  ensureAudioContext();
+  const audioContext = audioState.context;
+  if (!audioContext) {
+    return;
+  }
+
+  if (audioState.music.dance) {
+    return;
+  }
+
+  const masterGain = audioContext.createGain();
+  masterGain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+  masterGain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.06);
+  masterGain.connect(audioContext.destination);
+
+  const tempo = 132;
+  const stepSeconds = 60 / tempo / 4; // 16th notes
+  const scheduleAheadSeconds = 0.12;
+
+  const bass = [48, 48, 55, 55, 57, 57, 55, 55]; // C2 G2 A2 G2 (arcade loop)
+  const melody = [72, 74, 76, 79, 76, 74, 72, 67]; // C5 D5 E5 G5 ...
+  const hats = [1, 0, 1, 0, 1, 0, 1, 0];
+
+  const state = {
+    gain: masterGain,
+    timerId: null,
+    nextTime: audioContext.currentTime + 0.02,
+    stepIndex: 0,
+  };
+
+  function scheduleTone(time, freq, duration, type, volume) {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.02);
+  }
+
+  function scheduleKick(time) {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(120, time);
+    osc.frequency.exponentialRampToValueAtTime(52, time + 0.09);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.11, time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(time);
+    osc.stop(time + 0.14);
+  }
+
+  function scheduleHat(time) {
+    const bufferSize = 0.03;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(880 + Math.random() * 140, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.035, time + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + bufferSize);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(time);
+    osc.stop(time + bufferSize + 0.01);
+  }
+
+  function scheduler() {
+    if (audioState.muted || !danceEvent.active) {
+      stopDanceMusic();
+      return;
+    }
+
+    while (state.nextTime < audioContext.currentTime + scheduleAheadSeconds) {
+      const step = state.stepIndex % 16;
+      const barStep = state.stepIndex % 8;
+
+      if (step % 4 === 0) {
+        scheduleKick(state.nextTime);
+      }
+
+      if (hats[barStep]) {
+        scheduleHat(state.nextTime);
+      }
+
+      const bassNote = bass[barStep];
+      scheduleTone(state.nextTime, midiToHz(bassNote), stepSeconds * 0.95, "triangle", 0.055);
+
+      const melodyNote = melody[barStep];
+      scheduleTone(state.nextTime + stepSeconds * 0.5, midiToHz(melodyNote), stepSeconds * 0.7, "square", 0.03);
+
+      state.nextTime += stepSeconds;
+      state.stepIndex += 1;
+    }
+  }
+
+  state.timerId = setInterval(scheduler, 25);
+  audioState.music.dance = state;
+}
+
+function stopMythicRevealSound() {
+  const audioContext = audioState.context;
+  if (!audioContext || !audioState.sfx.mythicNodes.length) {
+    audioState.sfx.mythicNodes.length = 0;
+    return;
+  }
+
+  const now = audioContext.currentTime;
+  for (const entry of audioState.sfx.mythicNodes) {
+    try {
+      entry.gain.gain.cancelScheduledValues(now);
+      entry.gain.gain.setValueAtTime(Math.max(0.0001, entry.gain.gain.value || 0.0001), now);
+      entry.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+      entry.osc.stop(now + 0.04);
+    } catch (_) {
+      // Ignore nodes that already ended.
+    }
+  }
+  audioState.sfx.mythicNodes.length = 0;
+}
+
+function playSound(type) {
+  if (audioState.muted) {
+    return;
+  }
+
+  ensureAudioContext();
+  const audioContext = audioState.context;
+  if (!audioContext) {
+    return;
+  }
+
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+
+  const now = audioContext.currentTime;
+  gain.gain.setValueAtTime(0.0001, now);
+
+  // Short oscillator envelopes keep the sound retro and dependency-free.
+  if (type === "jump") {
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(420, now);
+    oscillator.frequency.exponentialRampToValueAtTime(620, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+    oscillator.start(now);
+    oscillator.stop(now + 0.12);
+    return;
+  }
+
+  if (type === "doubleJump") {
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(540, now);
+    oscillator.frequency.exponentialRampToValueAtTime(860, now + 0.09);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    oscillator.start(now);
+    oscillator.stop(now + 0.14);
+    return;
+  }
+
+  if (type === "coin") {
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(660, now);
+    oscillator.frequency.exponentialRampToValueAtTime(990, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    oscillator.start(now);
+    oscillator.stop(now + 0.16);
+    return;
+  }
+
+  if (type === "button") {
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(820, now);
+    oscillator.frequency.exponentialRampToValueAtTime(620, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.055, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    oscillator.start(now);
+    oscillator.stop(now + 0.1);
+    return;
+  }
+
+  if (type === "stomp") {
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(180, now);
+    oscillator.frequency.exponentialRampToValueAtTime(90, now + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.09, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    oscillator.start(now);
+    oscillator.stop(now + 0.18);
+    return;
+  }
+
+  if (type === "clear") {
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(520, now);
+    oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    oscillator.start(now);
+    oscillator.stop(now + 0.28);
+    return;
+  }
+
+  if (type === "boxShake") {
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(132, now);
+    oscillator.frequency.exponentialRampToValueAtTime(94, now + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    oscillator.start(now);
+    oscillator.stop(now + 0.22);
+    return;
+  }
+
+  if (type === "boxOpen") {
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(240, now);
+    oscillator.frequency.exponentialRampToValueAtTime(410, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.065, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    oscillator.start(now);
+    oscillator.stop(now + 0.18);
+    return;
+  }
+
+  if (type === "resultReveal") {
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(460, now);
+    oscillator.frequency.exponentialRampToValueAtTime(720, now + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    oscillator.start(now);
+    oscillator.stop(now + 0.22);
+    return;
+  }
+
+  if (type === "resultRevealEpic") {
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    oscillator.type = "triangle";
+    osc2.type = "sine";
+    oscillator.frequency.setValueAtTime(520, now);
+    oscillator.frequency.exponentialRampToValueAtTime(920, now + 0.22);
+    osc2.frequency.setValueAtTime(780, now + 0.02);
+    osc2.frequency.exponentialRampToValueAtTime(1180, now + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain2.gain.exponentialRampToValueAtTime(0.032, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    oscillator.start(now);
+    osc2.start(now);
+    oscillator.stop(now + 0.3);
+    osc2.stop(now + 0.28);
+    return;
+  }
+
+  if (type === "resultRevealLegendary") {
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    oscillator.type = "triangle";
+    osc2.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(210, now);
+    oscillator.frequency.exponentialRampToValueAtTime(420, now + 0.28);
+    osc2.frequency.setValueAtTime(320, now + 0.02);
+    osc2.frequency.exponentialRampToValueAtTime(220, now + 0.34);
+    gain.gain.exponentialRampToValueAtTime(0.075, now + 0.01);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain2.gain.exponentialRampToValueAtTime(0.038, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    oscillator.start(now);
+    osc2.start(now);
+    oscillator.stop(now + 0.44);
+    osc2.stop(now + 0.4);
+    return;
+  }
+
+  if (type === "resultRevealMythic") {
+    stopMythicRevealSound();
+    const osc2 = audioContext.createOscillator();
+    const osc3 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    const gain3 = audioContext.createGain();
+    oscillator.type = "sine";
+    osc2.type = "triangle";
+    osc3.type = "sine";
+
+    oscillator.frequency.setValueAtTime(96, now);
+    oscillator.frequency.exponentialRampToValueAtTime(132, now + 0.46);
+    osc2.frequency.setValueAtTime(320, now + 0.1);
+    osc2.frequency.exponentialRampToValueAtTime(880, now + 0.54);
+    osc3.frequency.setValueAtTime(1180, now + 0.32);
+    osc3.frequency.exponentialRampToValueAtTime(1580, now + 0.56);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain3.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.055, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.026, now + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.1);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.048, now + 0.22);
+    gain2.gain.exponentialRampToValueAtTime(0.024, now + 0.56);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.96);
+    gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    gain3.gain.exponentialRampToValueAtTime(0.03, now + 0.42);
+    gain3.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+
+    osc2.connect(gain2);
+    osc3.connect(gain3);
+    gain2.connect(audioContext.destination);
+    gain3.connect(audioContext.destination);
+
+    audioState.sfx.mythicNodes.push(
+      { osc: oscillator, gain },
+      { osc: osc2, gain: gain2 },
+      { osc: osc3, gain: gain3 },
+    );
+
+    oscillator.start(now);
+    osc2.start(now);
+    osc3.start(now);
+    oscillator.stop(now + 1.12);
+    osc2.stop(now + 0.98);
+    osc3.stop(now + 0.92);
+    setTimeout(() => {
+      audioState.sfx.mythicNodes = audioState.sfx.mythicNodes.filter((entry) => ![oscillator, osc2, osc3].includes(entry.osc));
+    }, 1200);
+    return;
+  }
+
+  if (type === "nightmare") {
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    oscillator.type = "sawtooth";
+    osc2.type = "triangle";
+    oscillator.frequency.setValueAtTime(92, now);
+    oscillator.frequency.exponentialRampToValueAtTime(54, now + 0.9);
+    osc2.frequency.setValueAtTime(148, now);
+    osc2.frequency.exponentialRampToValueAtTime(88, now + 0.7);
+    oscillator.connect(gain);
+    osc2.connect(gain2);
+    gain.connect(audioContext.destination);
+    gain2.connect(audioContext.destination);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.075, now + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.05, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+    oscillator.start(now);
+    osc2.start(now);
+    oscillator.stop(now + 1.2);
+    osc2.stop(now + 0.95);
+  }
+}
+
+function resetAssassinationEvent() {
+  assassinationEvent.active = false;
+  assassinationEvent.mode = "";
+  assassinationEvent.targetType = "";
+  assassinationEvent.target = null;
+  assassinationEvent.targetBounds = null;
+  assassinationEvent.timer = 0;
+  assassinationEvent.gauge = 0;
+  assassinationEvent.flash = 0;
+  assassinationEvent.successText = "";
+}
+
+function breakAssassinStealth() {
+  const wasActive = player.stealthActive;
+  player.stealthActive = false;
+  player.stealthTimer = 0;
+  if (wasActive) {
+    player.stealthCooldown = Math.max(player.stealthCooldown, ASSASSIN_RULES.stealthCooldown);
+  }
+}
+
+function activateAssassinStealth() {
+  if (!isAssassinEquipped() || player.stealthActive || player.stealthCooldown > 0 || gameState !== "playing") {
+    return;
+  }
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+  player.stealthActive = true;
+  player.stealthTimer = ASSASSIN_RULES.stealthDuration;
+  playSound("button");
+}
+
+function createChangerClone() {
+  if (!isChangerEquipped() || gameState !== "playing") {
+    return;
+  }
+  if (changerState.cloneUsedThisRun) {
+    return;
+  }
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active || assassinationEvent.active) {
+    return;
+  }
+
+  changerState.clone = {
+    x: player.x,
+    y: player.y,
+    w: player.w,
+    h: player.h,
+    facing: player.facing,
+    crouching: player.crouching,
+    state: player.state,
+    animationTime: player.animationTime,
+  };
+  changerState.cloneUsedThisRun = true;
+  changerState.effectFrom = { x: player.x, y: player.y };
+  changerState.effectTo = { x: player.x, y: player.y };
+  changerState.effectTimer = CHANGER_RULES.effectDuration * 0.7;
+  playSound("button");
+}
+
+function consumeGuardianPassive() {
+  if (!isGuardianEquipped() || !player.guardianPassiveReady) {
+    return false;
+  }
+  player.guardianPassiveReady = false;
+  player.guardianFlash = GUARDIAN_RULES.passiveInvulnerability;
+  player.guardianShieldTimer = Math.max(player.guardianShieldTimer, GUARDIAN_RULES.passiveInvulnerability);
+  player.invulnerableTime = Math.max(player.invulnerableTime, GUARDIAN_RULES.passiveInvulnerability);
+  playSound("clear");
+  return true;
+}
+
+function activateGuardianShield() {
+  if (!isGuardianEquipped() || gameState !== "playing" || player.guardianShieldTimer > 0 || player.guardianShieldCooldown > 0) {
+    return;
+  }
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active || assassinationEvent.active) {
+    return;
+  }
+  player.guardianShieldTimer = GUARDIAN_RULES.shieldDuration;
+  player.guardianShieldCooldown = GUARDIAN_RULES.shieldCooldown;
+  player.guardianFlash = GUARDIAN_RULES.shieldDuration;
+  playSound("clear");
+}
+
+function swapChangerWithClone() {
+  if (!isChangerEquipped() || gameState !== "playing" || !changerState.clone || changerState.swapCooldown > 0) {
+    return;
+  }
+
+  const clone = changerState.clone;
+  const from = { x: player.x, y: player.y };
+  const to = { x: clone.x, y: clone.y };
+
+  changerState.clone = {
+    x: player.x,
+    y: player.y,
+    w: player.w,
+    h: player.h,
+    facing: player.facing,
+    crouching: player.crouching,
+    state: player.state,
+    animationTime: player.animationTime,
+  };
+
+  player.x = clone.x;
+  player.y = clone.y;
+  player.vx = 0;
+  player.vy = 0;
+  player.facing = clone.facing;
+  player.crouching = clone.crouching;
+  player.h = clone.crouching ? player.crouchH : player.standH;
+  player.onGround = false;
+  changerState.swapCooldown = CHANGER_RULES.swapCooldown;
+  changerState.effectFrom = from;
+  changerState.effectTo = to;
+  changerState.effectTimer = CHANGER_RULES.effectDuration;
+  player.invulnerableTime = Math.max(player.invulnerableTime, 0.2);
+  playSound("clear");
+}
+
+function transferToChangerClone() {
+  if (!isChangerEquipped() || !changerState.clone) {
+    return false;
+  }
+
+  const clone = changerState.clone;
+  const origin = { x: player.x, y: player.y };
+  player.x = clone.x;
+  player.y = clone.y;
+  player.vx = 0;
+  player.vy = 0;
+  player.facing = clone.facing;
+  player.h = player.standH;
+  player.crouching = false;
+  player.onGround = false;
+  player.jumpsRemaining = Math.max(1, player.maxJumps - 1);
+  player.invulnerableTime = Math.max(player.invulnerableTime, CHANGER_RULES.transferInvulnerability);
+  player.cloneTransferFlash = CHANGER_RULES.effectDuration;
+  changerState.effectFrom = origin;
+  changerState.effectTo = { x: clone.x, y: clone.y };
+  changerState.effectTimer = CHANGER_RULES.effectDuration;
+  changerState.clone = null;
+  changerState.swapCooldown = 0;
+  playSound("clear");
+  return true;
+}
+
+function getEnemyBounds(entity, type) {
+  if (type === "serpent") {
+    return getSerpentHitbox(entity);
+  }
+  return {
+    x: entity.x,
+    y: entity.y,
+    w: entity.w,
+    h: entity.h,
+  };
+}
+
+function getEnemyFacingDirection(entity, type) {
+  if (type === "excavator") {
+    return entity.facing || 1;
+  }
+  if (type === "serpent") {
+    return Math.sign((entity.strikeX || entity.homeX) - entity.homeX) || 1;
+  }
+  if (type === "boss") {
+    return entity.facing || 1;
+  }
+  return Math.sign(entity.vx) || entity.facing || 1;
+}
+
+function isBossEntity(entity, type) {
+  return type === "boss" || entity.type === "boss" || entity.isBoss;
+}
+
+function isSeaMonsterEntity(entity, type) {
+  return type === "seaMonster" || type === "serpent" || entity?.type === "seaMonster";
+}
+
+function canAssassinTargetEntity(entity, type) {
+  if (!entity || entity.defeated) {
+    return false;
+  }
+  if (isSeaMonsterEntity(entity, type)) {
+    return false;
+  }
+  if (type === "serpent") {
+    return entity.alive;
+  }
+  return entity.alive !== false || isBossEntity(entity, type);
+}
+
+function findAssassinationTarget() {
+  if (!isAssassinEquipped() || gameState !== "playing") {
+    return null;
+  }
+
+  const playerCenterX = player.x + player.w * 0.5;
+  const playerCenterY = player.y + player.h * 0.5;
+  let bestTarget = null;
+  let bestDistance = Infinity;
+
+  const considerTarget = (entity, type) => {
+    if (!canAssassinTargetEntity(entity, type)) {
+      return;
+    }
+
+    const bounds = getEnemyBounds(entity, type);
+    const targetCenterX = bounds.x + bounds.w * 0.5;
+    const targetCenterY = bounds.y + bounds.h * 0.5;
+    const deltaX = targetCenterX - playerCenterX;
+    const deltaY = targetCenterY - playerCenterY;
+
+    if (Math.abs(deltaX) > ASSASSIN_RULES.qteRangeX || Math.abs(deltaY) > ASSASSIN_RULES.qteRangeY) {
+      return;
+    }
+
+    const distance = Math.hypot(deltaX, deltaY);
+    if (distance >= bestDistance) {
+      return;
+    }
+
+    const facing = getEnemyFacingDirection(entity, type);
+    const behind = facing > 0 ? playerCenterX < targetCenterX - 4 : playerCenterX > targetCenterX + 4;
+
+    bestDistance = distance;
+    bestTarget = {
+      entity,
+      type: isBossEntity(entity, type) ? "boss" : type,
+      bounds,
+      behind,
+    };
+  };
+
+  for (const enemy of level.enemies) {
+    considerTarget(enemy, enemy.type);
+  }
+  for (const serpent of level.serpentEnemies) {
+    considerTarget(serpent, "serpent");
+  }
+
+  return bestTarget;
+}
+
+function finishAssassination(success) {
+  const target = assassinationEvent.target;
+  const targetType = assassinationEvent.targetType;
+  const failedFrontAttack = assassinationEvent.mode === "qte";
+  resetAssassinationEvent();
+
+  if (!target) {
+    return;
+  }
+
+  if (!success) {
+    player.stunTimer = Math.max(player.stunTimer, failedFrontAttack ? ASSASSIN_RULES.frontalFailStun : 0.2);
+    player.invulnerableTime = Math.max(player.invulnerableTime, 0.3);
+    player.vx = 0;
+    playSound("nightmare");
+    return;
+  }
+
+  if (targetType === "boss") {
+    target.hp = Math.max(0, (target.hp ?? 100) - ASSASSIN_RULES.bossDamage);
+    if (target.hp <= 0) {
+      target.alive = false;
+      target.defeated = true;
+    }
+    score += 900 + currentStageIndex * 120;
+    awardCoins(28 + currentStageIndex * 3);
+  } else if (targetType === "serpent") {
+    target.alive = false;
+    target.defeated = true;
+    target.stunTimer = 0;
+    target.rise = 0;
+    target.state = "stunned";
+    score += 550 + currentStageIndex * 90;
+    awardCoins(16 + currentStageIndex * 2);
+  } else {
+    target.alive = false;
+    target.defeated = true;
+    target.squishTimer = 0.3;
+    score += target.type === "excavator" ? 650 + currentStageIndex * 100 : 450 + currentStageIndex * 70;
+    awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
+  }
+
+  player.invulnerableTime = Math.max(player.invulnerableTime, 0.7);
+  player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
+  playSound("clear");
+}
+
+function beginAssassination() {
+  if (!isAssassinEquipped() || assassinationEvent.active || player.stunTimer > 0 || player.assassinationCooldown > 0 || gameState !== "playing") {
+    return;
+  }
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+
+  const target = findAssassinationTarget();
+  if (!target) {
+    return;
+  }
+
+  breakAssassinStealth();
+  player.vx = 0;
+  player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
+
+  assassinationEvent.active = true;
+  assassinationEvent.target = target.entity;
+  assassinationEvent.targetType = target.type;
+  assassinationEvent.targetBounds = target.bounds;
+  assassinationEvent.flash = 1;
+  assassinationEvent.gauge = 0;
+
+  if (target.behind && target.type !== "boss") {
+    assassinationEvent.mode = "backstab";
+    assassinationEvent.timer = ASSASSIN_RULES.strikeWindup;
+    assassinationEvent.successText = "Backstab";
+  } else {
+    const bossFight = target.type === "boss";
+    assassinationEvent.mode = "qte";
+    assassinationEvent.timer = bossFight ? ASSASSIN_RULES.qteBossDuration : ASSASSIN_RULES.qteDuration;
+    assassinationEvent.successText = bossFight ? "Boss Break" : "Front Clash";
+  }
+
+  playSound("stomp");
+}
+
+function tapAssassinationQte() {
+  if (!assassinationEvent.active || assassinationEvent.mode !== "qte") {
+    return;
+  }
+  const bossFight = assassinationEvent.targetType === "boss";
+  assassinationEvent.gauge = Math.min(
+    1,
+    assassinationEvent.gauge + (bossFight ? ASSASSIN_RULES.qteBossTapGain : ASSASSIN_RULES.qteTapGain)
+  );
+  assassinationEvent.flash = 1;
+  playSound("button");
+  if (assassinationEvent.gauge >= 1) {
+    finishAssassination(true);
+  }
+}
+
+function updateAssassinationEvent(dt) {
+  if (!assassinationEvent.active) {
+    return;
+  }
+
+  assassinationEvent.flash = Math.max(0, assassinationEvent.flash - dt * 1.8);
+  assassinationEvent.timer -= dt;
+
+  if (assassinationEvent.mode === "backstab") {
+    if (assassinationEvent.timer <= 0) {
+      finishAssassination(true);
+    }
+    return;
+  }
+
+  const bossFight = assassinationEvent.targetType === "boss";
+  assassinationEvent.gauge = Math.max(
+    0,
+    assassinationEvent.gauge - (bossFight ? ASSASSIN_RULES.qteBossDrainRate : ASSASSIN_RULES.qteDrainRate) * dt
+  );
+
+  if (assassinationEvent.timer <= 0) {
+    finishAssassination(false);
+  }
+}
+
+function handleInput(event, pressed) {
+  if (lootBoxState.active) {
+    if (pressed) {
+      if (lootBoxState.revealReady) {
+        closeLootBoxPanel();
+      } else {
+        skipLootBoxAnimation();
+      }
+    }
+    return;
+  }
+
+  const arcadeHardDanceLive =
+    level.theme === "arcade" &&
+    difficulty.label === "Hard" &&
+    (danceEvent.active || danceEvent.countdown);
+
+  if (arcadeHardDanceLive) {
+    if (pressed && danceEvent.active) {
+      const key = event.key;
+      const dir =
+        ["a", "A"].includes(key) ? "left" :
+        ["d", "D"].includes(key) ? "right" :
+        ["w", "W"].includes(key) ? "up" :
+        ["s", "S"].includes(key) ? "down" :
+        null;
+
+      if (dir) {
+        if (dir === danceEvent.sequence[danceEvent.index]) {
+          danceEvent.index += 1;
+          danceEvent.stepTimer = danceEvent.stepTimeLimit;
+          danceEvent.flash = 1;
+          playSound("stomp");
+          if (danceEvent.index >= danceEvent.sequence.length) {
+            resolveDanceEvent(true);
+          }
+        } else {
+          resolveDanceEvent(false);
+        }
+        return;
+      }
+    }
+
+    if (pressed && ["r", "R"].includes(event.key)) {
+      restartGame();
+    }
+    if (pressed && ["Escape"].includes(event.key)) {
+      openLobby();
+    }
+    return;
+  }
+
+  if (pressed && nightmareEvent.active && [" ", "Spacebar", "Enter"].includes(event.key)) {
+    const marker = nightmareEvent.marker;
+    const success =
+      marker >= nightmareEvent.targetStart &&
+      marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
+    resolveNightmareEvent(success);
+    return;
+  }
+
+  if (assassinationEvent.active) {
+    if (pressed && ["q", "Q"].includes(event.key)) {
+      tapAssassinationQte();
+      return;
+    }
+    if (pressed && ["r", "R"].includes(event.key)) {
+      restartGame();
+    }
+    if (pressed && ["Escape"].includes(event.key)) {
+      openLobby();
+    }
+    return;
+  }
+
+  if (["ArrowLeft", "a", "A"].includes(event.key)) {
+    keys.left = pressed;
+  }
+  if (["ArrowRight", "d", "D"].includes(event.key)) {
+    keys.right = pressed;
+  }
+  if (["ArrowUp", "w", "W", " "].includes(event.key)) {
+    if (pressed && !keys.jump) {
+      keys.jumpQueued = true;
+    }
+    keys.jump = pressed;
+  }
+
+  const isShift = event.key === "Shift" || event.code === "ShiftLeft" || event.code === "ShiftRight";
+  const isSKey = event.key === "s" || event.key === "S" || event.code === "KeyS";
+  if (isShift || isSKey) {
+    keys.crouch = level.theme === "arcade" && gameState !== "lobby" ? pressed : false;
+  }
+
+  if (pressed && ["r", "R"].includes(event.key)) {
+    restartGame();
+  }
+  if (pressed && ["Enter"].includes(event.key) && gameState === "stageclear") {
+    nextStage();
+  }
+  if (pressed && ["e", "E"].includes(event.key)) {
+    if (isChangerEquipped()) {
+      createChangerClone();
+    } else {
+      activateAssassinStealth();
+    }
+  }
+  if (pressed && ["q", "Q"].includes(event.key)) {
+    if (isGuardianEquipped()) {
+      activateGuardianShield();
+    } else if (isChangerEquipped()) {
+      swapChangerWithClone();
+    } else {
+      beginAssassination();
+    }
+  }
+  if (pressed && ["Escape"].includes(event.key)) {
+    openLobby();
+  }
+}
+
+document.addEventListener("keydown", (event) => {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
+    event.preventDefault();
+  }
+  handleInput(event, true);
+});
+
+document.addEventListener("keyup", (event) => {
+  handleInput(event, false);
+});
+
+canvas.addEventListener("pointerdown", ensureAudioContext);
+canvas.addEventListener("pointerdown", (event) => {
+  if (!clawEscapeEvent.active) {
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+
+  const btn = clawEscapeEvent.button;
+  const inside =
+    x >= btn.x &&
+    x <= btn.x + btn.w &&
+    y >= btn.y &&
+    y <= btn.y + btn.h;
+
+  if (!inside) {
+    return;
+  }
+
+  clawEscapeEvent.meter = Math.min(1, clawEscapeEvent.meter + 0.02);
+  clawEscapeEvent.flash = 1;
+  playSound("stomp");
+  if (clawEscapeEvent.meter >= 1) {
+    resolveClawEscapeEvent();
+  }
+});
+muteButton.addEventListener("click", () => {
+  audioState.muted = !audioState.muted;
+  updateMuteButtonLabel();
+  if (audioState.muted) {
+    stopDanceMusic();
+  } else if (danceEvent.active) {
+    startDanceMusic();
+  }
+});
+
+languageSelect?.addEventListener("change", () => {
+  applyLanguage(languageSelect.value);
+});
+
+difficultySelect.addEventListener("change", () => {
+  activeDifficultyKey = difficultySelect.value;
+  difficulty = DIFFICULTIES[activeDifficultyKey];
+});
+
+stageSelect.addEventListener("change", () => {
+  selectedStageIndex = Number(stageSelect.value);
+});
+
+screenModeSelect.addEventListener("change", () => {
+  screenMode = screenModeSelect.value;
+  applyScreenMode();
+});
+
+playButton.addEventListener("click", () => {
+  if (!accountState.currentNickname) {
+    setAuthMessageKey("auth_signin_before_play", {}, true);
+    showAuthPanel(true);
+    return;
+  }
+  closeLobby();
+  restartGame();
+});
+
+openShopButton.addEventListener("click", () => {
+  if (!accountState.currentNickname) {
+    setAuthMessageKey("auth_signin_shop", {}, true);
+    showAuthPanel(true);
+    return;
+  }
+  shopPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+shopTabCharacters.addEventListener("click", () => {
+  shopUiState.activeTab = "character";
+  renderShopCatalog();
+});
+
+shopTabSkins.addEventListener("click", () => {
+  shopUiState.activeTab = "skin";
+  renderShopCatalog();
+});
+
+shopTabBoxes?.addEventListener("click", () => {
+  shopUiState.activeTab = "box";
+  renderShopCatalog();
+});
+
+closeLootboxButton?.addEventListener("click", () => {
+  if (lootBoxState.revealReady) {
+    closeLootBoxPanel();
+  } else {
+    skipLootBoxAnimation();
+  }
+});
+
+lootboxPanel?.addEventListener("pointerdown", () => {
+  if (!lootBoxState.active) {
+    return;
+  }
+  if (lootBoxState.revealReady) {
+    closeLootBoxPanel();
+  } else {
+    skipLootBoxAnimation();
+  }
+});
+
+lobbyButton.addEventListener("click", () => {
+  openLobby();
+});
+
+initializeAuthControls();
+
+function overlaps(a, b) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function pointInRect(px, py, rect) {
+  return px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+}
+
+function hasSolidAt(px, py) {
+  for (const solid of level.solids) {
+    if (pointInRect(px, py, solid)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasHazardAt(px, py) {
+  for (const hazard of level.hazards) {
+    if (pointInRect(px, py, hazard)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function moveTowards(current, target, maxStep) {
+  if (current < target) {
+    return Math.min(target, current + maxStep);
+  }
+  return Math.max(target, current - maxStep);
+}
+
+function getExcavatorClawHitbox(enemy) {
+  const clawW = 18;
+  const clawH = 18;
+  const armAnchorX = enemy.facing > 0 ? enemy.x + enemy.w - 8 : enemy.x + 8;
+  const verticalReach = enemy.reachY - enemy.armBaseY;
+  const horizontalReach = Math.sqrt(Math.max(0, enemy.armLength ** 2 - verticalReach ** 2));
+  const clawX = armAnchorX + enemy.facing * horizontalReach - clawW * 0.5;
+  const clawY = enemy.reachY - clawH * 0.5;
+  return {
+    x: clawX,
+    y: clawY,
+    w: clawW,
+    h: clawH,
+  };
+}
+
+function canPlayerStandUp() {
+  const bottomY = player.y + player.h;
+  const targetY = bottomY - player.standH;
+  const standRect = { x: player.x, y: targetY, w: player.w, h: player.standH };
+  for (const solid of level.solids) {
+    if (overlaps(standRect, solid)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function currentExcavatorStunDuration() {
+  if (difficulty.label === "Easy") {
+    return 5;
+  }
+  if (difficulty.label === "Hard") {
+    return 17.5;
+  }
+  return 10;
+}
+
+function stunPlayerByExcavator(enemy) {
+  if (player.invulnerableTime > 0 || gameState !== "playing") {
+    return;
+  }
+
+  breakAssassinStealth();
+  resetAssassinationEvent();
+  const stunDuration = currentExcavatorStunDuration();
+  player.stunTimer = stunDuration;
+  player.invulnerableTime = Math.max(player.invulnerableTime, stunDuration + 0.2);
+  player.vx = 0;
+  player.vy = Math.min(player.vy, 0);
+  enemy.alive = false;
+  enemy.squishTimer = 0;
+}
+
+function applyPlayerCrouch(desiredCrouch) {
+  if (level.theme !== "arcade") {
+    desiredCrouch = false;
+  }
+
+  if (desiredCrouch) {
+    if (!player.crouching) {
+      const bottomY = player.y + player.h;
+      player.h = player.crouchH;
+      player.y = bottomY - player.h;
+      player.crouching = true;
+    }
+    return;
+  }
+
+  if (player.crouching && canPlayerStandUp()) {
+    const bottomY = player.y + player.h;
+    player.h = player.standH;
+    player.y = bottomY - player.h;
+    player.crouching = false;
+  }
+}
+
+function updatePlayer(dt) {
+  if (gameState !== "playing" || nightmareEvent.active) {
+    player.animationTime += dt;
+    return;
+  }
+
+  if (danceEvent.active || danceEvent.countdown) {
+    player.animationTime += dt;
+    player.vx = 0;
+    player.vy = 0;
+    return;
+  }
+
+  if (clawEscapeEvent.active) {
+    player.animationTime += dt;
+    player.vx = 0;
+    player.vy = 0;
+    return;
+  }
+
+  if (assassinationEvent.active) {
+    player.animationTime += dt;
+    player.vx = 0;
+    return;
+  }
+
+  player.animationTime += dt;
+  player.invulnerableTime = Math.max(0, player.invulnerableTime - dt);
+  player.stunTimer = Math.max(0, player.stunTimer - dt);
+  player.stealthCooldown = Math.max(0, player.stealthCooldown - dt);
+  player.assassinationCooldown = Math.max(0, player.assassinationCooldown - dt);
+  player.guardianShieldTimer = Math.max(0, player.guardianShieldTimer - dt);
+  player.guardianShieldCooldown = Math.max(0, player.guardianShieldCooldown - dt);
+  player.guardianFlash = Math.max(0, player.guardianFlash - dt);
+  if (player.stealthActive) {
+    player.stealthTimer = Math.max(0, player.stealthTimer - dt);
+    if (player.stealthTimer <= 0) {
+      breakAssassinStealth();
+    }
+  }
+
+  if (player.stunTimer > 0) {
+    player.vx = 0;
+    player.vy += GRAVITY * dt * stageDifficultyFactor(currentStageIndex);
+    player.x += player.vx * dt;
+    resolveSolidCollisions("x");
+    player.y += player.vy * dt;
+    player.onGround = false;
+    resolveSolidCollisions("y");
+    if (player.onGround) {
+      player.jumpsRemaining = player.maxJumps;
+    }
+    if (player.y > GAME_HEIGHT + 300) {
+      loseLife();
+    }
+    player.state = "stun";
+    keys.jumpQueued = false;
+    return;
+  }
+
+  applyPlayerCrouch(keys.crouch);
+
+  const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const moveSpeed = player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed;
+  player.vx = inputX * moveSpeed;
+  if (inputX !== 0) {
+    player.facing = inputX;
+  }
+
+  if (keys.jumpQueued && player.jumpsRemaining > 0) {
+    const usedAirJump = !player.onGround && player.jumpsRemaining === 1;
+    player.vy = usedAirJump ? player.airJumpVelocity : player.jumpVelocity;
+    player.onGround = false;
+    player.jumpsRemaining -= 1;
+    playSound(usedAirJump ? "doubleJump" : "jump");
+  }
+
+  player.vy += GRAVITY * dt * stageDifficultyFactor(currentStageIndex);
+
+  // Horizontal and vertical resolution stay separate to keep platform collisions stable.
+  player.x += player.vx * dt;
+  resolveSolidCollisions("x");
+
+  player.y += player.vy * dt;
+  player.onGround = false;
+  resolveSolidCollisions("y");
+
+  if (player.onGround) {
+    player.jumpsRemaining = player.maxJumps;
+  }
+
+  if (player.y > GAME_HEIGHT + 300) {
+    loseLife();
+  }
+
+  for (const hazard of level.hazards) {
+    if (overlaps(player, hazard)) {
+      loseLife();
+      break;
+    }
+  }
+
+  for (const collectible of level.collectibles) {
+    if (!collectible.collected && overlaps(player, collectible)) {
+      collectible.collected = true;
+      score += Math.round(100 * difficulty.collectibleBonus);
+      awardCoins(level.theme === "factory" ? 8 : 6);
+      collectedCount += 1;
+      playSound(level.theme === "factory" ? "button" : "coin");
+    }
+  }
+
+  if (!player.stealthActive) {
+    for (const enemy of level.enemies) {
+      if (!enemy.alive || enemy.defeated || !overlaps(player, enemy)) {
+        continue;
+      }
+
+      if (enemy.type === "excavator") {
+        loseLife();
+        break;
+      }
+
+      const playerBottom = player.y + player.h;
+      const enemyTop = enemy.y + 6;
+      const fallingFastEnough = player.vy > 120;
+
+      if (fallingFastEnough && playerBottom - player.vy * dt <= enemyTop) {
+        if (isAssassinEquipped()) {
+          breakAssassinStealth();
+          player.vy = ASSASSIN_RULES.jumpGlanceBounce;
+          player.vx = -player.facing * 90;
+          player.invulnerableTime = Math.max(player.invulnerableTime, 0.2);
+          playSound("jump");
+        } else {
+          enemy.alive = false;
+          enemy.squishTimer = 0.35;
+          player.vy = player.stompBounce;
+          player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
+          score += 250 + currentStageIndex * 50;
+          awardCoins(7 + currentStageIndex);
+          playSound("stomp");
+        }
+      } else {
+        loseLife();
+        break;
+      }
+    }
+
+    for (const serpent of level.serpentEnemies) {
+      if (!serpent.alive || serpent.defeated) {
+        continue;
+      }
+
+      const serpentHitbox = getSerpentHitbox(serpent);
+
+      if (!overlaps(player, serpentHitbox)) {
+        continue;
+      }
+
+      const fallingFastEnough = player.vy > 140;
+      const playerBottom = player.y + player.h;
+      const serpentTop = serpentHitbox.y + 10;
+
+      if (fallingFastEnough && playerBottom - player.vy * dt <= serpentTop) {
+        if (serpent.type === "seaMonster") {
+          loseLife();
+          break;
+        } else if (isAssassinEquipped()) {
+          breakAssassinStealth();
+          player.vy = ASSASSIN_RULES.jumpGlanceBounce;
+          player.vx = -player.facing * 110;
+          player.invulnerableTime = Math.max(player.invulnerableTime, 0.22);
+          serpent.stunTimer = Math.max(serpent.stunTimer, 0.35);
+          playSound("jump");
+        } else {
+          serpent.alive = false;
+          serpent.stunTimer = 1.2;
+          serpent.state = "stunned";
+          serpent.strikeProgress = 0;
+          player.vy = player.stompBounce;
+          player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
+          score += 400 + currentStageIndex * 75;
+          awardCoins(10 + currentStageIndex);
+          playSound("stomp");
+        }
+      } else {
+        loseLife();
+        break;
+      }
+    }
+  }
+
+  if (gameState === "playing" && overlaps(player, level.goal) && collectedCount >= currentShardTarget()) {
+    awardCoins(25 + currentStageIndex * 5);
+    rollStageClearBoxReward();
+    if (level.theme === "arcade") {
+      triggerClawEscapeEvent();
+    } else {
+      playSound("clear");
+      gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
+    }
+  }
+
+  if (player.crouching && level.theme === "arcade") {
+    player.state = "crouch";
+  } else if (!player.onGround) {
+    player.state = "jump";
+  } else if (Math.abs(player.vx) > 0) {
+    player.state = "run";
+  } else {
+    player.state = "idle";
+  }
+
+  keys.jumpQueued = false;
+}
+
+function resolveSolidCollisions(axis) {
+  for (const solid of level.solids) {
+    if (!overlaps(player, solid)) {
+      continue;
+    }
+
+    if (axis === "x") {
+      if (player.vx > 0) {
+        player.x = solid.x - player.w;
+      } else if (player.vx < 0) {
+        player.x = solid.x + solid.w;
+      }
+      player.vx = 0;
+    } else {
+      if (player.vy > 0) {
+        player.y = solid.y - player.h;
+        player.vy = 0;
+        player.onGround = true;
+      } else if (player.vy < 0) {
+        player.y = solid.y + solid.h;
+        player.vy = 0;
+      }
+    }
+  }
+}
+
+function updateEnemies(dt) {
+  for (const enemy of level.enemies) {
+    enemy.animationTime += dt;
+    if (!enemy.alive || enemy.defeated) {
+      enemy.squishTimer = Math.max(0, enemy.squishTimer - dt);
+      continue;
+    }
+
+    if (enemy.type === "excavator") {
+      updateExcavatorEnemy(enemy, dt);
+      continue;
+    }
+
+    enemy.vy += GRAVITY * dt;
+    enemy.x += enemy.vx * dt;
+
+    if (enemy.x <= enemy.leftBound) {
+      enemy.x = enemy.leftBound;
+      enemy.vx *= -1;
+    } else if (enemy.x >= enemy.rightBound) {
+      enemy.x = enemy.rightBound;
+      enemy.vx *= -1;
+    }
+
+    enemy.y += enemy.vy * dt;
+
+    let onFloor = false;
+    for (const solid of level.solids) {
+      if (!overlaps(enemy, solid)) {
+        continue;
+      }
+      if (enemy.vy > 0) {
+        enemy.y = solid.y - enemy.h;
+        enemy.vy = 0;
+        onFloor = true;
+      } else if (enemy.vy < 0) {
+        enemy.y = solid.y + solid.h;
+        enemy.vy = 0;
+      }
+    }
+
+    if (onFloor) {
+      const direction = Math.sign(enemy.vx) || 1;
+      const probeX = direction > 0 ? enemy.x + enemy.w + 2 : enemy.x - 2;
+      const probeY = enemy.y + enemy.h + 2;
+      const steppingIntoHazard = hasHazardAt(probeX, enemy.y + enemy.h - 2) || hasHazardAt(probeX, probeY);
+      const noGroundAhead = !hasSolidAt(probeX, probeY);
+      if (steppingIntoHazard || noGroundAhead) {
+        enemy.vx *= -1;
+        enemy.x += Math.sign(enemy.vx) * 2;
+      }
+    }
+
+    if (!onFloor && enemy.y > GAME_HEIGHT + 300) {
+      enemy.alive = false;
+      enemy.squishTimer = 0;
+    }
+  }
+
+  for (const serpent of level.serpentEnemies) {
+    serpent.animationTime += dt;
+
+    if (serpent.defeated) {
+      continue;
+    }
+    if (!serpent.alive) {
+      serpent.stunTimer -= dt;
+      if (serpent.stunTimer <= 0) {
+        serpent.alive = true;
+        serpent.cooldown = 1.4 + Math.random() * 1.2;
+        serpent.state = "idle";
+      }
+      serpent.rise = Math.max(0, serpent.rise - 220 * dt);
+      serpent.strikeProgress = Math.max(0, serpent.strikeProgress - 2.8 * dt);
+      continue;
+    }
+
+    const playerInZone = !player.stealthActive && Math.abs(player.x + player.w * 0.5 - serpent.homeX) < serpent.aggroWidth;
+    const playerNearSurface = player.y + player.h > serpent.waterTop - 44;
+
+    if (serpent.state === "idle") {
+      serpent.cooldown -= dt;
+      serpent.rise = Math.max(0, serpent.rise - serpent.retreatSpeed * dt);
+      serpent.strikeProgress = Math.max(0, serpent.strikeProgress - 3.2 * dt);
+      if (serpent.cooldown <= 0 && playerInZone && playerNearSurface) {
+        serpent.state = "telegraph";
+        serpent.cooldown = 0.18;
+        serpent.strikeX = player.x + player.w * 0.5 + Math.sign(player.vx || 1) * 16;
+        serpent.strikeY = Math.min(player.y + 8, serpent.waterTop - 18);
+      }
+      continue;
+    }
+
+    if (serpent.state === "telegraph") {
+      serpent.rise = Math.min(serpent.maxRise * 0.42, serpent.rise + serpent.speed * 70 * dt);
+      serpent.cooldown -= dt;
+      if (serpent.cooldown <= 0) {
+        serpent.state = "strike";
+      }
+      continue;
+    }
+
+    if (serpent.state === "strike") {
+      serpent.rise = Math.min(serpent.maxRise, serpent.rise + serpent.speed * 180 * dt);
+      serpent.strikeProgress = Math.min(1, serpent.strikeProgress + serpent.speed * 1.8 * dt);
+      if (serpent.strikeProgress >= 1) {
+        serpent.state = "recover";
+        serpent.cooldown = 0.35;
+      }
+      continue;
+    }
+
+    if (serpent.state === "recover") {
+      serpent.cooldown -= dt;
+      serpent.strikeProgress = Math.max(0, serpent.strikeProgress - serpent.speed * 1.35 * dt);
+      serpent.rise = Math.max(0, serpent.rise - serpent.retreatSpeed * dt);
+      if (serpent.cooldown <= 0 && serpent.rise <= 8 && serpent.strikeProgress <= 0.02) {
+        serpent.state = "idle";
+        serpent.cooldown = 0.7 + Math.random() * 1.2;
+      }
+    }
+  }
+}
+
+function updateExcavatorEnemy(enemy, dt) {
+  const neutralVertical = enemy.reachY - enemy.armBaseY;
+  const neutralArmLength = Math.max(enemy.minRange * 0.35, Math.hypot(enemy.minRange * 0.35, neutralVertical));
+  if (player.stealthActive) {
+    enemy.targetArmLength = neutralArmLength;
+    enemy.armLength = moveTowards(enemy.armLength, enemy.targetArmLength, enemy.armSpeed * dt);
+    enemy.reachY = moveTowards(enemy.reachY, enemy.armBaseY - 24, 110 * dt);
+    enemy.state = "idle";
+    enemy.cooldown = Math.max(enemy.cooldown, 0.5);
+    return;
+  }
+  const playerCenterX = player.x + player.w * 0.5;
+  const playerCenterY = player.y + player.h * 0.5;
+  const armAnchorX = enemy.facing > 0 ? enemy.x + enemy.w - 8 : enemy.x + 8;
+  const deltaX = (playerCenterX - armAnchorX) * enemy.facing;
+  const targetReachY = playerCenterY;
+  enemy.reachY = moveTowards(enemy.reachY, targetReachY, 110 * dt);
+
+  const playerInBand = deltaX >= enemy.minRange && deltaX <= enemy.maxRange;
+  const strikeLength = Math.max(
+    enemy.minRange * 0.7,
+    Math.hypot(Math.max(enemy.minRange, deltaX), targetReachY - enemy.armBaseY)
+  );
+
+  enemy.armLength = moveTowards(enemy.armLength, enemy.targetArmLength, enemy.armSpeed * dt);
+
+  if (enemy.state === "idle") {
+    enemy.cooldown -= dt;
+    enemy.targetArmLength = neutralArmLength;
+    if (enemy.cooldown <= 0 && playerInBand) {
+      enemy.state = "telegraph";
+      enemy.telegraphTimer = 0.42;
+      enemy.targetArmLength = Math.max(neutralArmLength + 16, strikeLength * 0.72);
+    }
+    return;
+  }
+
+  if (enemy.state === "telegraph") {
+    enemy.telegraphTimer -= dt;
+    enemy.targetArmLength = Math.max(neutralArmLength + 20, strikeLength * 0.8);
+    if (enemy.telegraphTimer <= 0) {
+      enemy.state = "strike";
+      enemy.targetArmLength = strikeLength;
+    }
+  } else if (enemy.state === "strike") {
+    enemy.targetArmLength = strikeLength;
+    if (Math.abs(enemy.armLength - enemy.targetArmLength) < 8) {
+      enemy.state = "recover";
+      enemy.cooldown = 0.95 + Math.random() * 0.45;
+    }
+  } else if (enemy.state === "recover") {
+    enemy.targetArmLength = neutralArmLength;
+    if (Math.abs(enemy.armLength - neutralArmLength) < 6) {
+      enemy.state = "idle";
+    }
+  }
+
+  if (enemy.state === "strike") {
+    const clawHitbox = getExcavatorClawHitbox(enemy);
+    if (overlaps(player, clawHitbox)) {
+      stunPlayerByExcavator(enemy);
+    }
+  }
+}
+
+function updateCamera() {
+  const target = player.x - GAME_WIDTH * 0.35;
+  camera.x += (target - camera.x) * 0.1;
+  camera.x = Math.max(0, Math.min(camera.x, Math.max(0, worldWidth - GAME_WIDTH)));
+}
+
+function loseLife() {
+  if (player.invulnerableTime > 0 || player.guardianShieldTimer > 0 || gameState !== "playing") {
+    return;
+  }
+
+  if (consumeGuardianPassive()) {
+    return;
+  }
+
+  if (transferToChangerClone()) {
+    return;
+  }
+
+  breakAssassinStealth();
+  resetAssassinationEvent();
+  lives -= difficulty.lifeLoss;
+  if (lives <= 0) {
+    lives = 0;
+    gameState = "gameover";
+    player.vx = 0;
+    player.vy = 0;
+    return;
+  }
+
+  resetPlayerPosition();
+}
+
+function update(dt) {
+  updateLootBoxAnimation(dt);
+  updatePlayer(dt);
+  changerState.swapCooldown = Math.max(0, changerState.swapCooldown - dt);
+  changerState.effectTimer = Math.max(0, changerState.effectTimer - dt);
+  player.cloneTransferFlash = Math.max(0, player.cloneTransferFlash - dt);
+  if (gameState === "playing") {
+    if (assassinationEvent.active) {
+      updateAssassinationEvent(dt);
+    }
+    if (level.theme === "factory") {
+      factoryTimeRemaining = Math.max(0, factoryTimeRemaining - dt);
+      if (factoryTimeRemaining <= 0) {
+        if (consumeGuardianPassive()) {
+          factoryTimeRemaining = 3;
+          updateCamera();
+          return;
+        }
+        lives = 0;
+        gameState = "gameover";
+        player.vx = 0;
+        player.vy = 0;
+        updateCamera();
+        return;
+      }
+    }
+
+    if (!assassinationEvent.active && !clawEscapeEvent.active && !danceEvent.active && !danceEvent.countdown && !nightmareEvent.active && !nightmareEvent.countdown) {
+      updateEnemies(dt);
+    }
+    if (!clawEscapeEvent.active && !assassinationEvent.active) {
+      updateNightmareEvent(dt);
+    }
+    if (clawEscapeEvent.active) {
+      updateClawEscapeEvent(dt);
+    }
+  }
+  if (isChangerEquipped()) {
+    ctx.fillText(t("changer_hint"), 470, 124);
+  } else if (isGuardianEquipped()) {
+    ctx.fillText(t("guardian_hint"), 470, 124);
+  } else if (isAssassinEquipped()) {
+    ctx.fillText(t("assassin_hint"), 470, 124);
+  }
+
+  if (stageMessageTimer > 0) {
+    stageMessageTimer = Math.max(0, stageMessageTimer - dt);
+  }
+  updateCamera();
+  savePersistentProgress();
+}
+
+function updateClawEscapeEvent(dt) {
+  clawEscapeEvent.flash = Math.max(0, clawEscapeEvent.flash - dt * 1.6);
+  clawEscapeEvent.meter = Math.max(0, clawEscapeEvent.meter - dt * 0.08);
+}
+
+function updateNightmareEvent(dt) {
+  if (difficulty.label !== "Hard") {
+    return;
+  }
+
+  if (level.theme === "arcade") {
+    updateDanceEvent(dt);
+    return;
+  }
+
+  if (nightmareEvent.countdown) {
+    nightmareEvent.countdownTimer -= dt;
+    nightmareEvent.flash = Math.max(0, nightmareEvent.flash - dt * 0.7);
+    if (nightmareEvent.countdownTimer <= 0) {
+      nightmareEvent.countdown = false;
+      nightmareEvent.active = true;
+      nightmareEvent.timer = 10;
+      nightmareEvent.flash = 1;
+    }
+    return;
+  }
+
+  if (!nightmareEvent.active) {
+    nightmareEvent.triggerTimer -= dt;
+    if (nightmareEvent.triggerTimer <= 0) {
+      triggerNightmareEvent();
+    }
+    return;
+  }
+
+  nightmareEvent.timer -= dt;
+  nightmareEvent.flash = Math.max(0, nightmareEvent.flash - dt * 1.6);
+  nightmareEvent.marker += nightmareEvent.markerDir * nightmareEvent.markerSpeed * dt;
+
+  if (nightmareEvent.marker >= 1) {
+    nightmareEvent.marker = 1;
+    nightmareEvent.markerDir = -1;
+  } else if (nightmareEvent.marker <= 0) {
+    nightmareEvent.marker = 0;
+    nightmareEvent.markerDir = 1;
+  }
+
+  if (nightmareEvent.timer <= 0) {
+    resolveNightmareEvent(false);
+  }
+}
+
+function updateDanceEvent(dt) {
+  if (danceEvent.countdown) {
+    danceEvent.countdownTimer -= dt;
+    danceEvent.flash = Math.max(0, danceEvent.flash - dt * 0.7);
+    if (danceEvent.countdownTimer <= 0) {
+      danceEvent.countdown = false;
+      danceEvent.active = true;
+      danceEvent.index = 0;
+      danceEvent.stepTimer = danceEvent.stepTimeLimit;
+      danceEvent.flash = 1;
+      playSound("clear");
+      startDanceMusic();
+    }
+    return;
+  }
+
+  if (!danceEvent.active) {
+    danceEvent.triggerTimer -= dt;
+    if (danceEvent.triggerTimer <= 0) {
+      triggerDanceEvent();
+    }
+    return;
+  }
+
+  danceEvent.stepTimer -= dt;
+  danceEvent.flash = Math.max(0, danceEvent.flash - dt * 1.6);
+  if (danceEvent.stepTimer <= 0) {
+    resolveDanceEvent(false);
+  }
+}
+
+function getThemeColors() {
+  if (level.theme === "forest") {
+    return {
+      skyTop: "#6ed8d3",
+      skyMid: "#9ef1cf",
+      skyBottom: "#e6f48f",
+      hillBack: "#45876d",
+      hillFront: "#235d4e",
+      cloud: "rgba(240, 255, 245, 0.82)",
+      platformTop: "#7fe38c",
+      groundTop: "#4bc178",
+      hazardMain: "#5776ff",
+      hazardGlow: "#bdcbff",
+      goal: "#8ef9ff",
+    };
+  }
+
+  if (level.theme === "arcade") {
+    return {
+      skyTop: "#0b0621",
+      skyMid: "#1b0a3d",
+      skyBottom: "#240a3a",
+      hillBack: "#0a0d18",
+      hillFront: "#05070f",
+      cloud: "rgba(255, 255, 255, 0)",
+      platformTop: "#ff4df5",
+      groundTop: "#45f8ff",
+      hazardMain: "#ff2a5a",
+      hazardGlow: "#ffd3e3",
+      goal: "#a7ff70",
+    };
+  }
+
+  if (level.theme === "factory") {
+    return {
+      skyTop: "#2d3242",
+      skyMid: "#505a6d",
+      skyBottom: "#d7a663",
+      hillBack: "#59606d",
+      hillFront: "#2f353f",
+      cloud: "rgba(230, 232, 236, 0.32)",
+      platformTop: "#f7c84f",
+      groundTop: "#b5c3cf",
+      hazardMain: "#c9482f",
+      hazardGlow: "#ffd7a1",
+      goal: "#ffe07a",
+    };
+  }
+
+  if (level.theme === "sunset") {
+    return {
+      skyTop: "#ff9966",
+      skyMid: "#ffc066",
+      skyBottom: "#ffe5a0",
+      hillBack: "#945d44",
+      hillFront: "#5e3428",
+      cloud: "rgba(255, 240, 220, 0.72)",
+      platformTop: "#ffd65a",
+      groundTop: "#ff9f68",
+      hazardMain: "#8b2d39",
+      hazardGlow: "#ffb28d",
+      goal: "#fff0a6",
+    };
+  }
+
+  return {
+    skyTop: "#78d7ff",
+    skyMid: "#99edff",
+    skyBottom: "#f5d66e",
+    hillBack: "#76b95e",
+    hillFront: "#4c9342",
+    cloud: "rgba(255, 255, 255, 0.8)",
+    platformTop: "#7dcc55",
+    groundTop: "#66b14f",
+    hazardMain: "#7145c4",
+    hazardGlow: "#c8a3ff",
+    goal: "#7fe0ff",
+  };
+}
+
+function drawBackground() {
+  if (level.theme === "arcade") {
+    drawArcadeBackground();
+    return;
+  }
+
+  if (level.theme === "factory") {
+    drawFactoryBackground();
+    return;
+  }
+
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.55, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  // Stage themes change the background mood while the game systems stay shared.
+  drawParallaxHills(0.18, palette.hillBack, 320, 380, 120);
+  drawParallaxHills(0.32, palette.hillFront, 380, 430, 150);
+  drawCloud(120, 90, 1, palette.cloud);
+  drawCloud(420, 120, 0.9, palette.cloud);
+  drawCloud(760, 80, 1.1, palette.cloud);
+}
+
+function drawFactoryBackground() {
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.6, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  drawParallaxHills(0.14, palette.hillBack, 330, 395, 150);
+  drawParallaxHills(0.28, palette.hillFront, 380, 448, 170);
+
+  const smokeScroll = (camera.x * 0.08) % (GAME_WIDTH + 180);
+  for (let i = -1; i < 5; i += 1) {
+    const x = i * 250 - smokeScroll;
+    ctx.fillStyle = "rgba(40, 43, 52, 0.7)";
+    ctx.fillRect(x + 40, 170, 40, 190);
+    ctx.fillRect(x + 126, 130, 54, 230);
+    ctx.fillStyle = "rgba(215, 219, 223, 0.14)";
+    ctx.fillRect(x + 48, 178, 8, 140);
+    ctx.fillRect(x + 138, 138, 10, 170);
+
+    for (let p = 0; p < 4; p += 1) {
+      const puffY = 118 - p * 22 + Math.sin(lastTime * 0.002 + i + p) * 4;
+      ctx.fillStyle = `rgba(230, 232, 236, ${0.18 - p * 0.03})`;
+      ctx.fillRect(x + 34 - p * 6, puffY, 48 + p * 8, 14);
+      ctx.fillRect(x + 120 - p * 8, puffY - 18, 64 + p * 10, 16);
+    }
+  }
+
+  const beamOffset = (camera.x * 0.24) % 120;
+  ctx.fillStyle = "rgba(255, 210, 110, 0.12)";
+  for (let i = -1; i < 10; i += 1) {
+    ctx.fillRect(i * 120 - beamOffset, 420, 18, 120);
+  }
+}
+
+function drawArcadeBackground() {
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.55, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  // Neon grid floor.
+  const horizonY = 260;
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = "rgba(90, 245, 255, 0.35)";
+  ctx.lineWidth = 2;
+  for (let i = -2; i <= 18; i += 1) {
+    const t = i / 18;
+    const y = horizonY + t * t * 320;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(GAME_WIDTH, y);
+    ctx.stroke();
+  }
+  for (let i = -8; i <= 24; i += 1) {
+    const x = i * 60 - (camera.x * 0.2) % 60;
+    ctx.beginPath();
+    ctx.moveTo(GAME_WIDTH / 2, horizonY);
+    ctx.lineTo(x, GAME_HEIGHT);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Cabinet silhouettes + marquee lights.
+  const scroll = (camera.x * 0.22) % 220;
+  const baseY = 360;
+  for (let i = -1; i < 7; i += 1) {
+    const x = i * 220 - scroll;
+    ctx.fillStyle = "rgba(5, 6, 12, 0.92)";
+    ctx.fillRect(x + 16, baseY, 78, 140);
+    ctx.fillRect(x + 110, baseY + 18, 90, 122);
+
+    const flicker = 0.85 + Math.sin(lastTime * 0.004 + i * 1.7) * 0.12;
+    ctx.fillStyle = `rgba(255, 77, 245, ${0.24 * flicker})`;
+    ctx.fillRect(x + 26, baseY + 18, 58, 42);
+    ctx.fillStyle = `rgba(69, 248, 255, ${0.18 * flicker})`;
+    ctx.fillRect(x + 120, baseY + 36, 70, 38);
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillRect(x + 16, baseY + 118, 78, 4);
+    ctx.fillRect(x + 110, baseY + 112, 90, 4);
+  }
+
+  // Overhead neon ticker.
+  const tickerX = 40 - (camera.x * 0.12) % (GAME_WIDTH + 220);
+  ctx.fillStyle = "rgba(6, 6, 10, 0.7)";
+  ctx.fillRect(tickerX, 44, 260, 28);
+  ctx.fillStyle = "rgba(255, 220, 120, 0.32)";
+  for (let i = 0; i < 26; i += 1) {
+    const pulse = Math.sin(lastTime * 0.006 + i * 0.7) > 0 ? 1 : 0;
+    ctx.fillRect(tickerX + 10 + i * 10, 52, 6, 6 + pulse);
+  }
+  ctx.fillStyle = "rgba(255, 77, 245, 0.24)";
+  ctx.fillRect(tickerX + 10, 72, 240, 3);
+}
+
+function drawParallaxHills(speed, color, baseY, maxY, size) {
+  ctx.fillStyle = color;
+  for (let i = -1; i < 8; i += 1) {
+    const x = i * 180 - (camera.x * speed) % 180;
+    ctx.beginPath();
+    ctx.moveTo(x, maxY);
+    ctx.quadraticCurveTo(x + size * 0.35, baseY, x + size * 0.7, maxY);
+    ctx.quadraticCurveTo(x + size * 1.05, baseY - 10, x + size * 1.4, maxY);
+    ctx.lineTo(x + size * 1.4, GAME_HEIGHT);
+    ctx.lineTo(x, GAME_HEIGHT);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawCloud(x, y, scale, color) {
+  const px = x - (camera.x * 0.1) % (GAME_WIDTH + 140);
+  ctx.fillStyle = color;
+  ctx.fillRect(px, y, 40 * scale, 18 * scale);
+  ctx.fillRect(px + 10 * scale, y - 10 * scale, 36 * scale, 22 * scale);
+  ctx.fillRect(px + 30 * scale, y + 4 * scale, 28 * scale, 14 * scale);
+}
+
+function drawWorld() {
+  ctx.save();
+  ctx.translate(-camera.x, 0);
+  drawHazards();
+  drawSerpentEnemies();
+  drawGoal();
+  drawSolids();
+  drawCollectibles();
+  drawEnemies();
+  drawChangerClone();
+  drawPlayer();
+  drawChangerSwapEffect();
+  ctx.restore();
+}
+
+function drawSolids() {
+  const palette = getThemeColors();
+  for (const solid of level.solids) {
+    const isGround = solid.y >= FLOOR_Y;
+    if (level.theme === "arcade") {
+      ctx.fillStyle = isGround ? "#1b1633" : "#231a3a";
+    } else if (level.theme === "factory") {
+      ctx.fillStyle = isGround ? "#565b66" : "#787f8a";
+    } else {
+      ctx.fillStyle = isGround ? "#7f5c43" : "#9a733f";
+    }
+    ctx.fillRect(solid.x, solid.y, solid.w, solid.h);
+    if (level.theme === "arcade") {
+      ctx.fillStyle = isGround ? "#0e0a1b" : "#120c22";
+    } else if (level.theme === "factory") {
+      ctx.fillStyle = isGround ? "#2d3139" : "#4a515c";
+    } else {
+      ctx.fillStyle = isGround ? "#5b3e2a" : "#6d512c";
+    }
+    ctx.fillRect(solid.x, solid.y + solid.h - 6, solid.w, 6);
+    ctx.fillStyle = isGround ? palette.groundTop : palette.platformTop;
+    ctx.fillRect(solid.x, solid.y, solid.w, 6);
+
+    if (level.theme === "arcade") {
+      const blink = Math.sin(lastTime * 0.01 + solid.x * 0.02) > 0 ? 1 : 0;
+      ctx.fillStyle = "rgba(255,255,255,0.10)";
+      ctx.fillRect(solid.x + 4, solid.y + 8, 6, 6);
+      if (blink) {
+        ctx.fillStyle = "rgba(69, 248, 255, 0.22)";
+        ctx.fillRect(solid.x + 18, solid.y + 14, 5, 5);
+      }
+    } else if (level.theme === "factory") {
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(solid.x + 4, solid.y + 8, 6, 4);
+      ctx.fillRect(solid.x + 18, solid.y + 14, 5, 4);
+      ctx.fillStyle = "rgba(50, 55, 64, 0.4)";
+      ctx.fillRect(solid.x + 12, solid.y + 6, 2, solid.h - 12);
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.fillRect(solid.x + 4, solid.y + 8, 6, 6);
+      ctx.fillRect(solid.x + 18, solid.y + 14, 5, 5);
+    }
+  }
+}
+
+function drawHazards() {
+  const palette = getThemeColors();
+  for (const hazard of level.hazards) {
+    const serpentPool = hazardHasSerpent(hazard);
+    if (serpentPool) {
+      const waterTop = hazard.y + SERPENT_POOL_SURFACE_OFFSET;
+      const waterHeight = Math.max(0, hazard.h - (SERPENT_POOL_SURFACE_OFFSET + SERPENT_POOL_BOTTOM_MARGIN));
+      const waterGradient = ctx.createLinearGradient(0, waterTop, 0, waterTop + waterHeight);
+      waterGradient.addColorStop(0, "rgba(112, 229, 255, 0.88)");
+      waterGradient.addColorStop(0.45, "rgba(24, 132, 186, 0.9)");
+      waterGradient.addColorStop(1, "rgba(8, 56, 101, 0.98)");
+      ctx.fillStyle = waterGradient;
+      ctx.fillRect(hazard.x, waterTop, hazard.w, waterHeight);
+
+      ctx.fillStyle = "rgba(220, 252, 255, 0.75)";
+      for (let i = 0; i < hazard.w; i += 18) {
+        const wave = Math.sin((i + lastTime * 0.02) * 0.08) * 2;
+        ctx.fillRect(hazard.x + i, waterTop + wave, 12, 3);
+      }
+
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.fillRect(hazard.x, waterTop + 4, hazard.w, 4);
+    }
+
+    for (let i = 0; i < hazard.w; i += 16) {
+      ctx.fillStyle = serpentPool ? "#163963" : palette.hazardMain;
+      ctx.beginPath();
+      ctx.moveTo(hazard.x + i, hazard.y + hazard.h);
+      ctx.lineTo(hazard.x + i + 8, hazard.y);
+      ctx.lineTo(hazard.x + i + 16, hazard.y + hazard.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = serpentPool ? "#8be3ff" : palette.hazardGlow;
+      ctx.fillRect(hazard.x + i + 6, hazard.y + 12, 4, 8);
+    }
+  }
+}
+
+function drawSerpentEnemies() {
+  for (const serpent of level.serpentEnemies) {
+    if (serpent.defeated) {
+      continue;
+    }
+    if (serpent.rise <= 4 && serpent.alive && serpent.state === "idle") {
+      continue;
+    }
+
+    const neckBaseX = serpent.homeX;
+    const neckBaseY = serpent.baseY - serpent.rise;
+    const headX = serpent.homeX + (serpent.strikeX - serpent.homeX) * serpent.strikeProgress;
+    const headY = serpent.baseY - serpent.rise + (serpent.strikeY - (serpent.baseY - serpent.rise)) * serpent.strikeProgress;
+    const sway = Math.sin(serpent.animationTime * 4 + serpent.phase) * (serpent.state === "strike" ? 2 : 6);
+    const jaw = serpent.alive ? (Math.sin(serpent.animationTime * 11) > 0 ? 5 : 1) : 0;
+    const crestWave = Math.sin(serpent.animationTime * 9 + serpent.phase) * 2;
+
+    ctx.save();
+    ctx.strokeStyle = serpent.alive ? "#091a33" : "#426b7f";
+    ctx.lineWidth = 24;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(neckBaseX, neckBaseY);
+    ctx.quadraticCurveTo(neckBaseX + 10 + sway * 0.3, neckBaseY - 36, headX - 8, headY + 18);
+    ctx.stroke();
+
+    ctx.strokeStyle = serpent.alive ? "#0e4a72" : "#7bb1ba";
+    ctx.lineWidth = 18;
+    ctx.beginPath();
+    ctx.moveTo(neckBaseX + 1, neckBaseY + 2);
+    ctx.quadraticCurveTo(neckBaseX + 5 + sway * 0.2, neckBaseY - 30, headX - 6, headY + 18);
+    ctx.stroke();
+
+    ctx.strokeStyle = serpent.alive ? "#8ae8ff" : "#9fc0ca";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(neckBaseX + 4, neckBaseY + 7);
+    ctx.quadraticCurveTo(neckBaseX + 10, neckBaseY - 22, headX - 4, headY + 20);
+    ctx.stroke();
+
+    for (let i = 0; i < 7; i += 1) {
+      const spineT = i / 6;
+      const finX = neckBaseX + (headX - neckBaseX) * spineT - 4;
+      const finY = neckBaseY + (headY - neckBaseY) * spineT - 8;
+      ctx.fillStyle = serpent.alive ? "#301744" : "#6a7782";
+      ctx.beginPath();
+      ctx.moveTo(finX, finY + 10);
+      ctx.lineTo(finX - 12, finY - 10 - crestWave);
+      ctx.lineTo(finX + 5, finY - 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.fillStyle = serpent.alive ? "#0f5f83" : "#5f7983";
+    ctx.beginPath();
+    ctx.moveTo(headX - 30, headY + 4);
+    ctx.lineTo(headX - 12, headY - 20);
+    ctx.lineTo(headX + 12, headY - 18);
+    ctx.lineTo(headX + 34, headY - 6);
+    ctx.lineTo(headX + 28, headY + 4);
+    ctx.lineTo(headX + 8, headY + 14 + jaw);
+    ctx.lineTo(headX - 22, headY + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = serpent.alive ? "#dbefe6" : "#9cadb6";
+    ctx.beginPath();
+    ctx.moveTo(headX - 14, headY + 8);
+    ctx.lineTo(headX + 16, headY + 14 + jaw);
+    ctx.lineTo(headX + 8, headY + 24 + jaw);
+    ctx.lineTo(headX - 22, headY + 16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = serpent.alive ? "#42255b" : "#5a6870";
+    for (let i = 0; i < 5; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(headX - 24 + i * 10, headY - 6);
+      ctx.lineTo(headX - 18 + i * 10, headY - 26 - (i % 2) * 6);
+      ctx.lineTo(headX - 10 + i * 10, headY - 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (serpent.alive) {
+      ctx.fillStyle = "#ffffff";
+      for (let i = 0; i < 6; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(headX - 12 + i * 5, headY + 11);
+        ctx.lineTo(headX - 9 + i * 5, headY + 20 + jaw);
+        ctx.lineTo(headX - 6 + i * 5, headY + 11);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    ctx.fillStyle = serpent.alive ? "#ffcf87" : "#bcc5c8";
+    ctx.fillRect(headX + 8, headY - 1, 5, 5);
+    ctx.fillStyle = serpent.alive ? "#ea5b54" : "#798085";
+    ctx.fillRect(headX + 9, headY, 3, 3);
+    ctx.fillStyle = serpent.alive ? "#0c1022" : "#475057";
+    ctx.fillRect(headX + 10, headY + 1, 1, 1);
+
+    if (serpent.state === "telegraph") {
+      ctx.fillStyle = "rgba(255, 110, 110, 0.35)";
+      ctx.beginPath();
+      ctx.arc(headX + 4, headY + 2, 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawCollectibles() {
+  for (const collectible of level.collectibles) {
+    if (collectible.collected) {
+      continue;
+    }
+    const bobY = level.theme === "factory" ? 0 : Math.sin(player.animationTime * 4 + collectible.bob) * 3;
+    const x = collectible.x;
+    const y = collectible.y + bobY;
+
+    if (level.theme === "factory") {
+      const pulse = 0.82 + Math.sin(lastTime * 0.01 + collectible.bob) * 0.08;
+      ctx.fillStyle = "#d8dadd";
+      ctx.fillRect(x, y + 8, 20, 6);
+      ctx.fillRect(x + 2, y + 6, 16, 2);
+
+      ctx.fillStyle = "#f4f5f6";
+      ctx.fillRect(x + 1, y + 4, 18, 4);
+      ctx.fillStyle = "#c3c7cb";
+      ctx.fillRect(x + 2, y + 11, 16, 2);
+
+      ctx.fillStyle = `rgba(196, 18, 18, ${0.95 * pulse})`;
+      ctx.fillRect(x + 4, y + 1, 12, 8);
+      ctx.fillRect(x + 3, y + 3, 14, 5);
+      ctx.fillStyle = `rgba(239, 68, 68, ${0.95 * pulse})`;
+      ctx.fillRect(x + 5, y + 2, 10, 3);
+      ctx.fillStyle = "rgba(255,255,255,0.42)";
+      ctx.fillRect(x + 6, y + 2, 5, 1);
+    } else if (level.theme === "arcade") {
+      const flicker = 0.85 + Math.sin(lastTime * 0.01 + collectible.bob) * 0.15;
+      ctx.fillStyle = `rgba(255, 214, 92, ${0.9 * flicker})`;
+      ctx.fillRect(x + 2, y + 2, 16, 16);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.18 * flicker})`;
+      ctx.fillRect(x + 4, y + 4, 12, 12);
+      ctx.fillStyle = `rgba(255, 77, 245, ${0.45 * flicker})`;
+      ctx.fillRect(x + 7, y + 6, 6, 8);
+      ctx.fillStyle = `rgba(12, 8, 20, ${0.85 * flicker})`;
+      ctx.fillRect(x + 8, y + 8, 4, 2);
+      ctx.fillRect(x + 8, y + 10, 2, 2);
+      ctx.fillRect(x + 10, y + 10, 2, 2);
+    } else {
+      ctx.fillStyle = "#ffe14d";
+      ctx.fillRect(x + 4, y, 12, 20);
+      ctx.fillRect(x, y + 4, 20, 12);
+      ctx.fillStyle = "#fff3a0";
+      ctx.fillRect(x + 6, y + 2, 4, 4);
+      ctx.fillRect(x + 10, y + 6, 4, 4);
+      ctx.fillStyle = "#d68a1b";
+      ctx.fillRect(x + 14, y + 4, 2, 10);
+    }
+  }
+}
+
+function drawEnemySprite(enemy) {
+  if (enemy.type === "excavator" && !enemy.alive) {
+    return;
+  }
+
+  if (enemy.type === "excavator") {
+    drawExcavatorSprite(enemy);
+    return;
+  }
+
+  const bounce = Math.sin(enemy.animationTime * 8) > 0 ? 1 : 0;
+  const x = enemy.x;
+  const y = enemy.y;
+
+  if (!enemy.alive && enemy.squishTimer <= 0) {
+    return;
+  }
+
+  if (!enemy.alive) {
+    ctx.fillStyle = "#9f4e3a";
+    ctx.fillRect(x, y + 16, enemy.w, 10);
+    ctx.fillStyle = "#f6d38f";
+    ctx.fillRect(x + 4, y + 18, 6, 4);
+    ctx.fillRect(x + 16, y + 18, 6, 4);
+    return;
+  }
+
+  ctx.fillStyle = "#9f4e3a";
+  ctx.fillRect(x + 2, y + 10, 22, 14);
+  ctx.fillStyle = "#e9c189";
+  ctx.fillRect(x + 4, y + 4, 18, 12);
+  ctx.fillRect(x + 4, y + 24, 6, 2 + bounce);
+  ctx.fillRect(x + 16, y + 24, 6, 2 + (1 - bounce));
+  ctx.fillStyle = "#40211b";
+  ctx.fillRect(x + 7, y + 8, 2, 2);
+  ctx.fillRect(x + 17, y + 8, 2, 2);
+  ctx.fillRect(x + 10, y + 12, 6, 2);
+}
+
+function drawExcavatorSprite(enemy) {
+  const x = enemy.x;
+  const y = enemy.y;
+  const bodyW = enemy.w;
+  const armAnchorX = enemy.facing > 0 ? x + bodyW - 6 : x + 6;
+  const armAnchorY = enemy.armBaseY;
+  const elbowX = armAnchorX + enemy.facing * Math.max(18, enemy.armLength * 0.52);
+  const claw = getExcavatorClawHitbox(enemy);
+  const clawCenterY = claw.y + claw.h * 0.5;
+  const elbowY = armAnchorY + (clawCenterY - armAnchorY) * 0.42 - 14;
+  const telegraphPulse = enemy.state === "telegraph" ? (Math.sin(lastTime * 0.03) > 0 ? 1 : 0.45) : 0.35;
+
+  ctx.save();
+  ctx.strokeStyle = "#3a2414";
+  ctx.lineWidth = 11;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(armAnchorX, armAnchorY);
+  ctx.lineTo(elbowX, elbowY);
+  ctx.lineTo(claw.x + claw.w * 0.5, claw.y + claw.h * 0.5);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#c37b2e";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(armAnchorX, armAnchorY);
+  ctx.lineTo(elbowX, elbowY);
+  ctx.lineTo(claw.x + claw.w * 0.5, claw.y + claw.h * 0.5);
+  ctx.stroke();
+
+  ctx.fillStyle = "#f0a93a";
+  ctx.fillRect(x + 8, y + 10, 26, 18);
+  ctx.fillRect(x + 4, y + 26, 34, 10);
+  ctx.fillStyle = "#66411d";
+  ctx.fillRect(x + 12, y + 14, 10, 8);
+  ctx.fillStyle = "#9bd7ff";
+  ctx.fillRect(x + 22, y + 14, 8, 8);
+
+  ctx.fillStyle = "#2a2e35";
+  ctx.fillRect(x + 3, y + 36, 36, 6);
+  ctx.fillStyle = "#646d77";
+  ctx.fillRect(x + 4, y + 38, 8, 4);
+  ctx.fillRect(x + 16, y + 38, 8, 4);
+  ctx.fillRect(x + 28, y + 38, 8, 4);
+
+  ctx.fillStyle = enemy.state === "telegraph" || enemy.state === "strike"
+    ? `rgba(255, 88, 88, ${telegraphPulse})`
+    : "rgba(255, 239, 160, 0.55)";
+  ctx.fillRect(x + 28, y + 8, 6, 6);
+
+  ctx.fillStyle = "#3a2414";
+  ctx.fillRect(claw.x + 2, claw.y + 4, claw.w - 4, claw.h - 8);
+  ctx.fillStyle = "#d5dee5";
+  ctx.fillRect(claw.x, claw.y, 5, claw.h);
+  ctx.fillRect(claw.x + claw.w - 5, claw.y, 5, claw.h);
+  ctx.restore();
+}
+
+function drawEnemies() {
+  for (const enemy of level.enemies) {
+    drawEnemySprite(enemy);
+  }
+}
+
+function drawPlayer() {
+  const flicker = player.invulnerableTime > 0 && Math.floor(player.invulnerableTime * 18) % 2 === 0;
+  if (flicker) {
+    return;
+  }
+
+  const x = player.x;
+  const y = player.y;
+  const frame = Math.floor(player.animationTime * 10) % 2;
+
+  ctx.save();
+  if (player.facing < 0) {
+    ctx.translate(x + player.w, y);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(x, y);
+  }
+  ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
+
+  const legOffset = player.state === "run" ? (frame === 0 ? 0 : 2) : player.state === "jump" ? 1 : 0;
+  const armOffset = player.state === "run" ? (frame === 0 ? 2 : -1) : player.state === "jump" ? -2 : 0;
+  const scarfOffset = player.state === "jump" ? -2 : frame;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+
+  if (isChangerEquipped()) {
+    drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, false);
+    ctx.restore();
+    return;
+  }
+
+  if (isGuardianEquipped()) {
+    drawGuardianPlayerSprite(legOffset, armOffset);
+    ctx.restore();
+    return;
+  }
+
+  if (isAssassinEquipped()) {
+    drawAssassinPlayerSprite(legOffset, armOffset, scarfOffset);
+    ctx.restore();
+    return;
+  }
+
+  if (player.state === "stun") {
+    ctx.fillStyle = "#0e1830";
+    r(7, 4, 12, 7);
+    r(8, 11, 10, 3);
+    ctx.fillStyle = "#ff9d54";
+    r(6, 6, 14, 8);
+    ctx.fillStyle = "#ffbf7d";
+    r(8, 8, 3, 3);
+    r(16, 8, 2, 2);
+    ctx.fillStyle = "#1a2238";
+    r(9, 9, 8, 6);
+    ctx.fillStyle = "#6fd2ff";
+    r(12, 11, 2, 2);
+    r(16, 11, 1, 2);
+    ctx.fillStyle = "#173f7a";
+    r(5, 17, 17, 8);
+    ctx.fillStyle = "#2e6eb5";
+    r(6, 18, 15, 4);
+    ctx.fillStyle = "#ffd24d";
+    r(18, 19, 5, 2);
+    ctx.fillStyle = "#ff8a4c";
+    r(5, 25, 6, 4);
+    r(15, 25, 6, 4);
+    ctx.fillStyle = "#efbb8d";
+    r(3, 18, 2, 7);
+    r(22, 18, 2, 7);
+    ctx.fillStyle = "#ffe98a";
+    r(3, 2, 2, 4);
+    r(21, 4, 2, 3);
+    ctx.restore();
+    return;
+  }
+
+  if (player.crouching && level.theme === "arcade") {
+    const crouchPulse = Math.sin(player.animationTime * 10) > 0 ? 1 : 0;
+    ctx.fillStyle = "#101b32";
+    r(7, 6, 12, 6);
+    r(8, 12, 9, 2);
+    ctx.fillStyle = "#ff9647";
+    r(6, 8, 14, 7);
+    ctx.fillStyle = "#ffd5a4";
+    r(9, 11, 2, 2);
+    ctx.fillStyle = "#182337";
+    r(9, 11, 8, 5);
+    ctx.fillStyle = "#74d6ff";
+    r(13, 12, 2, 2);
+    ctx.fillStyle = "#214a86";
+    r(4, 18, 18, 7);
+    ctx.fillStyle = "#2f74bc";
+    r(5, 19, 16, 3);
+    ctx.fillStyle = "#ffd24d";
+    r(18, 19 + crouchPulse, 5, 2);
+    ctx.fillStyle = "#ff8945";
+    r(5, 25, 6, 3);
+    r(15, 25, 6, 3);
+    ctx.fillStyle = "#efbb8d";
+    r(3, 19, 2, 6);
+    r(21, 19, 2, 6);
+    ctx.restore();
+    return;
+  }
+
+  const simpleSkin = getSimpleSkinPalette();
+  const cyberSkin = isCyberSkinEquipped();
+  const voidSkin = isVoidKingSkinEquipped();
+  const voidPulse = 0.82 + Math.sin(lastTime * 0.01) * 0.18;
+  ctx.fillStyle = "#0f1731";
+  if (voidSkin) {
+    ctx.fillStyle = "#050507";
+  } else if (simpleSkin) {
+    ctx.fillStyle = simpleSkin.dark;
+  } else if (cyberSkin) {
+    ctx.fillStyle = "#070a12";
+  }
+  r(8, 2, 10, 6);
+  r(7, 7, 12, 2);
+  ctx.fillStyle = voidSkin ? "#0b0b10" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#111626" : "#ff9445";
+  r(6, 5, 14, 10);
+  ctx.fillStyle = voidSkin ? "#16161e" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#1b223a" : "#ffc98c";
+  r(8, 8, 3, 4);
+  r(16, 8, 2, 3);
+  ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#0d1220" : "#171f35";
+  r(9, 9, 8, 8);
+  ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#66d2ff";
+  r(12, 11, 2, 2);
+  r(16, 11, 1, 2);
+  ctx.fillStyle = voidSkin ? "#111116" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#171c35" : "#1a447b";
+  r(5, 17, 16, 10);
+  ctx.fillStyle = voidSkin ? "#1c1b23" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#232c4f" : "#2f74bc";
+  r(6, 18, 14, 4);
+  r(8, 22, 10, 2);
+  ctx.fillStyle = voidSkin ? "#09090d" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#11182b" : "#18345e";
+  r(9, 18, 3, 8);
+  r(14, 18, 4, 8);
+  ctx.fillStyle = voidSkin ? "#611318" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#9b63ff" : "#ffd24d";
+  r(18, 18 + scarfOffset, 5, 2);
+  r(20, 20 + scarfOffset, 3, 1);
+  ctx.fillStyle = voidSkin ? "#08080a" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#0b0e17" : "#ff8b47";
+  r(4, 27, 7, 4 + legOffset);
+  r(15, 27, 7, 4 + (2 - legOffset));
+  ctx.fillStyle = voidSkin ? "#2e0a0d" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#4e5fff" : "#efbb8d";
+  r(2, 19 + armOffset, 2, 8);
+  r(22, 19 - armOffset, 2, 8);
+  ctx.fillStyle = voidSkin ? "#ff9b9b" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#d5b6ff" : "#f7fbff";
+  r(12, 11, 1, 1);
+  r(16, 11, 1, 1);
+  if (voidSkin) {
+    ctx.fillStyle = `rgba(174, 28, 35, ${0.52 + Math.sin(lastTime * 0.012) * 0.1})`;
+    r(10, 17, 1, 8);
+    r(15, 17, 1, 8);
+    r(11, 20, 4, 1);
+    r(7, 6, 2, 3);
+    r(18, 6, 2, 3);
+  }
+  drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawChangerClone() {
+  if (!changerState.clone) {
+    return;
+  }
+
+  const clone = changerState.clone;
+  const frame = Math.floor((clone.animationTime || lastTime * 0.001) * 10) % 2;
+  const legOffset = clone.state === "run" ? (frame === 0 ? 0 : 2) : clone.state === "jump" ? 1 : 0;
+  const armOffset = clone.state === "run" ? (frame === 0 ? 2 : -1) : clone.state === "jump" ? -2 : 0;
+  const scarfOffset = clone.state === "jump" ? -2 : frame;
+
+  ctx.save();
+  if ((clone.facing || 1) < 0) {
+    ctx.translate(clone.x + clone.w, clone.y);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(clone.x, clone.y);
+  }
+  ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
+  drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, true);
+  ctx.restore();
+}
+
+function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
+  const angelDemonSkin = isChangerAngelDemonSkinEquipped();
+  const cyberSkin = isCyberSkinEquipped();
+  const voidSkin = isVoidKingSkinEquipped();
+  const simpleSkin = getSimpleSkinPalette();
+  const voidPulse = 0.8 + Math.sin(lastTime * 0.011 + (isClone ? 1.2 : 0)) * 0.2;
+  const borderColor = angelDemonSkin
+    ? (isClone ? "#6f2fc7" : "#d2a24b")
+    : voidSkin
+      ? (isClone ? "#351117" : "#09090b")
+    : simpleSkin
+      ? simpleSkin.dark
+    : cyberSkin
+      ? (isClone ? "#5a2cc8" : "#12182d")
+    : (isClone ? "#ff8a4c" : "#173d77");
+  const hoodColor = angelDemonSkin
+    ? (isClone ? "#4d285f" : "#f3efe6")
+    : voidSkin
+      ? (isClone ? "#240b11" : "#0f0f13")
+    : simpleSkin
+      ? simpleSkin.primary
+    : cyberSkin
+      ? (isClone ? "#18122f" : "#090c16")
+    : (isClone ? "#4079ff" : "#ff8a39");
+  const glowColor = angelDemonSkin
+    ? (isClone ? "#d44dff" : "#ffe6a8")
+    : voidSkin
+      ? (isClone ? `rgba(214, 72, 84, ${voidPulse})` : `rgba(255, 74, 74, ${voidPulse})`)
+    : simpleSkin
+      ? simpleSkin.glow
+    : cyberSkin
+      ? (isClone ? "#bd78ff" : "#6ce1ff")
+    : (isClone ? "#8bc6ff" : "#ffd24d");
+  const bodyColor = angelDemonSkin
+    ? (isClone ? "#3d213f" : "#f5f2ec")
+    : voidSkin
+      ? (isClone ? "#31131d" : "#15151c")
+    : simpleSkin
+      ? simpleSkin.secondary
+    : cyberSkin
+      ? (isClone ? "#2a2354" : "#181c35")
+    : (isClone ? "#3455bf" : "#24314f");
+  const darkBodyColor = angelDemonSkin
+    ? (isClone ? "#201222" : "#b89f66")
+    : voidSkin
+      ? (isClone ? "#18070c" : "#060608")
+    : simpleSkin
+      ? simpleSkin.dark
+    : cyberSkin
+      ? (isClone ? "#140f2a" : "#070913")
+    : (isClone ? "#20357f" : "#111724");
+  const eyeColor = angelDemonSkin
+    ? (isClone ? "#ff7ac7" : "#6eb6ff")
+    : voidSkin
+      ? (isClone ? "#ff626c" : "#ff3939")
+    : simpleSkin
+      ? simpleSkin.glow
+    : cyberSkin
+      ? (isClone ? "#de8dff" : "#88f0ff")
+    : (isClone ? "#b9ecff" : "#fff3de");
+  const trimColor = angelDemonSkin
+    ? (isClone ? "#a834e1" : "#caa14d")
+    : voidSkin
+      ? "#5b0f16"
+    : simpleSkin
+      ? simpleSkin.accent
+    : cyberSkin
+      ? glowColor
+    : hoodColor;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+
+  ctx.save();
+  ctx.globalAlpha = isClone ? 0.76 : 1;
+
+  if (player.state === "stun" && !isClone) {
+    ctx.fillStyle = borderColor;
+    r(4, 2, 18, 28);
+    ctx.fillStyle = hoodColor;
+    r(7, 4, 12, 8);
+    ctx.fillStyle = bodyColor;
+    r(7, 12, 12, 11);
+    ctx.fillStyle = darkBodyColor;
+    r(8, 23, 10, 4);
+    ctx.fillStyle = eyeColor;
+    r(11, 10, 6, 2);
+    if (angelDemonSkin) {
+      ctx.fillStyle = isClone ? "#d65bff" : "#e6ca77";
+      r(9, 2, 2, 3);
+      r(17, 2, 2, 3);
+      r(12, 1, 3, 2);
+    } else if (voidSkin) {
+      ctx.fillStyle = "#191920";
+      r(6, 4, 2, 4);
+      r(18, 4, 2, 4);
+      r(7, 3, 3, 2);
+      r(16, 3, 3, 2);
+    }
+    drawPlayerSkinAccent();
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = borderColor;
+  r(4, 2, 18, 28);
+  ctx.fillStyle = hoodColor;
+  r(8, 4, 10, 8);
+  r(7, 8, 12, 5);
+  ctx.fillStyle = darkBodyColor;
+  r(9, 9, 8, 8);
+  ctx.fillStyle = bodyColor;
+  r(6, 16, 14, 10);
+  ctx.fillStyle = angelDemonSkin
+    ? (isClone ? "#6f3b7e" : "#e9e2d7")
+    : voidSkin
+      ? (isClone ? "#4b1823" : "#24242c")
+    : simpleSkin
+      ? simpleSkin.primary
+    : cyberSkin
+      ? (isClone ? "#443891" : "#22284f")
+    : (isClone ? "#5a84dd" : "#314b76");
+  r(8, 17, 10, 3);
+  ctx.fillStyle = glowColor;
+  r(18, 17 + scarfOffset, 4, 3);
+  r(5, 20, 2, 3);
+  ctx.fillStyle = trimColor;
+  r(6, 26, 5, 4 + legOffset);
+  r(15, 26, 5, 4 + (2 - legOffset));
+  ctx.fillStyle = angelDemonSkin
+    ? (isClone ? "#8b5cb7" : "#f0d8b1")
+    : voidSkin
+      ? "#3c0c12"
+    : simpleSkin
+      ? simpleSkin.accent
+    : (isClone ? "#9fc1ff" : "#f4c9a3");
+  r(4, 18 + armOffset, 2, 8);
+  r(20, 18 - armOffset, 2, 8);
+  ctx.fillStyle = eyeColor;
+  r(11, 11, 2, 2);
+  r(16, 11, 2, 2);
+  ctx.fillStyle = isClone ? "#081b4b" : "#070d1a";
+  r(12, 12, 5, 1);
+  if (cyberSkin) {
+    ctx.fillStyle = glowColor;
+    r(10, 17, 1, 8);
+    r(15, 17, 1, 8);
+    r(11, 20, 4, 1);
+    r(8, 8, 1, 6);
+    r(17, 8, 1, 6);
+  }
+  if (voidSkin) {
+    ctx.fillStyle = glowColor;
+    r(10, 17, 1, 8);
+    r(15, 17, 1, 8);
+    r(11, 20, 4, 1);
+    r(7, 9, 1, 7);
+    r(18, 9, 1, 7);
+  }
+  if (angelDemonSkin) {
+    ctx.fillStyle = isClone ? "#9129cf" : "#dcb661";
+    r(12, 2, 3, 2);
+    if (isClone) {
+      r(7, 4, 2, 4);
+      r(17, 4, 2, 4);
+    } else {
+      r(5, 10, 2, 10);
+      r(19, 10, 2, 10);
+    }
+  }
+
+  if (isClone) {
+    ctx.fillStyle = angelDemonSkin
+      ? "rgba(176, 86, 255, 0.85)"
+      : cyberSkin
+        ? "rgba(167, 101, 255, 0.8)"
+        : "rgba(118, 204, 255, 0.85)";
+    r(2, 29, 22, 2);
+    if (angelDemonSkin) {
+      ctx.fillStyle = "rgba(222, 118, 255, 0.75)";
+      r(1, 8, 3, 12);
+      r(22, 8, 3, 12);
+      r(0, 12, 3, 8);
+      r(23, 12, 3, 8);
+    } else if (voidSkin) {
+      ctx.fillStyle = `rgba(58, 8, 12, ${0.75 * voidPulse})`;
+      r(1, 28, 24, 3);
+    }
+  } else {
+    if (player.cloneTransferFlash > 0) {
+      ctx.fillStyle = `rgba(132, 214, 255, ${Math.min(0.55, player.cloneTransferFlash)})`;
+      r(1, 0, 24, 31);
+    }
+    if (angelDemonSkin) {
+      ctx.fillStyle = "rgba(255, 236, 176, 0.9)";
+      r(0, 9, 4, 12);
+      r(22, 9, 4, 12);
+      r(1, 6, 3, 10);
+      r(22, 6, 3, 10);
+      ctx.fillStyle = "rgba(206, 176, 94, 0.75)";
+      r(11, 1, 4, 3);
+      r(9, 3, 2, 2);
+      r(15, 3, 2, 2);
+    } else if (voidSkin) {
+      ctx.fillStyle = "#1a1a20";
+      r(4, 6, 3, 10);
+      r(19, 6, 3, 10);
+      r(2, 8, 3, 10);
+      r(21, 8, 3, 10);
+    }
+    drawPlayerSkinAccent();
+  }
+  ctx.restore();
+}
+
+function drawChangerSwapEffect() {
+  if (changerState.effectTimer <= 0 || !changerState.effectFrom || !changerState.effectTo) {
+    return;
+  }
+
+  const alpha = changerState.effectTimer / CHANGER_RULES.effectDuration;
+  const positions = [changerState.effectFrom, changerState.effectTo];
+  const outerColor = isChangerAngelDemonSkinEquipped() ? "#f3c66b" : "#7cc8ff";
+  const innerColor = isChangerAngelDemonSkinEquipped() ? "#a94eff" : "#ff9c59";
+  for (const pos of positions) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha * 0.55);
+    ctx.strokeStyle = outerColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(pos.x - 6, pos.y - 6, player.w + 12, player.h + 12);
+    ctx.strokeStyle = innerColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pos.x - 2, pos.y - 2, player.w + 4, player.h + 4);
+    ctx.restore();
+  }
+}
+
+function getGuardianPalette() {
+  if (shopState.equippedSkin === "admin") {
+    return {
+      border: "#441214",
+      hood: "#e0d3b0",
+      cloak: "#8b1f22",
+      cloth: "#a12a2d",
+      metal: "#6e6460",
+      trim: "#d6a233",
+      glow: "#ffe28a",
+    };
+  }
+  if (shopState.equippedSkin === "angelDemon") {
+    return {
+      border: "#5a4822",
+      hood: "#f6f2ea",
+      cloak: "#e7e0d2",
+      cloth: "#ffffff",
+      metal: "#d0c7b7",
+      trim: "#e1b95a",
+      glow: "#8dd8ff",
+    };
+  }
+  if (shopState.equippedSkin === "cyber") {
+    return {
+      border: "#12172c",
+      hood: "#090c14",
+      cloak: "#37276f",
+      cloth: "#171c35",
+      metal: "#444f6d",
+      trim: "#7a4fff",
+      glow: "#69e2ff",
+    };
+  }
+  if (shopState.equippedSkin === "desert") {
+    return {
+      border: "#4c3725",
+      hood: "#c89256",
+      cloak: "#8d6236",
+      cloth: "#a97744",
+      metal: "#b9aa8b",
+      trim: "#e6c58a",
+      glow: "#fff0c8",
+    };
+  }
+  if (shopState.equippedSkin === "forest") {
+    return {
+      border: "#1d3524",
+      hood: "#4f8a57",
+      cloak: "#355f3c",
+      cloth: "#426f49",
+      metal: "#89937f",
+      trim: "#9fc47d",
+      glow: "#dff2c7",
+    };
+  }
+  if (shopState.equippedSkin === "stone") {
+    return {
+      border: "#313740",
+      hood: "#8f98a4",
+      cloak: "#67707b",
+      cloth: "#7b8490",
+      metal: "#c9d0d8",
+      trim: "#dbe2e8",
+      glow: "#eef3f7",
+    };
+  }
+  if (shopState.equippedSkin === "voidKing") {
+    return {
+      border: "#09090b",
+      hood: "#121217",
+      cloak: "#14080b",
+      cloth: "#1d1c24",
+      metal: "#3a3942",
+      trim: "#5a1017",
+      glow: "#ff4a4a",
+    };
+  }
+  return {
+    border: "#23324c",
+    hood: "#6b4b32",
+    cloak: "#214b9b",
+    cloth: "#2d68bf",
+    metal: "#90939b",
+    trim: "#d6a233",
+    glow: "#7fc3ff",
+  };
+}
+
+function drawGuardianPlayerSprite(legOffset, armOffset) {
+  const palette = getGuardianPalette();
+  const voidSkin = isVoidKingSkinEquipped();
+  const voidPulse = 0.78 + Math.sin(lastTime * 0.012) * 0.18;
+  const shieldGlow = player.guardianShieldTimer > 0 ? 0.85 : player.guardianFlash > 0 ? 0.55 : 0;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+
+  ctx.save();
+
+  if (shieldGlow > 0) {
+    ctx.fillStyle = `rgba(86, 172, 255, ${shieldGlow * 0.45})`;
+    r(1, 0, 24, 31);
+    ctx.strokeStyle = `rgba(102, 192, 255, ${shieldGlow})`;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, 48, 60);
+  }
+
+  ctx.fillStyle = palette.border;
+  r(6, 2, 14, 28);
+  ctx.fillStyle = palette.hood;
+  r(8, 4, 10, 8);
+  r(7, 8, 12, 4);
+  ctx.fillStyle = voidSkin ? "#060608" : "#1a2234";
+  r(9, 10, 8, 8);
+  ctx.fillStyle = voidSkin ? `rgba(255, 76, 76, ${voidPulse})` : "#efe7d8";
+  r(11, 11, 2, 2);
+  r(15, 11, 2, 2);
+  ctx.fillStyle = palette.metal;
+  r(7, 16, 12, 10);
+  ctx.fillStyle = palette.cloth;
+  r(10, 17, 6, 8);
+  ctx.fillStyle = palette.trim;
+  r(9, 17, 1, 8);
+  r(16, 17, 1, 8);
+  r(11, 19, 4, 2);
+  ctx.fillStyle = palette.cloak;
+  r(3, 14 + armOffset, 4, 12);
+  r(4, 23, 3, 5);
+  ctx.fillStyle = palette.trim;
+  r(3, 15 + armOffset, 1, 9);
+  ctx.fillStyle = palette.metal;
+  r(4, 18 + armOffset, 2, 7);
+
+  ctx.fillStyle = palette.border;
+  r(16, 15, 8, 15);
+  ctx.fillStyle = palette.trim;
+  r(17, 16, 6, 13);
+  ctx.fillStyle = voidSkin ? "#16161c" : "#254d9e";
+  r(18, 17, 4, 11);
+  ctx.fillStyle = palette.glow;
+  r(19, 19, 2, 7);
+  r(18, 22, 4, 1);
+  if (shopState.equippedSkin === "cyber") {
+    ctx.fillStyle = "#9d8bff";
+    r(10, 10, 1, 8);
+    r(15, 10, 1, 8);
+    r(11, 20, 4, 1);
+  } else if (voidSkin) {
+    ctx.fillStyle = `rgba(205, 38, 44, ${0.54 + Math.sin(lastTime * 0.013) * 0.1})`;
+    r(10, 10, 1, 8);
+    r(15, 10, 1, 8);
+    r(11, 20, 4, 1);
+    r(18, 17, 1, 11);
+  }
+
+  ctx.fillStyle = palette.metal;
+  r(7, 26, 4, 5 + legOffset);
+  r(14, 26, 4, 5 + (2 - legOffset));
+  ctx.fillStyle = palette.border;
+  r(7, 30, 4, 2);
+  r(14, 30, 4, 2);
+
+  if (shopState.equippedSkin === "angelDemon") {
+    ctx.fillStyle = "rgba(255, 238, 182, 0.85)";
+    r(4, 7, 2, 10);
+    r(21, 7, 2, 10);
+    ctx.fillStyle = "rgba(223, 194, 112, 0.75)";
+    r(11, 1, 4, 2);
+  } else if (voidSkin) {
+    ctx.fillStyle = "#1a1a20";
+    r(4, 7, 2, 10);
+    r(21, 7, 2, 10);
+    r(3, 9, 2, 8);
+    r(22, 9, 2, 8);
+  }
+
+  drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
+  const alpha = player.stealthActive ? 0.34 : 1;
+  const simpleSkin = getSimpleSkinPalette();
+  const cyberSkin = isCyberSkinEquipped();
+  const voidSkin = isVoidKingSkinEquipped();
+  const voidPulse = 0.8 + Math.sin(lastTime * 0.014) * 0.2;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  if (player.state === "stun") {
+    ctx.fillStyle = voidSkin ? "#060608" : simpleSkin ? simpleSkin.dark : "#090d16";
+    r(7, 5, 12, 8);
+    ctx.fillStyle = voidSkin ? "#121218" : simpleSkin ? simpleSkin.secondary : "#161d2c";
+    r(5, 14, 16, 10);
+    ctx.fillStyle = voidSkin ? "#1f1d24" : simpleSkin ? simpleSkin.primary : "#28344c";
+    r(6, 24, 14, 4);
+    ctx.fillStyle = voidSkin ? `rgba(255, 70, 70, ${voidPulse})` : simpleSkin ? simpleSkin.glow : "#7fd0ff";
+    r(12, 10, 2, 2);
+    r(16, 10, 2, 2);
+    ctx.fillStyle = voidSkin ? "#ffb0b0" : simpleSkin ? simpleSkin.accent : "#b8f0ff";
+    r(13, 10, 1, 1);
+    r(17, 10, 1, 1);
+    ctx.fillStyle = voidSkin ? "#09090b" : simpleSkin ? simpleSkin.dark : "#0c1220";
+    r(6, 28, 5, 2);
+    r(15, 28, 5, 2);
+    drawPlayerSkinAccent();
+    ctx.restore();
+    return;
+  }
+
+  if (player.crouching && level.theme === "arcade") {
+    ctx.fillStyle = "#090d16";
+    r(8, 7, 10, 7);
+    ctx.fillStyle = "#161d2c";
+    r(5, 14, 16, 10);
+    ctx.fillStyle = "#2c3750";
+    r(6, 22, 14, 4);
+    ctx.fillStyle = "#87e5ff";
+    r(12, 11, 2, 2);
+    r(16, 11, 2, 2);
+    ctx.fillStyle = "#0c1220";
+    r(6, 26, 5, 2);
+    r(15, 26, 5, 2);
+    ctx.fillStyle = "#8fe7ff";
+    r(4, 17, 2, 7);
+    r(20, 17, 2, 7);
+    drawPlayerSkinAccent();
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#05070e" : "#060910";
+  r(7, 2, 12, 7);
+  r(6, 7, 14, 4);
+  ctx.fillStyle = voidSkin ? "#0d0d12" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#0d1220" : "#111724";
+  r(7, 10, 12, 6);
+  ctx.fillStyle = voidSkin ? "#17161d" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#151a31" : "#202a3c";
+  r(6, 16, 14, 10);
+  ctx.fillStyle = voidSkin ? "#221f27" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#20264a" : "#2d3851";
+  r(7, 20, 12, 4);
+  ctx.fillStyle = voidSkin ? "#5b0f17" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2d3470" : "#34415f";
+  r(8, 16, 10, 3);
+  ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
+  r(12, 9, 2, 2);
+  r(16, 9, 2, 2);
+  ctx.fillStyle = voidSkin ? "#ffc0c0" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ddb5ff" : "#baf4ff";
+  r(13, 9, 1, 1);
+  r(17, 9, 1, 1);
+  ctx.fillStyle = voidSkin ? "#430c13" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#6c4fff" : "#394766";
+  r(4, 18 + armOffset, 2, 8);
+  r(20, 18 - armOffset, 2, 8);
+  ctx.fillStyle = voidSkin ? "#08080a" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#070a14" : "#0a0f1c";
+  r(6, 26, 5, 4 + legOffset);
+  r(15, 26, 5, 4 + (2 - legOffset));
+  ctx.fillStyle = voidSkin ? "#2f0b10" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#9d67ff" : "#84f0ff";
+  r(19, 16 + cloakOffset, 4, 7);
+  ctx.fillStyle = voidSkin ? "#26080c" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#3a4dd5" : "#405070";
+  r(5, 19, 2, 4);
+  ctx.fillStyle = voidSkin ? `rgba(200, 35, 40, ${0.55 + Math.sin(lastTime * 0.016) * 0.12})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#78efff" : "#d7f9ff";
+  r(5, 20 + armOffset, 1, 4);
+  if (cyberSkin) {
+    ctx.fillStyle = "#78efff";
+    r(10, 17, 1, 8);
+    r(15, 17, 1, 8);
+    r(11, 20, 4, 1);
+  } else if (voidSkin) {
+    ctx.fillStyle = `rgba(200, 35, 40, ${0.58 + Math.sin(lastTime * 0.016) * 0.12})`;
+    r(10, 17, 1, 8);
+    r(15, 17, 1, 8);
+    r(11, 20, 4, 1);
+    r(7, 8, 1, 6);
+    r(18, 8, 1, 6);
+  }
+  drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawPlayerSkinAccent() {
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+
+  if (shopState.equippedSkin === "voidKing") {
+    const pulse = 0.6 + Math.sin(lastTime * 0.015) * 0.16;
+    ctx.fillStyle = `rgba(210, 30, 40, ${pulse})`;
+    r(11, 9, 1, 6);
+    r(17, 9, 1, 6);
+    r(12, 18, 2, 7);
+    r(14, 18, 2, 7);
+    r(10, 21, 8, 1);
+    ctx.fillStyle = `rgba(52, 8, 12, ${0.72 + Math.sin(lastTime * 0.012) * 0.08})`;
+    r(2, 30, 22, 2);
+    return;
+  }
+
+  if (shopState.equippedSkin === "cyber") {
+    ctx.fillStyle = "#77eaff";
+    r(11, 9, 1, 6);
+    r(17, 9, 1, 6);
+    r(12, 18, 2, 7);
+    ctx.fillStyle = "#9d67ff";
+    r(14, 18, 2, 7);
+    r(10, 21, 8, 1);
+    return;
+  }
+
+  if (shopState.equippedSkin !== "admin") {
+    return;
+  }
+
+  ctx.fillStyle = "#d3901d";
+  r(6, -1, 14, 3);
+  r(7, -3, 2, 2);
+  r(12, -5, 2, 4);
+  r(17, -3, 2, 2);
+
+  ctx.fillStyle = "#ffd95e";
+  r(8, -4, 2, 3);
+  r(11, -6, 4, 5);
+  r(16, -4, 2, 3);
+
+  ctx.fillStyle = "#fff7b3";
+  r(12, -5, 2, 1);
+}
+
+function drawGoal() {
+  const palette = getThemeColors();
+  const { x, y, h } = level.goal;
+  if (level.theme === "factory") {
+    const doorOpen = collectedCount >= currentShardTarget();
+    const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
+
+    ctx.fillStyle = "#313640";
+    ctx.fillRect(x + 6, y, 52, h);
+    ctx.fillStyle = "#1f232a";
+    ctx.fillRect(x + 10, y + 6, 44, h - 12);
+
+    if (doorOpen) {
+      ctx.fillStyle = "rgba(255, 224, 122, 0.18)";
+      ctx.fillRect(x + 18, y + 12, 28, h - 24);
+      ctx.fillStyle = "rgba(255, 239, 180, 0.28)";
+      ctx.fillRect(x + 24, y + 16, 16, h - 32);
+    } else {
+      ctx.fillStyle = "#5a606a";
+      ctx.fillRect(x + 12, y + 8, 40, h - 16);
+      ctx.fillStyle = "#464c55";
+      for (let i = 0; i < 5; i += 1) {
+        ctx.fillRect(x + 15, y + 14 + i * 26, 34, 8);
+      }
+    }
+
+    ctx.fillStyle = "#2d3139";
+    ctx.fillRect(x - 20, y + h - 36, 22, 28);
+    ctx.fillStyle = doorOpen ? `rgba(255, 224, 122, ${0.65 * pulse})` : "rgba(247, 90, 70, 0.65)";
+    ctx.fillRect(x - 16, y + h - 30, 14, 10);
+    ctx.strokeStyle = doorOpen ? `rgba(255, 224, 122, ${0.8 * pulse})` : "rgba(247, 120, 90, 0.8)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - 9, y + h - 20);
+    ctx.lineTo(x + 10, doorOpen ? y + h - 38 : y + h - 10);
+    ctx.stroke();
+    return;
+  }
+
+  if (level.theme === "arcade") {
+    const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
+
+    // Claw machine cabinet
+    ctx.fillStyle = "rgba(10, 8, 18, 0.95)";
+    ctx.fillRect(x + 6, y + 6, 56, h - 6);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillRect(x + 10, y + 10, 48, 44);
+
+    // Glass + neon trim
+    ctx.strokeStyle = `rgba(69, 248, 255, ${0.55 * pulse})`;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x + 6, y + 6, 56, h - 6);
+    ctx.strokeStyle = `rgba(255, 77, 245, ${0.42 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 12, y + 12, 44, 32);
+
+    // Prize plush blocks
+    for (let i = 0; i < 6; i += 1) {
+      ctx.fillStyle = i % 2 === 0 ? "rgba(255, 214, 92, 0.55)" : "rgba(167, 255, 112, 0.45)";
+      ctx.fillRect(x + 16 + (i % 3) * 14, y + 18 + Math.floor(i / 3) * 14, 10, 10);
+    }
+
+    // Control panel + lever light
+    ctx.fillStyle = `rgba(255, 77, 245, ${0.18 * pulse})`;
+    ctx.fillRect(x + 12, y + h - 34, 44, 16);
+    ctx.fillStyle = palette.goal;
+    ctx.beginPath();
+    ctx.arc(x + 58, y + h - 26, 8, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#5d4632";
+    ctx.fillRect(x + 12, y, 8, h);
+    ctx.fillStyle = palette.goal;
+    ctx.fillRect(x + 20, y + 10, 28, 18);
+    ctx.fillStyle = "#dff9ff";
+    ctx.fillRect(x + 26, y + 14, 10, 6);
+    ctx.fillStyle = "#ffe66d";
+    ctx.beginPath();
+    ctx.arc(x + 52, y + 16, 10, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawHud() {
+  ctx.fillStyle = "rgba(7, 19, 33, 0.75)";
+  ctx.fillRect(16, 16, 410, 136);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.strokeRect(16, 16, 410, 136);
+
+  ctx.fillStyle = "#fef8d4";
+  ctx.font = "bold 22px Verdana";
+  ctx.fillText(t("hud_score", { score: score.toString().padStart(5, "0") }), 30, 46);
+  ctx.fillText(t("hud_lives", { lives }), 30, 76);
+  ctx.fillText(t("hud_stage", { current: currentStageIndex + 1, total: STAGE_DEFS.length }), 30, 106);
+
+  ctx.fillStyle = "#d8fbff";
+  ctx.font = "16px Verdana";
+  ctx.fillText(`${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`, 190, 46);
+  ctx.fillText(t("hud_difficulty", { difficulty: getDifficultyLabel(activeDifficultyKey) }), 190, 76);
+  ctx.fillText(t("hud_jumps", { current: player.jumpsRemaining, total: player.maxJumps }), 190, 106);
+  const stealthStatus = isChangerEquipped()
+    ? changerState.clone
+      ? changerState.swapCooldown > 0
+        ? t("changer_status_ready_cd", { time: changerState.swapCooldown.toFixed(1) })
+        : t("changer_status_ready")
+      : changerState.cloneUsedThisRun
+        ? t("changer_status_spent")
+        : t("changer_status_prompt")
+    : isGuardianEquipped()
+      ? player.guardianShieldTimer > 0
+        ? t("guardian_status_shield", {
+          time: player.guardianShieldTimer.toFixed(1),
+          state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
+        })
+        : player.guardianShieldCooldown > 0
+          ? t("guardian_status_cooldown", {
+            time: player.guardianShieldCooldown.toFixed(1),
+            state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
+          })
+          : t("guardian_status_ready", {
+            state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
+          })
+    : !isAssassinEquipped()
+      ? t("hud_character", { name: formatCatalogName(shopState.equippedCharacter) })
+      : player.stealthActive
+        ? t("assassin_status_stealth", {
+          time: player.stealthTimer.toFixed(1),
+          cooldown: player.assassinationCooldown.toFixed(1),
+        })
+        : player.stealthCooldown > 0
+          ? t("assassin_status_stealth_cd", {
+            time: player.stealthCooldown.toFixed(1),
+            cooldown: player.assassinationCooldown.toFixed(1),
+          })
+          : player.assassinationCooldown > 0
+            ? t("assassin_status_q_cd", { time: player.assassinationCooldown.toFixed(1) })
+            : t("assassin_status_ready");
+  ctx.fillText(stealthStatus, 190, 130);
+
+  ctx.fillStyle = "#fff6ca";
+  ctx.font = "bold 18px Verdana";
+  ctx.fillText(level.name, 470, 40);
+  if (level.theme === "factory") {
+    ctx.fillText(t("hud_clock", { time: formatStageTimer(factoryTimeRemaining) }), 470, 68);
+    ctx.fillText(t("hud_factory_hint"), 470, 96);
+  } else {
+    ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
+    ctx.fillText(t("hud_return_lobby"), 470, 96);
+  }
+  if (isChangerEquipped()) {
+    ctx.fillText(t("changer_hint"), 470, 124);
+  } else if (isGuardianEquipped()) {
+    ctx.fillText(t("guardian_hint"), 470, 124);
+  } else if (isAssassinEquipped()) {
+    ctx.fillText(t("assassin_hint"), 470, 124);
+  }
+
+  if (stageMessageTimer > 0) {
+    if (level.theme === "factory") {
+      drawCenterPanel(level.name, t("stage_objective_factory", { count: currentShardTarget() }), "");
+    } else {
+      drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
+    }
+  }
+
+  if (gameState === "stageclear") {
+    drawCenterPanel(
+      t("center_stage_clear"),
+      t("center_next_stage"),
+      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) })
+    );
+  } else if (gameState === "finished") {
+    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), t("center_restart"));
+  } else if (gameState === "gameover") {
+    drawCenterPanel(t("center_game_over"), t("center_game_over_copy"), t("center_restart"));
+  }
+}
+
+function drawCenterPanel(title, line1, line2) {
+  ctx.fillStyle = "rgba(7, 19, 33, 0.72)";
+  ctx.fillRect(180, 140, 600, 190);
+  ctx.strokeStyle = "#ffe98a";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(180, 140, 600, 190);
+  ctx.fillStyle = "#fff6ca";
+  ctx.textAlign = "center";
+  ctx.font = "bold 40px Verdana";
+  ctx.fillText(title, GAME_WIDTH / 2, 200);
+  ctx.font = "20px Verdana";
+  ctx.fillText(line1, GAME_WIDTH / 2, 242);
+  if (line2) {
+    ctx.fillText(line2, GAME_WIDTH / 2, 278);
+  }
+  ctx.textAlign = "left";
+}
+
+function render() {
+  drawBackground();
+  drawWorld();
+  drawHud();
+  if (assassinationEvent.active) {
+    drawAssassinationOverlay();
+  } else if (clawEscapeEvent.active) {
+    drawClawEscapeOverlay();
+  } else if (danceEvent.active || danceEvent.countdown) {
+    drawDanceOverlay();
+  } else if (nightmareEvent.active || nightmareEvent.countdown) {
+    drawNightmareOverlay();
+  }
+}
+
+function drawAssassinationOverlay() {
+  const bossFight = assassinationEvent.targetType === "boss";
+  const panelAlpha = 0.48 + assassinationEvent.flash * 0.18;
+  ctx.fillStyle = `rgba(4, 7, 16, ${panelAlpha})`;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(10, 15, 28, 0.86)";
+  ctx.fillRect(180, 146, 600, 204);
+  ctx.strokeStyle = `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(180, 146, 600, 204);
+
+  ctx.fillStyle = "#f7f9ff";
+  ctx.textAlign = "center";
+  ctx.font = "bold 30px Verdana";
+  ctx.fillText(assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"), GAME_WIDTH / 2, 188);
+  ctx.font = "18px Verdana";
+  ctx.fillStyle = "#d5efff";
+  ctx.fillText(
+    assassinationEvent.mode === "backstab"
+      ? t("assassinate_locking")
+      : bossFight
+        ? t("assassinate_boss_copy")
+        : t("assassinate_enemy_copy"),
+    GAME_WIDTH / 2,
+    220
+  );
+
+  const meterX = 238;
+  const meterY = 248;
+  const meterW = 484;
+  const meterH = 24;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.fillRect(meterX, meterY, meterW, meterH);
+  ctx.fillStyle = assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
+  const fillAmount = assassinationEvent.mode === "backstab"
+    ? 1 - Math.max(0, assassinationEvent.timer / ASSASSIN_RULES.strikeWindup)
+    : assassinationEvent.gauge;
+  ctx.fillRect(meterX, meterY, meterW * fillAmount, meterH);
+  ctx.strokeStyle = "rgba(255, 241, 173, 0.7)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(meterX, meterY, meterW, meterH);
+
+  ctx.fillStyle = "#fff5cd";
+  ctx.font = "bold 22px Verdana";
+  ctx.fillText(assassinationEvent.successText, GAME_WIDTH / 2, 308);
+  ctx.font = "17px Verdana";
+  if (assassinationEvent.mode === "qte") {
+    ctx.fillText(t("assassinate_time", { time: assassinationEvent.timer.toFixed(1) }), GAME_WIDTH / 2, 334);
+  }
+  ctx.textAlign = "left";
+}
+
+function drawClawEscapeOverlay() {
+  const alpha = 0.54 + clawEscapeEvent.flash * 0.22;
+  ctx.fillStyle = `rgba(7, 5, 16, ${alpha})`;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(38, 8, 48, 0.24)";
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(7, 19, 33, 0.78)";
+  ctx.fillRect(180, 130, 600, 260);
+  ctx.strokeStyle = "rgba(69, 248, 255, 0.52)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(180, 130, 600, 260);
+  ctx.strokeStyle = "rgba(255, 77, 245, 0.34)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(188, 138, 584, 244);
+
+  ctx.fillStyle = "#fff5d6";
+  ctx.textAlign = "center";
+  ctx.font = "bold 34px Verdana";
+  ctx.fillText(t("claw_title"), GAME_WIDTH / 2, 176);
+  ctx.font = "18px Verdana";
+  ctx.fillStyle = "#d8fbff";
+  ctx.fillText(t("claw_copy"), GAME_WIDTH / 2, 206);
+
+  // Meter
+  const meterX = 250;
+  const meterY = 232;
+  const meterW = 460;
+  const meterH = 20;
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(meterX, meterY, meterW, meterH);
+  ctx.fillStyle = "rgba(167, 255, 112, 0.7)";
+  ctx.fillRect(meterX, meterY, meterW * clawEscapeEvent.meter, meterH);
+  ctx.strokeStyle = "rgba(255, 214, 92, 0.55)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(meterX, meterY, meterW, meterH);
+
+  // Lever button
+  const btnW = 280;
+  const btnH = 64;
+  const btnX = GAME_WIDTH / 2 - btnW / 2;
+  const btnY = 290;
+  clawEscapeEvent.button = { x: btnX, y: btnY, w: btnW, h: btnH };
+
+  const pulse = 0.7 + Math.sin(lastTime * 0.01) * 0.18 + clawEscapeEvent.flash * 0.12;
+  ctx.fillStyle = "rgba(12, 10, 18, 0.9)";
+  ctx.fillRect(btnX, btnY, btnW, btnH);
+  ctx.strokeStyle = `rgba(255, 77, 245, ${0.55 * pulse})`;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(btnX, btnY, btnW, btnH);
+  ctx.strokeStyle = `rgba(69, 248, 255, ${0.4 * pulse})`;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(btnX + 6, btnY + 6, btnW - 12, btnH - 12);
+
+  ctx.fillStyle = `rgba(69, 248, 255, ${0.18 * pulse})`;
+  ctx.fillRect(btnX + 18, btnY + 18, btnW - 36, btnH - 36);
+
+  ctx.fillStyle = "#fff6ca";
+  ctx.font = "bold 26px Verdana";
+  ctx.fillText(t("claw_pull"), GAME_WIDTH / 2, btnY + 42);
+
+  ctx.textAlign = "left";
+}
+
+function drawDanceOverlay() {
+  const alpha = 0.54 + danceEvent.flash * 0.22;
+  ctx.fillStyle = `rgba(7, 5, 16, ${alpha})`;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(38, 8, 48, 0.24)";
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(7, 19, 33, 0.78)";
+  ctx.fillRect(180, 140, 600, 230);
+  ctx.strokeStyle = "rgba(255, 77, 245, 0.62)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(180, 140, 600, 230);
+  ctx.strokeStyle = "rgba(69, 248, 255, 0.38)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(188, 148, 584, 214);
+
+  ctx.fillStyle = "#fff5d6";
+  ctx.textAlign = "center";
+  ctx.font = "bold 34px Verdana";
+  ctx.fillText(t("dance_title"), GAME_WIDTH / 2, 186);
+  ctx.font = "18px Verdana";
+  ctx.fillStyle = "#d8fbff";
+  ctx.fillText(t("dance_copy"), GAME_WIDTH / 2, 216);
+
+  if (danceEvent.countdown) {
+    const countdownValue = Math.max(1, Math.ceil(danceEvent.countdownTimer));
+    ctx.font = "bold 72px Verdana";
+    ctx.fillStyle = "#ffb3b3";
+    ctx.fillText(String(countdownValue), GAME_WIDTH / 2, 290);
+    ctx.font = "18px Verdana";
+    ctx.fillStyle = "#fff6ca";
+    ctx.fillText(t("dance_ready"), GAME_WIDTH / 2, 326);
+    ctx.textAlign = "left";
+    return;
+  }
+
+  const current = danceEvent.sequence[danceEvent.index] || "up";
+  const arrowX = GAME_WIDTH / 2;
+  const arrowY = 292;
+  drawDanceArrow(arrowX, arrowY, current, true);
+  ctx.font = "bold 18px Verdana";
+  ctx.fillStyle = "#fff6ca";
+  ctx.fillText(`${danceEvent.index + 1}/${danceEvent.sequence.length}`, GAME_WIDTH / 2, 352);
+
+  const barX = 240;
+  const barY = 318;
+  const barW = 480;
+  const barH = 16;
+  const t = Math.max(0, Math.min(1, danceEvent.stepTimer / danceEvent.stepTimeLimit));
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.fillStyle = "rgba(69, 248, 255, 0.55)";
+  ctx.fillRect(barX, barY, barW * t, barH);
+  ctx.strokeStyle = "rgba(255, 214, 92, 0.55)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  ctx.textAlign = "left";
+}
+
+function drawDanceArrow(cx, cy, dir, lit) {
+  const size = 44;
+  const half = size / 2;
+  const glow = lit ? 0.95 : 0.28;
+  const base = "rgba(12, 10, 18, 0.88)";
+  const edge = lit ? `rgba(255, 77, 245, ${0.7 * glow})` : "rgba(255,255,255,0.18)";
+  const fill = lit ? `rgba(69, 248, 255, ${0.52 * glow})` : "rgba(69, 248, 255, 0.14)";
+
+  ctx.fillStyle = base;
+  ctx.fillRect(cx - half, cy - half, size, size);
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(cx - half, cy - half, size, size);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  const angle =
+    dir === "up" ? -Math.PI / 2 :
+    dir === "down" ? Math.PI / 2 :
+    dir === "left" ? Math.PI :
+    0;
+  ctx.rotate(angle);
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(-2, -12);
+  ctx.lineTo(-2, -6);
+  ctx.lineTo(-16, -6);
+  ctx.lineTo(-16, 6);
+  ctx.lineTo(-2, 6);
+  ctx.lineTo(-2, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = lit ? `rgba(255, 214, 92, ${0.4 * glow})` : "rgba(255, 214, 92, 0.12)";
+  ctx.fillRect(-10, -2, 14, 4);
+  ctx.restore();
+}
+
+function drawNightmareOverlay() {
+  const alpha = 0.54 + nightmareEvent.flash * 0.22;
+  ctx.fillStyle = `rgba(7, 5, 16, ${alpha})`;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(38, 8, 48, 0.24)";
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  const centerX = GAME_WIDTH / 2;
+  const centerY = 210;
+  const pulse = Math.sin(lastTime * 0.02) * 4;
+  const clawPulse = Math.sin(lastTime * 0.03) * 5;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.fillStyle = "rgba(8, 8, 14, 0.96)";
+  ctx.beginPath();
+  ctx.moveTo(-156, 136);
+  ctx.quadraticCurveTo(-120, 28, -112, -24);
+  ctx.quadraticCurveTo(-102, -86, -64, -142);
+  ctx.quadraticCurveTo(-30, -184, 0, -154);
+  ctx.quadraticCurveTo(34, -182, 70, -138);
+  ctx.quadraticCurveTo(104, -88, 114, -16);
+  ctx.quadraticCurveTo(124, 42, 154, 136);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#04060b";
+  ctx.beginPath();
+  ctx.moveTo(-120, 54);
+  ctx.lineTo(-94, 122);
+  ctx.lineTo(-46, 156);
+  ctx.lineTo(0, 168);
+  ctx.lineTo(46, 156);
+  ctx.lineTo(94, 122);
+  ctx.lineTo(120, 54);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+  ctx.beginPath();
+  ctx.moveTo(-152, 126);
+  ctx.lineTo(-214, 108 + clawPulse);
+  ctx.lineTo(-186, 68);
+  ctx.lineTo(-228, 52);
+  ctx.lineTo(-186, 28);
+  ctx.lineTo(-136, 58);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(152, 126);
+  ctx.lineTo(214, 108 - clawPulse);
+  ctx.lineTo(186, 68);
+  ctx.lineTo(228, 52);
+  ctx.lineTo(186, 28);
+  ctx.lineTo(136, 58);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#6fe8ff";
+  ctx.beginPath();
+  ctx.ellipse(-38, -18, 30, 15 + pulse * 0.18, 0.12, 0, Math.PI * 2);
+  ctx.ellipse(38, -18, 30, 15 + pulse * 0.18, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(111, 232, 255, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(-38, -18, 46, 22, 0.12, 0, Math.PI * 2);
+  ctx.ellipse(38, -18, 46, 22, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#eefcff";
+  ctx.fillRect(-48, -22, 6, 6);
+  ctx.fillRect(30, -22, 6, 6);
+
+  ctx.fillStyle = "#07090e";
+  ctx.beginPath();
+  ctx.moveTo(-48, 12);
+  ctx.lineTo(-16, 24);
+  ctx.lineTo(0, 22);
+  ctx.lineTo(16, 24);
+  ctx.lineTo(48, 12);
+  ctx.lineTo(34, 54);
+  ctx.lineTo(0, 70);
+  ctx.lineTo(-34, 54);
+  ctx.closePath();
+  ctx.fill();
+
+  for (let i = 0; i < 9; i += 1) {
+    ctx.fillStyle = i % 2 === 0 ? "#ece6d8" : "#d0c7bb";
+    ctx.beginPath();
+    ctx.moveTo(-60 + i * 15, 18);
+    ctx.lineTo(-54 + i * 15, 66 + (i % 2) * 8);
+    ctx.lineTo(-48 + i * 15, 18);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "rgba(111, 232, 255, 0.16)";
+  ctx.fillRect(-86, 96, 172, 34);
+  ctx.restore();
+
+  ctx.fillStyle = "#fff5d6";
+  ctx.textAlign = "center";
+  ctx.font = "bold 34px Verdana";
+  ctx.fillText(t("nightmare_title"), GAME_WIDTH / 2, 84);
+  ctx.font = "18px Verdana";
+  if (nightmareEvent.countdown) {
+    ctx.fillText(t("nightmare_countdown"), GAME_WIDTH / 2, 116);
+  } else {
+    ctx.fillText(t("nightmare_copy"), GAME_WIDTH / 2, 116);
+  }
+
+  if (nightmareEvent.countdown) {
+    const countdownValue = Math.max(1, Math.ceil(nightmareEvent.countdownTimer));
+    ctx.font = "bold 72px Verdana";
+    ctx.fillStyle = "#ffb3b3";
+    ctx.fillText(String(countdownValue), GAME_WIDTH / 2, 170);
+  } else {
+    const timerText = nightmareEvent.timer.toFixed(1);
+    ctx.font = "bold 28px Verdana";
+    ctx.fillStyle = "#ffb3b3";
+    ctx.fillText(`${timerText}s`, GAME_WIDTH / 2, 150);
+  }
+
+  const barX = 200;
+  const barY = 430;
+  const barW = 560;
+  const barH = 26;
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.strokeStyle = "#f5e4c5";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  if (!nightmareEvent.countdown) {
+    ctx.fillStyle = "rgba(214, 24, 35, 0.9)";
+    ctx.fillRect(
+      barX + barW * nightmareEvent.targetStart,
+      barY + 2,
+      barW * nightmareEvent.targetWidth,
+      barH - 4
+    );
+
+    const markerX = barX + barW * nightmareEvent.marker;
+    ctx.fillStyle = "#fff8d8";
+    ctx.fillRect(markerX - 4, barY - 8, 8, barH + 16);
+  }
+}
+
+function gameLoop(timestamp) {
+  const dt = Math.min(0.0167 * 2, (timestamp - lastTime) / 1000 || 0);
+  lastTime = timestamp;
+  update(dt);
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+applyLanguage(currentLanguage);
+loadPersistentProgress();
+updateStageSelectLocks();
+applyScreenMode();
+openLobby();
+initializeAuthControls();
+savePersistentProgress(true);
+requestAnimationFrame(gameLoop);
