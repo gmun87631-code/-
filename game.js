@@ -71,6 +71,20 @@ const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const PATCH_NOTES = [
   {
+    version: "Beta v0.5",
+    date: "2026-04-25",
+    items: [
+      "6스테이지 얼어붙은 중계탑 추가",
+      "70초 제한 시간과 시간 경과에 따른 냉기 디버프 추가",
+      "미끄러운 얼음 바닥과 에너지 코어 3개 활성화 목표 추가",
+      "신규 몬스터 서리 워든 추가: aura, 얼음 파동, 근접 즉사 공격",
+      "눈보라, 숨결, 화면 냉기 색감 등 Frozen Relay 전용 연출 추가",
+      "6스테이지에서 서리 워든이 정상 등장하지 않던 문제 수정",
+      "6스테이지는 난이도와 상관없이 트리플 점프가 가능하도록 변경",
+      "서리 워든이 가시 위에 서면 가시가 얼어붙고 워든이 떨어지지 않도록 수정",
+    ],
+  },
+  {
     version: "Beta v0.4",
     date: "2026-04-24",
     items: [
@@ -433,6 +447,7 @@ const STRINGS = {
     stage_all_unlocked: "All stages unlocked. Pick any route.",
     collectible_shards: "Shards",
     collectible_buttons: "Buttons",
+    collectible_cores: "Cores",
     hud_score: "Score {score}",
     hud_lives: "Lives {lives}",
     hud_stage: "Stage {current}/{total}",
@@ -442,6 +457,7 @@ const STRINGS = {
     hud_stage_rank: "Stage Rank x{value}",
     hud_return_lobby: "Esc or Lobby button to return",
     hud_factory_hint: "Press every button before time runs out",
+    hud_frozen_hint: "Activate 3 energy cores before the freeze",
     hud_character: "Character {name}",
     changer_status_ready_cd: "Clone Ready | Swap CD {time}s",
     changer_status_ready: "Clone Ready | Swap Ready",
@@ -460,6 +476,7 @@ const STRINGS = {
     guardian_hint: "Q shield 2s | passive blocks one death",
     assassin_hint: "E stealth (3s) | Q assassinate | no stomp kills",
     stage_objective_factory: "Press {count} buttons to power the lever.",
+    stage_objective_frozen: "Activate {count} energy cores and reach the relay gate.",
     stage_objective_normal: "Collect {count} shards and reach the gate.",
     center_stage_clear: "Stage Clear",
     center_next_stage: "Press Enter for the next stage.",
@@ -513,6 +530,7 @@ const STRINGS = {
     stage_3_name: "Stage 3 - Ember Skyline",
     stage_4_name: "Stage 4 - Neon Arcade",
     stage_5_name: "Stage 5 - Clockwork Factory",
+    stage_6_name: "Stage 6 - Frozen Relay",
   },
   ko: {
     meta_description: "스타링 스프린트는 여러 스테이지, 난이도 설정, 특수 적, 아케이드 감각의 액션을 담은 오리지널 레트로풍 2D 횡스크롤 플랫폼 게임입니다.",
@@ -658,6 +676,7 @@ const STRINGS = {
     stage_all_unlocked: "모든 스테이지가 해금되었습니다. 원하는 경로를 선택하세요.",
     collectible_shards: "파편",
     collectible_buttons: "버튼",
+    collectible_cores: "코어",
     hud_score: "점수 {score}",
     hud_lives: "목숨 {lives}",
     hud_stage: "스테이지 {current}/{total}",
@@ -667,6 +686,7 @@ const STRINGS = {
     hud_stage_rank: "스테이지 배율 x{value}",
     hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
     hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
+    hud_frozen_hint: "완전 동결 전에 에너지 코어 3개를 활성화하세요",
     hud_character: "캐릭터 {name}",
     changer_status_ready_cd: "분신 준비 완료 | 교체 대기 {time}초",
     changer_status_ready: "분신 준비 완료 | 교체 가능",
@@ -685,6 +705,7 @@ const STRINGS = {
     guardian_hint: "Q 방패 2초 | 패시브로 죽음 1회 무효화",
     assassin_hint: "E 은신 (3초) | Q 암살 | 점프 처치 불가",
     stage_objective_factory: "버튼 {count}개를 눌러 레버에 전력을 공급하세요.",
+    stage_objective_frozen: "에너지 코어 {count}개를 활성화하고 중계 게이트에 도달하세요.",
     stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
     center_stage_clear: "스테이지 클리어",
     center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
@@ -738,6 +759,7 @@ const STRINGS = {
     stage_3_name: "스테이지 3 - 불꽃 스카이라인",
     stage_4_name: "스테이지 4 - 네온 아케이드",
     stage_5_name: "스테이지 5 - 시계 공장",
+    stage_6_name: "스테이지 6 - 얼어붙은 중계탑",
   },
 };
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ko";
@@ -978,6 +1000,43 @@ const STAGE_DEFS = [
     ],
     serpentSpawns: [],
   },
+  {
+    name: "Stage 6 - Frozen Relay",
+    widthTiles: 198,
+    theme: "frozen",
+    start: { x: 2, y: 11 },
+    goal: { x: 190, y: 8 },
+    groundSegments: [
+      [0, 8], [11, 19], [23, 31], [35, 44], [48, 56], [60, 69],
+      [73, 82], [86, 94], [99, 108], [112, 121], [126, 135],
+      [140, 149], [154, 163], [168, 177], [182, 197],
+    ],
+    platforms: [
+      [7, 12, 2], [15, 10, 3], [27, 8, 3], [39, 10, 2], [51, 7, 4],
+      [64, 9, 3], [77, 6, 4], [91, 8, 2], [104, 6, 4], [117, 9, 3],
+      [132, 6, 4], [146, 8, 3], [160, 6, 4], [174, 9, 3], [185, 7, 4],
+    ],
+    hazards: [
+      [8, 3], [19, 4], [31, 4], [44, 4], [56, 4], [69, 4], [82, 4],
+      [94, 5], [108, 4], [121, 5], [135, 5], [149, 5], [163, 5], [177, 5],
+    ],
+    iceSegments: [
+      [11, 19], [35, 44], [60, 69], [86, 94], [112, 121], [140, 149], [168, 177],
+      [51, 7, 4], [77, 6, 4], [104, 6, 4], [132, 6, 4], [160, 6, 4],
+    ],
+    collectibles: [
+      { point: [39, 8] },
+      { point: [104, 4] },
+      { point: [174, 7] },
+    ],
+    enemies: [
+      [15, 14], [64, 8], [91, 14], [146, 7], [185, 6],
+    ],
+    frostWardens: [
+      [122, 13],
+    ],
+    serpentSpawns: [],
+  },
 ];
 
 const player = createPlayer();
@@ -1101,6 +1160,9 @@ function currentShardTarget() {
   if (level.theme === "factory") {
     return 12;
   }
+  if (level.theme === "frozen") {
+    return 3;
+  }
   return difficulty.shardGoal;
 }
 
@@ -1140,7 +1202,13 @@ function getSkinSummary(value) {
 }
 
 function currentCollectibleLabel() {
-  return level.theme === "factory" ? t("collectible_buttons") : t("collectible_shards");
+  if (level.theme === "factory") {
+    return t("collectible_buttons");
+  }
+  if (level.theme === "frozen") {
+    return t("collectible_cores");
+  }
+  return t("collectible_shards");
 }
 
 function formatCatalogName(value) {
@@ -3067,6 +3135,8 @@ function createPlayer() {
     guardianShieldCooldown: 0,
     guardianFlash: 0,
     cloneTransferFlash: 0,
+    frostSlowTimer: 0,
+    iceSlideTimer: 0,
   };
 }
 
@@ -3097,6 +3167,9 @@ function resetPlayerPosition() {
       ? 250 * ASSASSIN_RULES.speedMultiplier
       : 250;
   player.maxJumps = difficulty.maxJumps;
+  if (level.theme === "frozen") {
+    player.maxJumps = 3;
+  }
   player.jumpVelocity = difficulty.jumpVelocity;
   player.airJumpVelocity = difficulty.airJumpVelocity;
   if (shopState.equippedCharacter === "starling") {
@@ -3117,6 +3190,8 @@ function resetPlayerPosition() {
   player.stealthTimer = 0;
   player.stealthCooldown = 0;
   player.assassinationCooldown = 0;
+  player.frostSlowTimer = 0;
+  player.iceSlideTimer = 0;
   clearGuardianState();
   player.cloneTransferFlash = 0;
   clearChangerState();
@@ -3132,6 +3207,7 @@ function loadStage(stageIndex, preserveScore = true) {
   level.collectibles.length = 0;
   level.enemies.length = 0;
   level.serpentEnemies.length = 0;
+  level.frostProjectiles.length = 0;
   level.hazards.length = 0;
 
   level.widthTiles = stageDef.widthTiles;
@@ -3146,6 +3222,7 @@ function loadStage(stageIndex, preserveScore = true) {
   }
   collectedCount = 0;
   factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
+  frozenTimeRemaining = level.theme === "frozen" ? 70 : 0;
 
   // Each stage is defined as data so we can scale the route count cleanly.
   for (const [start, end] of stageDef.groundSegments) {
@@ -3154,6 +3231,7 @@ function loadStage(stageIndex, preserveScore = true) {
   for (const [x, y, width] of stageDef.platforms) {
     addPlatform(x, y, width);
   }
+  markIceSolids(stageDef.iceSegments || []);
   for (const [x, width] of stageDef.hazards) {
     addHazard(x, width);
   }
@@ -3174,6 +3252,9 @@ function loadStage(stageIndex, preserveScore = true) {
   }
   for (const excavator of stageDef.excavators || []) {
     addExcavatorEnemy(excavator[0], excavator[1], excavator[2], excavator[3], excavator[4]);
+  }
+  for (const warden of stageDef.frostWardens || []) {
+    addFrostWarden(warden[0], warden[1]);
   }
   for (const serpentSpawn of stageDef.serpentSpawns || []) {
     addSerpentEnemy(serpentSpawn);
@@ -3209,6 +3290,20 @@ function addPlatform(tileX, tileY, widthTiles) {
   }
 }
 
+function markIceSolids(iceSegments) {
+  for (const [tileX, tileYOrEnd, widthTiles] of iceSegments) {
+    for (const solid of level.solids) {
+      const solidTileX = Math.round(solid.x / TILE);
+      const solidTileY = Math.round(solid.y / TILE);
+      const isGroundSegment = widthTiles === undefined && solid.y >= FLOOR_Y && solidTileX >= tileX && solidTileX <= tileYOrEnd;
+      const isPlatformSegment = widthTiles !== undefined && solidTileY === tileYOrEnd && solidTileX >= tileX && solidTileX < tileX + widthTiles;
+      if (isGroundSegment || isPlatformSegment) {
+        solid.ice = true;
+      }
+    }
+  }
+}
+
 function addHazard(startTile, widthTiles) {
   level.hazards.push({
     x: startTile * TILE,
@@ -3239,6 +3334,19 @@ function addCollectible(tileX, tileY) {
       bob: Math.random() * Math.PI * 2,
       collected: false,
       style: "button",
+    });
+    return;
+  }
+
+  if (level.theme === "frozen") {
+    level.collectibles.push({
+      x: tileX * TILE + 2,
+      y: tileY * TILE + 2,
+      w: 28,
+      h: 28,
+      bob: Math.random() * Math.PI * 2,
+      collected: false,
+      style: "core",
     });
     return;
   }
@@ -3336,6 +3444,33 @@ function addExcavatorEnemy(tileX, tileY, facing = "right", minRange = 48, maxRan
   });
 }
 
+function addFrostWarden(tileX, tileY) {
+  const x = tileX * TILE;
+  const y = tileY * TILE - 32;
+  const stageFactor = stageDifficultyFactor(currentStageIndex);
+  level.enemies.push({
+    type: "frostWarden",
+    isBoss: true,
+    x,
+    y,
+    w: 72,
+    h: 88,
+    vx: 0,
+    vy: 0,
+    speed: 46 * difficulty.enemySpeed * stageFactor,
+    facing: -1,
+    alive: true,
+    defeated: false,
+    squishTimer: 0,
+    animationTime: Math.random() * 2,
+    state: "idle",
+    cooldown: 1.4,
+    telegraphTimer: 0,
+    attackType: "",
+    auraPulse: 0,
+  });
+}
+
 function addSerpentEnemy(tileX) {
   const stageFactor = stageDifficultyFactor(currentStageIndex);
   level.serpentEnemies.push({
@@ -3388,7 +3523,7 @@ function restartGame() {
   clearChangerState(true);
   resetNightmareEvent();
   resetAssassinationEvent();
-  loadStage(Math.min(selectedStageIndex, unlockedStageIndex), true);
+  loadStage(Math.min(selectedStageIndex, currentSelectableStageMax()), true);
 }
 
 function nextStage() {
@@ -3430,21 +3565,28 @@ function closeLobby() {
   lobbyOverlay.classList.add("hidden");
 }
 
+function currentSelectableStageMax() {
+  return accountState.isAdmin ? STAGE_DEFS.length - 1 : unlockedStageIndex;
+}
+
 function updateStageSelectLocks() {
+  const selectableMax = currentSelectableStageMax();
   for (const option of stageSelect.options) {
     const stageIndex = Number(option.value);
-    option.disabled = stageIndex > unlockedStageIndex;
-    option.textContent = stageIndex > unlockedStageIndex
+    option.disabled = stageIndex > selectableMax;
+    option.textContent = stageIndex > selectableMax
       ? t("stage_locked", { name: getStageDisplayName(stageIndex) })
       : getStageDisplayName(stageIndex);
   }
 
-  if (selectedStageIndex > unlockedStageIndex) {
-    selectedStageIndex = unlockedStageIndex;
+  if (selectedStageIndex > selectableMax) {
+    selectedStageIndex = selectableMax;
     stageSelect.value = String(selectedStageIndex);
   }
 
-  if (unlockedStageIndex === 0) {
+  if (accountState.isAdmin || selectableMax >= STAGE_DEFS.length - 1) {
+    stageLockText.textContent = t("stage_all_unlocked");
+  } else if (unlockedStageIndex === 0) {
     stageLockText.textContent = t("stage_ready_one");
   } else if (unlockedStageIndex < STAGE_DEFS.length - 1) {
     stageLockText.textContent = t("stage_unlocked_next", {
@@ -3692,6 +3834,17 @@ function playSound(type) {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
     oscillator.start(now);
     oscillator.stop(now + 0.1);
+    return;
+  }
+
+  if (type === "ice") {
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(940, now);
+    oscillator.frequency.exponentialRampToValueAtTime(360, now + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    oscillator.start(now);
+    oscillator.stop(now + 0.22);
     return;
   }
 
@@ -4614,6 +4767,44 @@ function applyPlayerCrouch(desiredCrouch) {
   }
 }
 
+function frozenPressureLevel() {
+  if (level.theme !== "frozen") {
+    return 1;
+  }
+  if (frozenTimeRemaining <= 10) {
+    return 3;
+  }
+  if (frozenTimeRemaining <= 30) {
+    return 2;
+  }
+  return 1;
+}
+
+function frozenSpeedMultiplier() {
+  if (level.theme !== "frozen") {
+    return 1;
+  }
+  let multiplier = frozenPressureLevel() >= 2 ? 0.88 : 1;
+  if (player.frostSlowTimer > 0) {
+    multiplier *= 0.72;
+  }
+  return multiplier;
+}
+
+function frozenJumpMultiplier() {
+  return level.theme === "frozen" && frozenPressureLevel() >= 3 ? 0.82 : 1;
+}
+
+function isPlayerOnIce() {
+  if (level.theme !== "frozen" || !player.onGround) {
+    return false;
+  }
+  const footY = player.y + player.h + 2;
+  const leftX = player.x + 4;
+  const rightX = player.x + player.w - 4;
+  return level.solids.some((solid) => solid.ice && footY >= solid.y && footY <= solid.y + 8 && rightX > solid.x && leftX < solid.x + solid.w);
+}
+
 function updatePlayer(dt) {
   if (gameState !== "playing" || nightmareEvent.active) {
     player.animationTime += dt;
@@ -4648,6 +4839,8 @@ function updatePlayer(dt) {
   player.guardianShieldTimer = Math.max(0, player.guardianShieldTimer - dt);
   player.guardianShieldCooldown = Math.max(0, player.guardianShieldCooldown - dt);
   player.guardianFlash = Math.max(0, player.guardianFlash - dt);
+  player.frostSlowTimer = Math.max(0, player.frostSlowTimer - dt);
+  player.iceSlideTimer = Math.max(0, player.iceSlideTimer - dt);
   if (player.stealthActive) {
     player.stealthTimer = Math.max(0, player.stealthTimer - dt);
     if (player.stealthTimer <= 0) {
@@ -4677,15 +4870,23 @@ function updatePlayer(dt) {
   applyPlayerCrouch(keys.crouch);
 
   const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const moveSpeed = player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed;
-  player.vx = inputX * moveSpeed;
+  const moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
+  if (level.theme === "frozen") {
+    const targetVx = inputX * moveSpeed;
+    const slippery = isPlayerOnIce() || player.iceSlideTimer > 0;
+    const accel = slippery ? 900 : 3200;
+    const decel = slippery ? (player.frostSlowTimer > 0 ? 170 : 260) : 3600;
+    player.vx = moveTowards(player.vx, targetVx, (inputX === 0 ? decel : accel) * dt);
+  } else {
+    player.vx = inputX * moveSpeed;
+  }
   if (inputX !== 0) {
     player.facing = inputX;
   }
 
   if (keys.jumpQueued && player.jumpsRemaining > 0) {
     const usedAirJump = !player.onGround && player.jumpsRemaining === 1;
-    player.vy = usedAirJump ? player.airJumpVelocity : player.jumpVelocity;
+    player.vy = (usedAirJump ? player.airJumpVelocity : player.jumpVelocity) * frozenJumpMultiplier();
     player.onGround = false;
     player.jumpsRemaining -= 1;
     playSound(usedAirJump ? "doubleJump" : "jump");
@@ -4720,9 +4921,9 @@ function updatePlayer(dt) {
     if (!collectible.collected && overlaps(player, collectible)) {
       collectible.collected = true;
       score += Math.round(100 * difficulty.collectibleBonus);
-      awardCoins(level.theme === "factory" ? 8 : 6);
+      awardCoins(level.theme === "factory" || level.theme === "frozen" ? 8 : 6);
       collectedCount += 1;
-      playSound(level.theme === "factory" ? "button" : "coin");
+      playSound(level.theme === "factory" ? "button" : level.theme === "frozen" ? "ice" : "coin");
     }
   }
 
@@ -4733,6 +4934,11 @@ function updatePlayer(dt) {
       }
 
       if (enemy.type === "excavator") {
+        loseLife();
+        break;
+      }
+
+      if (enemy.type === "frostWarden") {
         loseLife();
         break;
       }
@@ -4870,6 +5076,11 @@ function updateEnemies(dt) {
       continue;
     }
 
+    if (enemy.type === "frostWarden") {
+      updateFrostWardenEnemy(enemy, dt);
+      continue;
+    }
+
     enemy.vy += GRAVITY * dt;
     enemy.x += enemy.vx * dt;
 
@@ -4915,6 +5126,8 @@ function updateEnemies(dt) {
       enemy.squishTimer = 0;
     }
   }
+
+  updateFrostProjectiles(dt);
 
   for (const serpent of level.serpentEnemies) {
     serpent.animationTime += dt;
@@ -5046,6 +5259,134 @@ function updateExcavatorEnemy(enemy, dt) {
   }
 }
 
+function updateFrostWardenEnemy(enemy, dt) {
+  const playerCenterX = player.x + player.w * 0.5;
+  const enemyCenterX = enemy.x + enemy.w * 0.5;
+  const dx = playerCenterX - enemyCenterX;
+  const distance = Math.abs(dx);
+  enemy.facing = dx < 0 ? -1 : 1;
+  enemy.auraPulse = Math.max(0, 1 - distance / 360);
+  enemy.vy += GRAVITY * dt;
+
+  if (player.stealthActive) {
+    enemy.vx = 0;
+    enemy.state = "idle";
+    enemy.cooldown = Math.max(enemy.cooldown, 0.8);
+  } else if (enemy.state === "idle") {
+    enemy.cooldown -= dt;
+    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed : 0;
+    if (enemy.cooldown <= 0 && distance < 360) {
+      enemy.state = "telegraph";
+      enemy.attackType = distance < 88 ? "melee" : "wave";
+      enemy.telegraphTimer = enemy.attackType === "melee" ? 0.42 : 0.55;
+      enemy.vx = 0;
+    }
+  } else if (enemy.state === "telegraph") {
+    enemy.vx = 0;
+    enemy.telegraphTimer -= dt;
+    enemy.auraPulse = 1.35;
+    if (enemy.telegraphTimer <= 0) {
+      if (enemy.attackType === "melee") {
+        const hitbox = {
+          x: enemy.facing > 0 ? enemy.x + enemy.w - 4 : enemy.x - 44,
+          y: enemy.y + 18,
+          w: 48,
+          h: 54,
+        };
+        if (overlaps(player, hitbox)) {
+          lives = 0;
+          gameState = "gameover";
+          player.vx = 0;
+          player.vy = 0;
+        }
+      } else {
+        spawnFrostWave(enemy);
+      }
+      enemy.state = "recover";
+      enemy.cooldown = 0.7;
+    }
+  } else if (enemy.state === "recover") {
+    enemy.vx = 0;
+    enemy.cooldown -= dt;
+    if (enemy.cooldown <= 0) {
+      enemy.state = "idle";
+      enemy.cooldown = 1.1 + Math.random() * 0.5;
+    }
+  }
+
+  enemy.x += enemy.vx * dt;
+  enemy.y += enemy.vy * dt;
+
+  resolveFrostWardenFrozenSpikes(enemy, dt);
+
+  for (const solid of level.solids) {
+    if (!overlaps(enemy, solid)) {
+      continue;
+    }
+    if (enemy.vy > 0) {
+      enemy.y = solid.y - enemy.h;
+      enemy.vy = 0;
+    } else if (enemy.vy < 0) {
+      enemy.y = solid.y + solid.h;
+      enemy.vy = 0;
+    }
+  }
+}
+
+function resolveFrostWardenFrozenSpikes(enemy, dt) {
+  if (level.theme !== "frozen" || enemy.vy < 0) {
+    return;
+  }
+
+  const previousBottom = enemy.y + enemy.h - enemy.vy * dt;
+  const currentBottom = enemy.y + enemy.h;
+  for (const hazard of level.hazards) {
+    const horizontalOverlap = enemy.x + enemy.w > hazard.x + 6 && enemy.x < hazard.x + hazard.w - 6;
+    const crossingTop = previousBottom <= hazard.y + 8 && currentBottom >= hazard.y;
+    if (!horizontalOverlap || !crossingTop) {
+      continue;
+    }
+
+    hazard.frozenByWarden = true;
+    enemy.y = hazard.y - enemy.h;
+    enemy.vy = 0;
+    return;
+  }
+}
+
+function spawnFrostWave(enemy) {
+  const waveW = 42;
+  level.frostProjectiles.push({
+    x: enemy.facing > 0 ? enemy.x + enemy.w - 4 : enemy.x - waveW + 4,
+    y: enemy.y + 34,
+    w: waveW,
+    h: 22,
+    vx: enemy.facing * 260,
+    life: 2.4,
+    phase: Math.random() * Math.PI * 2,
+  });
+  playSound("ice");
+}
+
+function updateFrostProjectiles(dt) {
+  for (const projectile of level.frostProjectiles) {
+    projectile.x += projectile.vx * dt;
+    projectile.life -= dt;
+    projectile.phase += dt * 10;
+    if (overlaps(player, projectile)) {
+      player.frostSlowTimer = Math.max(player.frostSlowTimer, 3.2);
+      player.iceSlideTimer = Math.max(player.iceSlideTimer, 3.2);
+      projectile.life = 0;
+      playSound("ice");
+    }
+  }
+  for (let i = level.frostProjectiles.length - 1; i >= 0; i -= 1) {
+    if (level.frostProjectiles[i].life <= 0) {
+      level.frostProjectiles.splice(i, 1);
+    }
+  }
+}
+
 function updateCamera() {
   const target = player.x - GAME_WIDTH * 0.35;
   camera.x += (target - camera.x) * 0.1;
@@ -5097,6 +5438,18 @@ function update(dt) {
           updateCamera();
           return;
         }
+        lives = 0;
+        gameState = "gameover";
+        player.vx = 0;
+        player.vy = 0;
+        updateCamera();
+        return;
+      }
+    }
+
+    if (level.theme === "frozen") {
+      frozenTimeRemaining = Math.max(0, frozenTimeRemaining - dt);
+      if (frozenTimeRemaining <= 0) {
         lives = 0;
         gameState = "gameover";
         player.vx = 0;
@@ -5263,6 +5616,22 @@ function getThemeColors() {
     };
   }
 
+  if (level.theme === "frozen") {
+    return {
+      skyTop: "#071221",
+      skyMid: "#123454",
+      skyBottom: "#8ccdf1",
+      hillBack: "#284d70",
+      hillFront: "#163653",
+      cloud: "rgba(226, 248, 255, 0.5)",
+      platformTop: "#bdf3ff",
+      groundTop: "#81d8ff",
+      hazardMain: "#23446d",
+      hazardGlow: "#b9f7ff",
+      goal: "#8eeeff",
+    };
+  }
+
   if (level.theme === "sunset") {
     return {
       skyTop: "#ff9966",
@@ -5302,6 +5671,11 @@ function drawBackground() {
 
   if (level.theme === "factory") {
     drawFactoryBackground();
+    return;
+  }
+
+  if (level.theme === "frozen") {
+    drawFrozenBackground();
     return;
   }
 
@@ -5355,6 +5729,36 @@ function drawFactoryBackground() {
   ctx.fillStyle = "rgba(255, 210, 110, 0.12)";
   for (let i = -1; i < 10; i += 1) {
     ctx.fillRect(i * 120 - beamOffset, 420, 18, 120);
+  }
+}
+
+function drawFrozenBackground() {
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.58, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  drawParallaxHills(0.12, palette.hillBack, 300, 390, 170);
+  drawParallaxHills(0.26, palette.hillFront, 360, 448, 150);
+
+  const towerScroll = (camera.x * 0.16) % 320;
+  for (let i = -1; i < 5; i += 1) {
+    const x = i * 320 - towerScroll;
+    ctx.fillStyle = "rgba(5, 18, 34, 0.55)";
+    ctx.fillRect(x + 120, 88, 34, 320);
+    ctx.fillRect(x + 84, 170, 106, 16);
+    ctx.fillRect(x + 98, 250, 78, 14);
+    ctx.strokeStyle = "rgba(155, 234, 255, 0.24)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 137, 88);
+    ctx.lineTo(x + 72, 236);
+    ctx.moveTo(x + 137, 88);
+    ctx.lineTo(x + 206, 236);
+    ctx.stroke();
   }
 }
 
@@ -5449,6 +5853,7 @@ function drawWorld() {
   ctx.save();
   ctx.translate(-camera.x, 0);
   drawHazards();
+  drawFrostProjectiles();
   drawSerpentEnemies();
   drawGoal();
   drawSolids();
@@ -5456,6 +5861,7 @@ function drawWorld() {
   drawEnemies();
   drawChangerClone();
   drawPlayer();
+  drawFrozenPlayerEffect();
   drawChangerSwapEffect();
   ctx.restore();
 }
@@ -5468,6 +5874,8 @@ function drawSolids() {
       ctx.fillStyle = isGround ? "#1b1633" : "#231a3a";
     } else if (level.theme === "factory") {
       ctx.fillStyle = isGround ? "#565b66" : "#787f8a";
+    } else if (level.theme === "frozen") {
+      ctx.fillStyle = solid.ice ? "#7dcdeb" : (isGround ? "#31516d" : "#4f7895");
     } else {
       ctx.fillStyle = isGround ? "#7f5c43" : "#9a733f";
     }
@@ -5476,6 +5884,8 @@ function drawSolids() {
       ctx.fillStyle = isGround ? "#0e0a1b" : "#120c22";
     } else if (level.theme === "factory") {
       ctx.fillStyle = isGround ? "#2d3139" : "#4a515c";
+    } else if (level.theme === "frozen") {
+      ctx.fillStyle = solid.ice ? "#3a87ad" : "#203b52";
     } else {
       ctx.fillStyle = isGround ? "#5b3e2a" : "#6d512c";
     }
@@ -5497,6 +5907,14 @@ function drawSolids() {
       ctx.fillRect(solid.x + 18, solid.y + 14, 5, 4);
       ctx.fillStyle = "rgba(50, 55, 64, 0.4)";
       ctx.fillRect(solid.x + 12, solid.y + 6, 2, solid.h - 12);
+    } else if (level.theme === "frozen") {
+      ctx.fillStyle = solid.ice ? "rgba(235,255,255,0.42)" : "rgba(210,244,255,0.18)";
+      ctx.fillRect(solid.x + 3, solid.y + 8, 12, 3);
+      ctx.fillRect(solid.x + 17, solid.y + 14, 9, 2);
+      if (solid.ice) {
+        ctx.fillStyle = "rgba(255,255,255,0.22)";
+        ctx.fillRect(solid.x, solid.y + 2, solid.w, 2);
+      }
     } else {
       ctx.fillStyle = "rgba(255,255,255,0.12)";
       ctx.fillRect(solid.x + 4, solid.y + 8, 6, 6);
@@ -5540,6 +5958,39 @@ function drawHazards() {
       ctx.fillStyle = serpentPool ? "#8be3ff" : palette.hazardGlow;
       ctx.fillRect(hazard.x + i + 6, hazard.y + 12, 4, 8);
     }
+
+    if (hazard.frozenByWarden) {
+      ctx.fillStyle = "rgba(194, 247, 255, 0.78)";
+      ctx.fillRect(hazard.x, hazard.y - 4, hazard.w, 10);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.44)";
+      for (let i = 4; i < hazard.w; i += 24) {
+        ctx.fillRect(hazard.x + i, hazard.y - 2, 12, 3);
+      }
+      ctx.strokeStyle = "rgba(104, 218, 255, 0.68)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(hazard.x, hazard.y - 4, hazard.w, 10);
+    }
+  }
+}
+
+function drawFrostProjectiles() {
+  if (level.theme !== "frozen") {
+    return;
+  }
+  for (const projectile of level.frostProjectiles) {
+    const wave = Math.sin(projectile.phase) * 4;
+    ctx.fillStyle = "rgba(154, 238, 255, 0.32)";
+    ctx.fillRect(projectile.x - 8, projectile.y - 8 + wave, projectile.w + 16, projectile.h + 16);
+    ctx.fillStyle = "#d7fbff";
+    ctx.beginPath();
+    ctx.moveTo(projectile.x, projectile.y + projectile.h * 0.5);
+    ctx.lineTo(projectile.x + projectile.w * 0.65, projectile.y);
+    ctx.lineTo(projectile.x + projectile.w, projectile.y + projectile.h * 0.5);
+    ctx.lineTo(projectile.x + projectile.w * 0.65, projectile.y + projectile.h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#54cfff";
+    ctx.fillRect(projectile.x + 8, projectile.y + 8, projectile.w - 16, 5);
   }
 }
 
@@ -5696,6 +6147,20 @@ function drawCollectibles() {
       ctx.fillRect(x + 8, y + 8, 4, 2);
       ctx.fillRect(x + 8, y + 10, 2, 2);
       ctx.fillRect(x + 10, y + 10, 2, 2);
+    } else if (level.theme === "frozen") {
+      const pulse = 0.78 + Math.sin(lastTime * 0.009 + collectible.bob) * 0.18;
+      ctx.fillStyle = `rgba(122, 229, 255, ${0.22 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(x + 14, y + 14, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#113657";
+      ctx.fillRect(x + 7, y + 3, 14, 22);
+      ctx.fillRect(x + 3, y + 7, 22, 14);
+      ctx.fillStyle = `rgba(126, 238, 255, ${0.95 * pulse})`;
+      ctx.fillRect(x + 10, y + 6, 8, 16);
+      ctx.fillRect(x + 6, y + 10, 16, 8);
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.fillRect(x + 12, y + 8, 4, 4);
     } else {
       ctx.fillStyle = "#ffe14d";
       ctx.fillRect(x + 4, y, 12, 20);
@@ -5716,6 +6181,11 @@ function drawEnemySprite(enemy) {
 
   if (enemy.type === "excavator") {
     drawExcavatorSprite(enemy);
+    return;
+  }
+
+  if (enemy.type === "frostWarden") {
+    drawFrostWardenSprite(enemy);
     return;
   }
 
@@ -5803,6 +6273,54 @@ function drawExcavatorSprite(enemy) {
   ctx.fillStyle = "#d5dee5";
   ctx.fillRect(claw.x, claw.y, 5, claw.h);
   ctx.fillRect(claw.x + claw.w - 5, claw.y, 5, claw.h);
+  ctx.restore();
+}
+
+function drawFrostWardenSprite(enemy) {
+  if (!enemy.alive || enemy.defeated) {
+    return;
+  }
+  const x = enemy.x;
+  const y = enemy.y;
+  const pulse = 0.72 + Math.sin(enemy.animationTime * 5) * 0.12;
+  const telegraph = enemy.state === "telegraph" ? 0.55 + Math.sin(lastTime * 0.04) * 0.25 : 0;
+  const auraAlpha = Math.min(0.82, 0.16 + enemy.auraPulse * 0.32 + telegraph);
+
+  ctx.save();
+  ctx.fillStyle = `rgba(97, 218, 255, ${auraAlpha})`;
+  ctx.beginPath();
+  ctx.ellipse(x + enemy.w * 0.5, y + enemy.h * 0.55, 76, 96, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#071522";
+  ctx.fillRect(x + 18, y + 24, 38, 46);
+  ctx.fillRect(x + 12, y + 52, 48, 22);
+  ctx.fillStyle = "#24384f";
+  ctx.fillRect(x + 20, y + 18, 34, 42);
+  ctx.fillRect(x + 8, y + 44, 18, 34);
+  ctx.fillRect(x + 48, y + 44, 18, 34);
+  ctx.fillStyle = "#d7efff";
+  ctx.fillRect(x + 15, y + 8, 42, 16);
+  ctx.fillRect(x + 21, y + 2, 9, 16);
+  ctx.fillRect(x + 42, y, 9, 18);
+  ctx.fillStyle = "#8ddfff";
+  ctx.fillRect(x + 25, y + 28, 22, 8);
+  ctx.fillRect(x + 30, y + 38, 12, 18);
+  ctx.fillStyle = `rgba(101, 220, 255, ${0.88 * pulse + telegraph})`;
+  ctx.fillRect(x + 27, y + 18, 5, 5);
+  ctx.fillRect(x + 42, y + 18, 5, 5);
+  ctx.fillRect(x + 30, y + 30, 12, 3);
+  ctx.fillStyle = "#06101c";
+  ctx.fillRect(x + 16, y + 74, 18, 12);
+  ctx.fillRect(x + 40, y + 74, 18, 12);
+
+  if (enemy.state === "telegraph") {
+    ctx.strokeStyle = "rgba(213, 251, 255, 0.82)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(x + enemy.w * 0.5, y + enemy.h * 0.55, 82, 102, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -5970,6 +6488,28 @@ function drawPlayer() {
   }
   drawPlayerSkinAccent();
   ctx.restore();
+}
+
+function drawFrozenPlayerEffect() {
+  if (level.theme !== "frozen") {
+    return;
+  }
+  const coldStage = frozenPressureLevel();
+  const breathX = player.facing > 0 ? player.x + player.w + 6 : player.x - 14;
+  const breathY = player.y + 8 + Math.sin(player.animationTime * 3) * 2;
+  ctx.fillStyle = "rgba(223, 250, 255, 0.38)";
+  ctx.fillRect(breathX, breathY, 10, 5);
+  ctx.fillRect(breathX + player.facing * 8, breathY - 3, 8, 4);
+
+  if (coldStage >= 3 || player.frostSlowTimer > 0) {
+    const alpha = coldStage >= 3 ? 0.42 : 0.26;
+    ctx.strokeStyle = `rgba(173, 241, 255, ${alpha})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(player.x - 2, player.y - 2, player.w + 4, player.h + 4);
+    ctx.fillStyle = `rgba(218, 252, 255, ${alpha * 0.5})`;
+    ctx.fillRect(player.x + 4, player.y + 3, 6, 2);
+    ctx.fillRect(player.x + player.w - 10, player.y + 14, 7, 2);
+  }
 }
 
 function drawChangerClone() {
@@ -6698,6 +7238,9 @@ function drawHud() {
   if (level.theme === "factory") {
     ctx.fillText(t("hud_clock", { time: formatStageTimer(factoryTimeRemaining) }), 470, 68);
     ctx.fillText(t("hud_factory_hint"), 470, 96);
+  } else if (level.theme === "frozen") {
+    ctx.fillText(t("hud_clock", { time: formatStageTimer(frozenTimeRemaining) }), 470, 68);
+    ctx.fillText(t("hud_frozen_hint"), 470, 96);
   } else {
     ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
@@ -6713,6 +7256,8 @@ function drawHud() {
   if (stageMessageTimer > 0) {
     if (level.theme === "factory") {
       drawCenterPanel(level.name, t("stage_objective_factory", { count: currentShardTarget() }), "");
+    } else if (level.theme === "frozen") {
+      drawCenterPanel(level.name, t("stage_objective_frozen", { count: currentShardTarget() }), "");
     } else {
       drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
     }
@@ -6752,6 +7297,7 @@ function drawCenterPanel(title, line1, line2) {
 function render() {
   drawBackground();
   drawWorld();
+  drawFrozenAtmosphere();
   drawHud();
   if (assassinationEvent.active) {
     drawAssassinationOverlay();
@@ -6761,6 +7307,37 @@ function render() {
     drawDanceOverlay();
   } else if (nightmareEvent.active || nightmareEvent.countdown) {
     drawNightmareOverlay();
+  }
+}
+
+function drawFrozenAtmosphere() {
+  if (level.theme !== "frozen") {
+    return;
+  }
+  const coldStage = frozenPressureLevel();
+  const blueAlpha = coldStage === 1 ? 0.04 : coldStage === 2 ? 0.13 : 0.24;
+  ctx.fillStyle = `rgba(72, 166, 255, ${blueAlpha})`;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  ctx.fillStyle = "rgba(231, 252, 255, 0.66)";
+  const snowCount = coldStage === 3 ? 86 : 58;
+  for (let i = 0; i < snowCount; i += 1) {
+    const x = (i * 73 + lastTime * 0.025 + camera.x * 0.12) % (GAME_WIDTH + 20) - 10;
+    const y = (i * 41 + lastTime * (0.035 + (i % 5) * 0.004)) % (GAME_HEIGHT + 24) - 12;
+    const size = 1 + (i % 3);
+    ctx.fillRect(x, y, size, size);
+  }
+
+  if (coldStage >= 3) {
+    ctx.strokeStyle = "rgba(218, 252, 255, 0.24)";
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 9; i += 1) {
+      const x = 40 + i * 112 + Math.sin(lastTime * 0.002 + i) * 12;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x - 38, 82);
+      ctx.stroke();
+    }
   }
 }
 
