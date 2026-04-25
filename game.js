@@ -5,6 +5,7 @@ ctx.imageSmoothingEnabled = false;
 const muteButton = document.getElementById("muteButton");
 const difficultySelect = document.getElementById("difficultySelect");
 const screenModeSelect = document.getElementById("screenModeSelect");
+const controlModeSelect = document.getElementById("controlModeSelect");
 const stageSelect = document.getElementById("stageSelect");
 const languageSelect = document.getElementById("languageSelect");
 const stageLockText = document.getElementById("stageLockText");
@@ -77,6 +78,7 @@ const PATCH_NOTES = [
       "모바일 터치 조작 버튼 추가: 이동, 점프, 웅크리기, 스킬, 재시작 지원",
       "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
       "모바일 조이스틱 감지와 터치 이벤트 호환성 개선",
+      "로비에서 컴퓨터 버전과 모바일 버전을 직접 선택하는 설정 추가",
     ],
   },
   {
@@ -347,6 +349,9 @@ const STRINGS = {
     settings_title: "Settings",
     difficulty_label: "Difficulty",
     screen_label: "Screen",
+    control_mode_label: "Controls",
+    control_desktop: "Computer",
+    control_mobile: "Mobile",
     collection_eyebrow: "Collection",
     collection_title: "Characters & Skins",
     shop_heading: "Shop",
@@ -578,6 +583,9 @@ const STRINGS = {
     settings_title: "설정",
     difficulty_label: "난이도",
     screen_label: "화면",
+    control_mode_label: "조작",
+    control_desktop: "컴퓨터",
+    control_mobile: "모바일",
     collection_eyebrow: "컬렉션",
     collection_title: "캐릭터 & 스킨",
     shop_heading: "상점",
@@ -1072,6 +1080,7 @@ let stageMessageTimer = 0;
 let selectedStageIndex = Number(stageSelect.value);
 let unlockedStageIndex = 0;
 let screenMode = screenModeSelect.value;
+let controlMode = controlModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
 let lastStageClearReward = null;
@@ -1613,6 +1622,8 @@ function applyLanguage(nextLanguage) {
   difficultySelect.querySelector('option[value="hard"]').textContent = getDifficultyLabel("hard");
   screenModeSelect.querySelector('option[value="fullscreen"]').textContent = getScreenModeLabel("fullscreen");
   screenModeSelect.querySelector('option[value="classic"]').textContent = getScreenModeLabel("classic");
+  controlModeSelect.querySelector('option[value="desktop"]').textContent = t("control_desktop");
+  controlModeSelect.querySelector('option[value="mobile"]').textContent = t("control_mobile");
   updateMuteButtonLabel();
 
   for (const option of stageSelect.options) {
@@ -1871,6 +1882,7 @@ function createDefaultProgress() {
     selectedStageIndex: 0,
     activeDifficultyKey: difficultySelect.value,
     screenMode: screenModeSelect.value,
+    controlMode: controlModeSelect.value,
     shopState: {
       ownedCharacters: getDefaultOwnedCharacters(),
       ownedSkins: getDefaultOwnedSkins(),
@@ -2501,6 +2513,7 @@ function createSaveData() {
     selectedStageIndex,
     activeDifficultyKey,
     screenMode,
+    controlMode,
     shopState: {
       ownedCharacters: [...shopState.ownedCharacters],
       ownedSkins: [...shopState.ownedSkins],
@@ -2580,6 +2593,9 @@ function loadPersistentProgress() {
     if (typeof data.screenMode === "string" && ["fullscreen", "classic"].includes(data.screenMode)) {
       screenMode = data.screenMode;
     }
+    if (typeof data.controlMode === "string" && ["desktop", "mobile"].includes(data.controlMode)) {
+      controlMode = data.controlMode;
+    }
 
     if (data.shopState && typeof data.shopState === "object") {
       if (Array.isArray(data.shopState.ownedCharacters) && data.shopState.ownedCharacters.length > 0) {
@@ -2621,6 +2637,7 @@ function loadPersistentProgress() {
 
     difficultySelect.value = activeDifficultyKey;
     screenModeSelect.value = screenMode;
+    controlModeSelect.value = controlMode;
     stageSelect.value = String(selectedStageIndex);
     showAuthPanel(false);
     syncLobbyAccountUI();
@@ -2644,6 +2661,7 @@ function resetProgressState() {
   selectedStageIndex = 0;
   unlockedStageIndex = 0;
   screenMode = screenModeSelect.value;
+  controlMode = controlModeSelect.value;
   factoryTimeRemaining = 0;
   shopState.ownedCharacters = getDefaultOwnedCharacters();
   shopState.ownedSkins = getDefaultOwnedSkins();
@@ -2677,6 +2695,9 @@ function applyAccountProgress(progress) {
   screenMode = typeof progress.screenMode === "string" && ["fullscreen", "classic"].includes(progress.screenMode)
     ? progress.screenMode
     : screenModeSelect.value;
+  controlMode = typeof progress.controlMode === "string" && ["desktop", "mobile"].includes(progress.controlMode)
+    ? progress.controlMode
+    : controlModeSelect.value;
 
   const savedShopState = progress.shopState || {};
   shopState.ownedCharacters = Array.isArray(savedShopState.ownedCharacters) ? [...new Set(savedShopState.ownedCharacters)] : getDefaultOwnedCharacters();
@@ -2694,9 +2715,11 @@ function applyAccountProgress(progress) {
 
   difficultySelect.value = activeDifficultyKey;
   screenModeSelect.value = screenMode;
+  controlModeSelect.value = controlMode;
   stageSelect.value = String(selectedStageIndex);
   updateStageSelectLocks();
   applyScreenMode();
+  applyControlMode();
   syncLobbyAccountUI();
   lastSavedStateJson = JSON.stringify(createSaveData());
 }
@@ -3056,6 +3079,13 @@ function stageDifficultyFactor(stageIndex) {
 
 function applyScreenMode() {
   document.body.classList.toggle("classic-mode", screenMode === "classic");
+}
+
+function applyControlMode() {
+  document.body.classList.toggle("touch-controls-enabled", controlMode === "mobile");
+  if (controlMode !== "mobile") {
+    resetMobileJoystick();
+  }
 }
 
 function resetNightmareEvent() {
@@ -4678,16 +4708,6 @@ const mobileJoystickState = {
   jumped: false,
 };
 
-function isTouchControlDevice() {
-  return Boolean(
-    navigator.maxTouchPoints > 0 ||
-    navigator.msMaxTouchPoints > 0 ||
-    window.matchMedia?.("(pointer: coarse)")?.matches
-  );
-}
-
-document.body.classList.toggle("touch-controls-enabled", isTouchControlDevice());
-
 function resetMobileJoystick() {
   keys.left = false;
   keys.right = false;
@@ -4881,6 +4901,11 @@ stageSelect.addEventListener("change", () => {
 screenModeSelect.addEventListener("change", () => {
   screenMode = screenModeSelect.value;
   applyScreenMode();
+});
+
+controlModeSelect.addEventListener("change", () => {
+  controlMode = controlModeSelect.value;
+  applyControlMode();
 });
 
 playButton.addEventListener("click", () => {
@@ -8013,6 +8038,7 @@ applyLanguage(currentLanguage);
 loadPersistentProgress();
 updateStageSelectLocks();
 applyScreenMode();
+applyControlMode();
 openLobby();
 initializeAuthControls();
 savePersistentProgress(true);
