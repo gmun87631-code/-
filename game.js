@@ -81,6 +81,8 @@ const PATCH_NOTES = [
       "로비에서 컴퓨터 버전과 모바일 버전을 직접 선택하는 설정 추가",
       "모바일 Q 버튼으로 어쌔신 연타 QTE를 진행할 수 있도록 수정",
       "모바일 조이스틱 시각 요소를 숨기고 화면 드래그 방향으로 조작하도록 변경",
+      "모바일 조이스틱 테두리는 숨기고 가운데 버튼만 표시하도록 조정",
+      "모바일 하드 악몽 이벤트에서 점프 드래그를 스페이스 입력처럼 처리하도록 수정",
     ],
   },
   {
@@ -3147,6 +3149,18 @@ function resolveNightmareEvent(success) {
   resetNightmareEvent();
 }
 
+function attemptNightmareInput() {
+  if (!nightmareEvent.active) {
+    return false;
+  }
+  const marker = nightmareEvent.marker;
+  const success =
+    marker >= nightmareEvent.targetStart &&
+    marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
+  resolveNightmareEvent(success);
+  return true;
+}
+
 function resetDanceEvent() {
   danceEvent.active = false;
   danceEvent.countdown = false;
@@ -4587,11 +4601,7 @@ function handleInput(event, pressed) {
   }
 
   if (pressed && nightmareEvent.active && [" ", "Spacebar", "Enter"].includes(event.key)) {
-    const marker = nightmareEvent.marker;
-    const success =
-      marker >= nightmareEvent.targetStart &&
-      marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
-    resolveNightmareEvent(success);
+    attemptNightmareInput();
     return;
   }
 
@@ -4755,6 +4765,11 @@ function updateMobileJoystick(event) {
   keys.crouch = normalizedY > 0.45 && level.theme === "arcade" && gameState !== "lobby";
   const wantsJump = normalizedY < -0.48;
   if (wantsJump && !mobileJoystickState.jumped && !keys.jump) {
+    if (attemptNightmareInput()) {
+      keys.jump = false;
+      mobileJoystickState.jumped = true;
+      return;
+    }
     keys.jumpQueued = true;
     if (gameState === "stageclear") {
       nextStage();
