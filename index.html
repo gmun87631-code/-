@@ -35,18 +35,6 @@
       </div>
       <div class="game-frame">
         <canvas id="game" width="960" height="540" aria-label="Starling Sprint game canvas" data-i18n-aria-label="canvas_label"></canvas>
-        <div class="mobile-controls" id="mobileControls" aria-hidden="true">
-          <div class="mobile-joystick" id="mobileJoystick" aria-label="Move joystick">
-            <div class="mobile-joystick-ring"></div>
-            <div class="mobile-joystick-knob" id="mobileJoystickKnob"></div>
-          </div>
-          <div class="mobile-actions">
-            <button type="button" class="mobile-control-button small" data-mobile-action="skill-e" aria-label="Skill E">E</button>
-            <button type="button" class="mobile-control-button small" data-mobile-action="skill-q" aria-label="Skill Q">Q</button>
-            <button type="button" class="mobile-control-button small" data-mobile-action="skill-x" aria-label="Skill X">X</button>
-            <button type="button" class="mobile-control-button small" data-mobile-action="restart" aria-label="Restart">R</button>
-          </div>
-        </div>
         <section class="lobby-overlay" id="lobbyOverlay">
           <div class="lobby-card">
             <section class="auth-panel" id="authPanel">
@@ -164,13 +152,6 @@
                     <select id="screenModeSelect">
                       <option value="fullscreen" selected>Fullscreen</option>
                       <option value="classic">Classic</option>
-                    </select>
-                  </label>
-                  <label class="option" for="controlModeSelect">
-                    <span data-i18n="control_mode_label">Controls</span>
-                    <select id="controlModeSelect">
-                      <option value="desktop" selected>Computer</option>
-                      <option value="mobile">Mobile</option>
                     </select>
                   </label>
                   <button id="muteButton" type="button">Mute: Off</button>

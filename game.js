@@ -5,7 +5,6 @@ ctx.imageSmoothingEnabled = false;
 const muteButton = document.getElementById("muteButton");
 const difficultySelect = document.getElementById("difficultySelect");
 const screenModeSelect = document.getElementById("screenModeSelect");
-const controlModeSelect = document.getElementById("controlModeSelect");
 const stageSelect = document.getElementById("stageSelect");
 const languageSelect = document.getElementById("languageSelect");
 const stageLockText = document.getElementById("stageLockText");
@@ -72,40 +71,6 @@ const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const PATCH_NOTES = [
   {
-    version: "Beta v0.7",
-    date: "2026-04-25",
-    items: [
-      "신규 캐릭터 라이트너 추가: 스파크 앵커, 체인 라이트닝 필드, 각성 스킬 구현",
-      "모바일 조작에 X 스킬 버튼 추가",
-      "모든 캐릭터 픽셀 스프라이트 디테일과 식별성을 개선",
-      "라이트너 이미지 에셋 렌더링을 제거하고 기존 코드 스프라이트로 복구",
-      "4스테이지 하드 댄스머신 입력을 방향키와 모바일 드래그에서도 작동하도록 수정",
-      "라이트너 픽셀 스프라이트가 보유 스킨 팔레트와 특수 스킨 효과를 반영하도록 수정",
-      "4스테이지 하드 댄스머신 트리거를 시작 즉시 카운트다운 방식으로 안정화하고 난이도 동기화 문제를 수정",
-    ],
-  },
-  {
-    version: "Beta v0.6",
-    date: "2026-04-25",
-    items: [
-      "모바일 터치 조작 버튼 추가: 이동, 점프, 웅크리기, 스킬, 재시작 지원",
-      "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
-      "모바일 조이스틱 감지와 터치 이벤트 호환성 개선",
-      "로비에서 컴퓨터 버전과 모바일 버전을 직접 선택하는 설정 추가",
-      "모바일 Q 버튼으로 어쌔신 연타 QTE를 진행할 수 있도록 수정",
-      "모바일 조이스틱 시각 요소를 숨기고 화면 드래그 방향으로 조작하도록 변경",
-      "모바일 조이스틱 테두리는 숨기고 가운데 버튼만 표시하도록 조정",
-      "모바일 하드 악몽 이벤트에서 점프 드래그를 스페이스 입력처럼 처리하도록 수정",
-      "모바일 스킬 버튼 터치와 클릭 입력 안정성 개선",
-      "서리 워든은 점프로 처치되지 않고 어쌔신 암살 성공으로 처치되도록 조정",
-      "어쌔신과 서리 워든이 접촉하면 즉시 연타 싸움이 시작되도록 변경",
-      "서리 워든 전용 암살 QTE 추가: 시간 정지, 중앙 게이지, 피니시 구간, 성공/실패 연출 적용",
-      "서리 워든 QTE를 모든 캐릭터가 도전 가능하도록 확장하고 캐릭터별 게이지 난이도 차이 적용",
-      "6스테이지 제한 시간을 25초로 단축하고, 서리 워든 처치 즉시 클리어되도록 변경",
-      "6스테이지 기본 코인 드랍을 제거하고, 서리 워든 처치 보상을 25코인으로 고정",
-    ],
-  },
-  {
     version: "Beta v0.5",
     date: "2026-04-25",
     items: [
@@ -117,10 +82,6 @@ const PATCH_NOTES = [
       "6스테이지에서 서리 워든이 정상 등장하지 않던 문제 수정",
       "6스테이지는 난이도와 상관없이 트리플 점프가 가능하도록 변경",
       "서리 워든이 가시 위에 서면 가시가 얼어붙고 워든이 떨어지지 않도록 수정",
-      "스테이지 클리어 코인에 난이도 보상 배율 적용 및 결과 화면 표시 추가",
-      "어드민계정 비밀번호가 항상 지정된 값으로 강제 동기화되도록 수정",
-      "어드민계정이 없을 때도 자동 생성되어 바로 로그인 가능하도록 수정",
-      "관리자 로그인 닉네임을 admin으로 변경하고 기존 어드민계정 진행도 이전 처리 추가",
     ],
   },
   {
@@ -162,8 +123,7 @@ const PATCH_NOTES = [
   },
 ];
 const LATEST_PATCH_NOTES_VERSION = PATCH_NOTES[0]?.version || "";
-const LEGACY_ADMIN_NICKNAME = "어드민계정";
-const ADMIN_NICKNAME = "admin";
+const ADMIN_NICKNAME = "어드민계정";
 const ADMIN_TITLE = "별빛 통치자";
 const ADMIN_PASSWORD_RESET = "ks54259671";
 const BETA_ACCOUNT_NICKNAME = "베타";
@@ -207,13 +167,6 @@ const CHARACTER_DEFS = {
     purchasable: true,
     defaultOwned: false,
     price: 1000,
-  },
-  lightner: {
-    name: "Lightner",
-    summary: "Electric speed controller",
-    purchasable: true,
-    defaultOwned: false,
-    price: 1200,
   },
 };
 const SKIN_DEFS = {
@@ -348,37 +301,7 @@ const ASSASSIN_RULES = {
   frontalFailStun: 0.42,
   jumpGlanceBounce: -210,
 };
-const FROST_WARDEN_QTE = {
-  duration: 5.6,
-  entryDuration: 0.5,
-  finishDuration: 1,
-  startGauge: 0.5,
-  assassinTapGain: 0.064,
-  defaultTapGain: 0.044,
-  assassinDrainRate: 0.17,
-  defaultDrainRate: 0.23,
-  assassinFinishDrainRate: 0.28,
-  defaultFinishDrainRate: 0.36,
-  successThreshold: 0.7,
-  clearCoins: 25,
-};
-const LIGHTNER_RULES = {
-  speedMultiplier: 1.06,
-  maxStacks: 3,
-  anchorLife: 5,
-  stackCooldown: 5,
-  awakenedStackCooldown: 3,
-  fieldCooldown: 15,
-  awakenedFieldCooldown: 5,
-  fieldRadius: 96,
-  normalStun: 3.25,
-  bossStun: 2.5,
-  bossSlowMultiplier: 0.45,
-  awakenKillsRequired: 5,
-  awakenDuration: 10,
-  awakenSpeedMultiplier: 1.25,
-};
-const PLAYER_SPRITE_RENDER_SCALE = 0.62;
+const PLAYER_SPRITE_RENDER_SCALE = 0.5;
 const STRINGS = {
   en: {
     meta_description: "Starling Sprint is an original retro-inspired 2D side-scrolling platformer with multiple stages, difficulty settings, special enemies, and arcade-style action.",
@@ -386,7 +309,7 @@ const STRINGS = {
     language_label: "Language",
     control_move: "A/D or Left/Right Move",
     control_jump: "W, Up, or Space Double Jump",
-    control_skill: "E Skill / Q Skill / X Skill",
+    control_skill: "E Skill / Q Skill",
     control_restart: "R Restart",
     canvas_label: "Starling Sprint game canvas",
     auth_eyebrow: "Account",
@@ -410,9 +333,6 @@ const STRINGS = {
     settings_title: "Settings",
     difficulty_label: "Difficulty",
     screen_label: "Screen",
-    control_mode_label: "Controls",
-    control_desktop: "Computer",
-    control_mobile: "Mobile",
     collection_eyebrow: "Collection",
     collection_title: "Characters & Skins",
     shop_heading: "Shop",
@@ -528,7 +448,6 @@ const STRINGS = {
     collectible_shards: "Shards",
     collectible_buttons: "Buttons",
     collectible_cores: "Cores",
-    collectible_coins: "Coins",
     hud_score: "Score {score}",
     hud_lives: "Lives {lives}",
     hud_stage: "Stage {current}/{total}",
@@ -539,9 +458,6 @@ const STRINGS = {
     hud_return_lobby: "Esc or Lobby button to return",
     hud_factory_hint: "Press every button before time runs out",
     hud_frozen_hint: "Activate 3 energy cores before the freeze",
-    hud_frozen_warden_hint: "Defeat the Frost Warden, then reach the relay gate",
-    difficulty_bonus: "Difficulty bonus: x{value}",
-    stage_clear_coins: "Clear coins: {coins}",
     hud_character: "Character {name}",
     changer_status_ready_cd: "Clone Ready | Swap CD {time}s",
     changer_status_ready: "Clone Ready | Swap Ready",
@@ -556,17 +472,11 @@ const STRINGS = {
     assassin_status_stealth_cd: "Stealth CD {time}s | Q {cooldown}s",
     assassin_status_q_cd: "Q Cooldown {time}s",
     assassin_status_ready: "Stealth Ready | Q Ready",
-    lightner_status: "Q {stacks}/{max} | E {e}s | X {awaken}",
-    lightner_awaken_ready: "Ready",
-    lightner_awaken_charge: "{kills}/{required}",
-    lightner_awaken_active: "{time}s",
     changer_hint: "One clone per run | Q works only while clone lives",
     guardian_hint: "Q shield 2s | passive blocks one death",
     assassin_hint: "E stealth (3s) | Q assassinate | no stomp kills",
-    lightner_hint: "Q spark anchor | E lightning field | X awaken",
     stage_objective_factory: "Press {count} buttons to power the lever.",
     stage_objective_frozen: "Activate {count} energy cores and reach the relay gate.",
-    stage_objective_frozen_warden: "Defeat the Frost Warden before the relay freezes.",
     stage_objective_normal: "Collect {count} shards and reach the gate.",
     center_stage_clear: "Stage Clear",
     center_next_stage: "Press Enter for the next stage.",
@@ -581,14 +491,12 @@ const STRINGS = {
     assassinate_locking: "Locking the strike...",
     assassinate_boss_copy: "Mash Q fast. Bosses need a much stronger break.",
     assassinate_enemy_copy: "Mash Q before the enemy overpowers you.",
-    assassinate_warden_title: "Frost Warden Clash",
-    assassinate_warden_copy: "Mash Q. Hold the gauge through the finish.",
     assassinate_time: "Time {time}s",
     claw_title: "Claw Machine Escape",
     claw_copy: "Click the lever to pull and fill the meter.",
     claw_pull: "PULL!",
     dance_title: "Dance Machine",
-    dance_copy: "Follow the lit arrow. Press WASD, arrow keys, or drag (6 steps).",
+    dance_copy: "Follow the lit arrow. Press WASD (6 steps).",
     dance_ready: "Ready...",
     nightmare_title: "Nightmare Ambush",
     nightmare_countdown: "Get ready. The nightmare is closing in.",
@@ -601,8 +509,6 @@ const STRINGS = {
     character_changer_summary: "Clone survival specialist",
     character_assassin_name: "Assassin",
     character_assassin_summary: "Stealth specialist",
-    character_lightner_name: "Lightner",
-    character_lightner_summary: "High-speed electric controller",
     skin_classic_name: "Classic",
     skin_classic_summary: "Default look",
     skin_desert_name: "Desert",
@@ -632,7 +538,7 @@ const STRINGS = {
     language_label: "언어",
     control_move: "A/D 또는 좌/우 이동",
     control_jump: "W, 위쪽, 또는 스페이스 이단 점프",
-    control_skill: "E 스킬 / Q 스킬 / X 스킬",
+    control_skill: "E 스킬 / Q 스킬",
     control_restart: "R 다시 시작",
     canvas_label: "스타링 스프린트 게임 화면",
     auth_eyebrow: "계정",
@@ -656,9 +562,6 @@ const STRINGS = {
     settings_title: "설정",
     difficulty_label: "난이도",
     screen_label: "화면",
-    control_mode_label: "조작",
-    control_desktop: "컴퓨터",
-    control_mobile: "모바일",
     collection_eyebrow: "컬렉션",
     collection_title: "캐릭터 & 스킨",
     shop_heading: "상점",
@@ -774,7 +677,6 @@ const STRINGS = {
     collectible_shards: "파편",
     collectible_buttons: "버튼",
     collectible_cores: "코어",
-    collectible_coins: "코인",
     hud_score: "점수 {score}",
     hud_lives: "목숨 {lives}",
     hud_stage: "스테이지 {current}/{total}",
@@ -785,9 +687,6 @@ const STRINGS = {
     hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
     hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
     hud_frozen_hint: "완전 동결 전에 에너지 코어 3개를 활성화하세요",
-    hud_frozen_warden_hint: "서리 워든을 처치한 뒤 중계 게이트에 도달하세요",
-    difficulty_bonus: "난이도 보너스: x{value}",
-    stage_clear_coins: "클리어 코인: {coins}",
     hud_character: "캐릭터 {name}",
     changer_status_ready_cd: "분신 준비 완료 | 교체 대기 {time}초",
     changer_status_ready: "분신 준비 완료 | 교체 가능",
@@ -802,17 +701,11 @@ const STRINGS = {
     assassin_status_stealth_cd: "은신 쿨타임 {time}초 | Q {cooldown}초",
     assassin_status_q_cd: "Q 쿨타임 {time}초",
     assassin_status_ready: "은신 준비 완료 | Q 준비 완료",
-    lightner_status: "Q {stacks}/{max} | E {e}초 | X {awaken}",
-    lightner_awaken_ready: "준비",
-    lightner_awaken_charge: "{kills}/{required}",
-    lightner_awaken_active: "{time}초",
     changer_hint: "한 판에 분신 1회만 생성 가능 | Q는 분신이 살아 있을 때만 사용 가능",
     guardian_hint: "Q 방패 2초 | 패시브로 죽음 1회 무효화",
     assassin_hint: "E 은신 (3초) | Q 암살 | 점프 처치 불가",
-    lightner_hint: "Q 스파크 앵커 | E 번개장 | X 각성",
     stage_objective_factory: "버튼 {count}개를 눌러 레버에 전력을 공급하세요.",
     stage_objective_frozen: "에너지 코어 {count}개를 활성화하고 중계 게이트에 도달하세요.",
-    stage_objective_frozen_warden: "중계탑이 완전히 얼기 전에 서리 워든을 처치하세요.",
     stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
     center_stage_clear: "스테이지 클리어",
     center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
@@ -827,14 +720,12 @@ const STRINGS = {
     assassinate_locking: "일격을 고정하는 중...",
     assassinate_boss_copy: "Q를 빠르게 연타하세요. 보스는 훨씬 강한 돌파가 필요합니다.",
     assassinate_enemy_copy: "적이 밀어붙이기 전에 Q를 연타하세요.",
-    assassinate_warden_title: "서리 워든 대치",
-    assassinate_warden_copy: "Q를 연타하세요. 피니시까지 게이지를 버텨야 합니다.",
     assassinate_time: "시간 {time}초",
     claw_title: "집게 탈출",
     claw_copy: "레버를 클릭해 게이지를 채우세요.",
     claw_pull: "당기기!",
     dance_title: "댄스 머신",
-    dance_copy: "빛나는 화살표를 따라가세요. WASD/방향키/드래그 입력 (6단계).",
+    dance_copy: "빛나는 화살표를 따라가세요. WASD 입력 (6단계).",
     dance_ready: "준비...",
     nightmare_title: "악몽 습격",
     nightmare_countdown: "준비하세요. 악몽이 다가오고 있습니다.",
@@ -847,8 +738,6 @@ const STRINGS = {
     character_changer_summary: "분신 생존 특화 캐릭터",
     character_assassin_name: "어쌔신",
     character_assassin_summary: "은신 특화 캐릭터",
-    character_lightner_name: "라이트너",
-    character_lightner_summary: "전기를 다루는 고속 컨트롤형 캐릭터",
     skin_classic_name: "기본외형",
     skin_classic_summary: "기본 외형",
     skin_desert_name: "데저트",
@@ -1165,11 +1054,8 @@ let stageMessageTimer = 0;
 let selectedStageIndex = Number(stageSelect.value);
 let unlockedStageIndex = 0;
 let screenMode = screenModeSelect.value;
-let controlMode = controlModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
-let lastStageClearReward = null;
-let screenShakeTimer = 0;
 let lastSavedStateJson = "";
 const accountState = {
   currentNickname: null,
@@ -1226,15 +1112,6 @@ const changerState = {
   effectFrom: null,
   effectTo: null,
 };
-const lightnerState = {
-  anchor: null,
-  stacks: LIGHTNER_RULES.maxStacks,
-  stackRechargeTimer: 0,
-  fieldCooldown: 0,
-  awakenKills: 0,
-  awakenTimer: 0,
-  effects: [],
-};
 const nightmareEvent = {
   active: false,
   countdown: false,
@@ -1277,7 +1154,6 @@ const assassinationEvent = {
   gauge: 0,
   flash: 0,
   successText: "",
-  advantaged: false,
 };
 
 function currentShardTarget() {
@@ -1285,7 +1161,7 @@ function currentShardTarget() {
     return 12;
   }
   if (level.theme === "frozen") {
-    return 0;
+    return 3;
   }
   return difficulty.shardGoal;
 }
@@ -1299,16 +1175,6 @@ function t(key, vars = {}) {
 
 function getDifficultyLabel(key = activeDifficultyKey) {
   return t(`difficulty_${key}`);
-}
-
-function difficultyCoinMultiplier(key = activeDifficultyKey) {
-  if (key === "hard") {
-    return 1.6;
-  }
-  if (key === "normal") {
-    return 1.3;
-  }
-  return 1;
 }
 
 function getScreenModeLabel(mode) {
@@ -1340,7 +1206,7 @@ function currentCollectibleLabel() {
     return t("collectible_buttons");
   }
   if (level.theme === "frozen") {
-    return t("collectible_coins");
+    return t("collectible_cores");
   }
   return t("collectible_shards");
 }
@@ -1643,43 +1509,6 @@ function awardCoins(amount) {
   shopState.coins += Math.floor(amount);
 }
 
-function awardStageClearCoins() {
-  const baseCoins = 25 + currentStageIndex * 5;
-  const multiplier = difficultyCoinMultiplier(activeDifficultyKey);
-  const finalCoins = Math.round(baseCoins * multiplier);
-  lastStageClearReward = {
-    baseCoins,
-    finalCoins,
-    multiplier,
-  };
-  awardCoins(finalCoins);
-}
-
-function stageClearRewardText() {
-  if (!lastStageClearReward) {
-    return "";
-  }
-  return `${t("stage_clear_coins", { coins: lastStageClearReward.finalCoins })} | ${t("difficulty_bonus", { value: lastStageClearReward.multiplier.toFixed(1) })}`;
-}
-
-function isFrostWardenDefeated() {
-  if (level.theme !== "frozen") {
-    return true;
-  }
-  return level.enemies.some((enemy) => enemy.type === "frostWarden" && enemy.defeated);
-}
-
-function finishFrozenStageByWarden() {
-  lastStageClearReward = {
-    baseCoins: FROST_WARDEN_QTE.clearCoins,
-    multiplier: 1,
-    finalCoins: FROST_WARDEN_QTE.clearCoins,
-  };
-  awardCoins(FROST_WARDEN_QTE.clearCoins);
-  playSound("clear");
-  gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
-}
-
 function getShopActionLabel({ owned, purchasable, available, canAfford, price }) {
   if (owned) {
     return t("shop_owned");
@@ -1736,8 +1565,6 @@ function applyLanguage(nextLanguage) {
   difficultySelect.querySelector('option[value="hard"]').textContent = getDifficultyLabel("hard");
   screenModeSelect.querySelector('option[value="fullscreen"]').textContent = getScreenModeLabel("fullscreen");
   screenModeSelect.querySelector('option[value="classic"]').textContent = getScreenModeLabel("classic");
-  controlModeSelect.querySelector('option[value="desktop"]').textContent = t("control_desktop");
-  controlModeSelect.querySelector('option[value="mobile"]').textContent = t("control_mobile");
   updateMuteButtonLabel();
 
   for (const option of stageSelect.options) {
@@ -1776,10 +1603,6 @@ function isChangerEquipped() {
 
 function isGuardianEquipped() {
   return shopState.equippedCharacter === "guardian";
-}
-
-function isLightnerEquipped() {
-  return shopState.equippedCharacter === "lightner";
 }
 
 function isChangerAngelDemonSkinEquipped() {
@@ -1823,103 +1646,6 @@ function getSimpleSkinPalette() {
     };
   }
   return null;
-}
-
-function getLightnerSkinPalette() {
-  const simpleSkin = getSimpleSkinPalette();
-  if (simpleSkin) {
-    return {
-      hood: simpleSkin.dark,
-      coat: simpleSkin.primary,
-      coatDark: simpleSkin.secondary,
-      mask: simpleSkin.dark,
-      pants: simpleSkin.dark,
-      arm: simpleSkin.secondary,
-      trim: simpleSkin.accent,
-      eye: simpleSkin.glow,
-      lightningRgb: "255, 215, 0",
-      lightningSolid: simpleSkin.glow,
-      awakenRgb: "255, 223, 45",
-    };
-  }
-
-  if (shopState.equippedSkin === "cyber") {
-    return {
-      hood: "#05070e",
-      coat: "#10172a",
-      coatDark: "#1e2750",
-      mask: "#05070e",
-      pants: "#070a14",
-      arm: "#18204a",
-      trim: "#9d67ff",
-      eye: "#77eaff",
-      lightningRgb: "119, 234, 255",
-      lightningSolid: "#77eaff",
-      awakenRgb: "157, 103, 255",
-    };
-  }
-
-  if (shopState.equippedSkin === "voidKing") {
-    return {
-      hood: "#050507",
-      coat: "#111116",
-      coatDark: "#1c1b23",
-      mask: "#050507",
-      pants: "#08080a",
-      arm: "#2e0a0d",
-      trim: "#611318",
-      eye: "#ff9b9b",
-      lightningRgb: "210, 30, 40",
-      lightningSolid: "#ff9b9b",
-      awakenRgb: "255, 76, 76",
-    };
-  }
-
-  if (shopState.equippedSkin === "admin") {
-    return {
-      hood: "#090806",
-      coat: "#1d1720",
-      coatDark: "#352315",
-      mask: "#050506",
-      pants: "#08080a",
-      arm: "#2c2012",
-      trim: "#d3901d",
-      eye: "#fff7b3",
-      lightningRgb: "255, 217, 94",
-      lightningSolid: "#fff7b3",
-      awakenRgb: "255, 247, 179",
-    };
-  }
-
-  if (shopState.equippedSkin === "angelDemon") {
-    return {
-      hood: "#121018",
-      coat: "#f0e7da",
-      coatDark: "#3b235c",
-      mask: "#090711",
-      pants: "#110c1a",
-      arm: "#33204f",
-      trim: "#f3c66b",
-      eye: "#ffe69a",
-      lightningRgb: "169, 78, 255",
-      lightningSolid: "#f3c66b",
-      awakenRgb: "243, 198, 107",
-    };
-  }
-
-  return {
-    hood: "#020304",
-    coat: "#0a0c0f",
-    coatDark: "#121315",
-    mask: "#050506",
-    pants: "#050506",
-    arm: "#0d0d0f",
-    trim: "#ffd700",
-    eye: "#ffd700",
-    lightningRgb: "255, 215, 0",
-    lightningSolid: "#ffd700",
-    awakenRgb: "255, 223, 45",
-  };
 }
 
 function getStartingLives() {
@@ -1989,7 +1715,7 @@ function readAccounts() {
     if (changed) {
       localStorage.setItem(ACCOUNT_KEY, JSON.stringify(data));
     }
-    return syncAdminAccountPassword(syncBetaAccountCoins(data));
+    return syncBetaAccountCoins(data);
   } catch (_) {
     return {};
   }
@@ -2000,58 +1726,11 @@ function writeAccounts(accounts) {
 }
 
 function syncAdminAccountPassword(accounts) {
-  if (!accounts || typeof accounts !== "object") {
-    return accounts;
-  }
-  const legacyAdminAccount = accounts[LEGACY_ADMIN_NICKNAME];
-  if (!accounts[ADMIN_NICKNAME] || typeof accounts[ADMIN_NICKNAME] !== "object") {
-    accounts[ADMIN_NICKNAME] = {
-      password: ADMIN_PASSWORD_RESET,
-      isAdmin: true,
-      hasBetaReward: Boolean(legacyAdminAccount?.hasBetaReward),
-      lastSeenPatchNoteVersion: legacyAdminAccount?.lastSeenPatchNoteVersion || "",
-      progress: legacyAdminAccount?.progress && typeof legacyAdminAccount.progress === "object"
-        ? legacyAdminAccount.progress
-        : createDefaultProgress(),
-    };
-    writeAccounts(accounts);
-    return accounts;
-  }
-
   const adminAccount = accounts[ADMIN_NICKNAME];
-  let changed = false;
-  if (legacyAdminAccount && typeof legacyAdminAccount === "object") {
-    if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
-      adminAccount.progress = legacyAdminAccount.progress && typeof legacyAdminAccount.progress === "object"
-        ? legacyAdminAccount.progress
-        : createDefaultProgress();
-      changed = true;
-    }
-    if (!adminAccount.hasBetaReward && legacyAdminAccount.hasBetaReward) {
-      adminAccount.hasBetaReward = true;
-      changed = true;
-    }
-    if (!adminAccount.lastSeenPatchNoteVersion && legacyAdminAccount.lastSeenPatchNoteVersion) {
-      adminAccount.lastSeenPatchNoteVersion = legacyAdminAccount.lastSeenPatchNoteVersion;
-      changed = true;
-    }
-  }
-  if (adminAccount.password !== ADMIN_PASSWORD_RESET) {
-    adminAccount.password = ADMIN_PASSWORD_RESET;
-    changed = true;
-  }
-  if (!adminAccount.isAdmin) {
-    adminAccount.isAdmin = true;
-    changed = true;
-  }
-  changed = ensureAccountMeta(adminAccount) || changed;
-  if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
-    adminAccount.progress = createDefaultProgress();
-    changed = true;
-  }
-  if (!changed) {
+  if (!adminAccount || adminAccount.password === ADMIN_PASSWORD_RESET) {
     return accounts;
   }
+  adminAccount.password = ADMIN_PASSWORD_RESET;
   writeAccounts(accounts);
   return accounts;
 }
@@ -2097,7 +1776,6 @@ function createDefaultProgress() {
     selectedStageIndex: 0,
     activeDifficultyKey: difficultySelect.value,
     screenMode: screenModeSelect.value,
-    controlMode: controlModeSelect.value,
     shopState: {
       ownedCharacters: getDefaultOwnedCharacters(),
       ownedSkins: getDefaultOwnedSkins(),
@@ -2728,7 +2406,6 @@ function createSaveData() {
     selectedStageIndex,
     activeDifficultyKey,
     screenMode,
-    controlMode,
     shopState: {
       ownedCharacters: [...shopState.ownedCharacters],
       ownedSkins: [...shopState.ownedSkins],
@@ -2770,12 +2447,8 @@ function savePersistentProgress(force = false) {
 
 function loadPersistentProgress() {
   try {
-    let currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+    const currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
     const accounts = syncAdminAccountPassword(readAccounts());
-    if (currentNickname === LEGACY_ADMIN_NICKNAME && accounts[ADMIN_NICKNAME]) {
-      currentNickname = ADMIN_NICKNAME;
-      localStorage.setItem(CURRENT_ACCOUNT_KEY, ADMIN_NICKNAME);
-    }
     if (!currentNickname || !accounts[currentNickname]) {
       accountState.currentNickname = null;
       accountState.isAdmin = false;
@@ -2807,9 +2480,6 @@ function loadPersistentProgress() {
     }
     if (typeof data.screenMode === "string" && ["fullscreen", "classic"].includes(data.screenMode)) {
       screenMode = data.screenMode;
-    }
-    if (typeof data.controlMode === "string" && ["desktop", "mobile"].includes(data.controlMode)) {
-      controlMode = data.controlMode;
     }
 
     if (data.shopState && typeof data.shopState === "object") {
@@ -2852,7 +2522,6 @@ function loadPersistentProgress() {
 
     difficultySelect.value = activeDifficultyKey;
     screenModeSelect.value = screenMode;
-    controlModeSelect.value = controlMode;
     stageSelect.value = String(selectedStageIndex);
     showAuthPanel(false);
     syncLobbyAccountUI();
@@ -2876,7 +2545,6 @@ function resetProgressState() {
   selectedStageIndex = 0;
   unlockedStageIndex = 0;
   screenMode = screenModeSelect.value;
-  controlMode = controlModeSelect.value;
   factoryTimeRemaining = 0;
   shopState.ownedCharacters = getDefaultOwnedCharacters();
   shopState.ownedSkins = getDefaultOwnedSkins();
@@ -2895,7 +2563,6 @@ function resetProgressState() {
   betaRewardState.selectedSkin = null;
   clearGuardianState(true);
   clearChangerState(true);
-  clearLightnerState(true);
   resetNightmareEvent();
   resetAssassinationEvent();
 }
@@ -2911,9 +2578,6 @@ function applyAccountProgress(progress) {
   screenMode = typeof progress.screenMode === "string" && ["fullscreen", "classic"].includes(progress.screenMode)
     ? progress.screenMode
     : screenModeSelect.value;
-  controlMode = typeof progress.controlMode === "string" && ["desktop", "mobile"].includes(progress.controlMode)
-    ? progress.controlMode
-    : controlModeSelect.value;
 
   const savedShopState = progress.shopState || {};
   shopState.ownedCharacters = Array.isArray(savedShopState.ownedCharacters) ? [...new Set(savedShopState.ownedCharacters)] : getDefaultOwnedCharacters();
@@ -2931,11 +2595,9 @@ function applyAccountProgress(progress) {
 
   difficultySelect.value = activeDifficultyKey;
   screenModeSelect.value = screenMode;
-  controlModeSelect.value = controlMode;
   stageSelect.value = String(selectedStageIndex);
   updateStageSelectLocks();
   applyScreenMode();
-  applyControlMode();
   syncLobbyAccountUI();
   lastSavedStateJson = JSON.stringify(createSaveData());
 }
@@ -2986,7 +2648,7 @@ function registerAccount() {
   }
 
   accounts[nickname] = {
-    password: nickname === ADMIN_NICKNAME ? ADMIN_PASSWORD_RESET : password,
+    password,
     isAdmin: nickname === ADMIN_NICKNAME,
     hasBetaReward: false,
     lastSeenPatchNoteVersion: "",
@@ -3297,13 +2959,6 @@ function applyScreenMode() {
   document.body.classList.toggle("classic-mode", screenMode === "classic");
 }
 
-function applyControlMode() {
-  document.body.classList.toggle("touch-controls-enabled", controlMode === "mobile");
-  if (controlMode !== "mobile") {
-    resetMobileJoystick();
-  }
-}
-
 function resetNightmareEvent() {
   nightmareEvent.active = false;
   nightmareEvent.countdown = false;
@@ -3318,18 +2973,6 @@ function resetNightmareEvent() {
   nightmareEvent.flash = 0;
 
   resetDanceEvent();
-}
-
-function isArcadeHardDanceStage() {
-  const hardSelected =
-    activeDifficultyKey === "hard" ||
-    difficultySelect.value === "hard" ||
-    difficulty === DIFFICULTIES.hard;
-  const arcadeStage =
-    level.theme === "arcade" ||
-    currentStageIndex === 3 ||
-    selectedStageIndex === 3;
-  return arcadeStage && hardSelected;
 }
 
 function triggerNightmareEvent() {
@@ -3355,9 +2998,7 @@ function resolveNightmareEvent(success) {
   nightmareEvent.countdown = false;
   if (success) {
     score += 600 + currentStageIndex * 100;
-    if (level.theme !== "frozen") {
-      awardCoins(18 + currentStageIndex * 2);
-    }
+    awardCoins(18 + currentStageIndex * 2);
     player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
     resetNightmareEvent();
     return;
@@ -3373,18 +3014,6 @@ function resolveNightmareEvent(success) {
   player.vx = 0;
   player.vy = 0;
   resetNightmareEvent();
-}
-
-function attemptNightmareInput() {
-  if (!nightmareEvent.active) {
-    return false;
-  }
-  const marker = nightmareEvent.marker;
-  const success =
-    marker >= nightmareEvent.targetStart &&
-    marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
-  resolveNightmareEvent(success);
-  return true;
 }
 
 function resetDanceEvent() {
@@ -3414,49 +3043,11 @@ function triggerDanceEvent() {
   keys.crouch = false;
 
   const steps = ["left", "up", "down", "right"];
-  let previousStep = null;
   for (let i = 0; i < 6; i += 1) {
-    const candidates = steps.filter((step) => step !== previousStep);
-    const next = candidates[Math.floor(Math.random() * candidates.length)];
+    const next = steps[Math.floor(Math.random() * steps.length)];
     danceEvent.sequence.push(next);
-    previousStep = next;
   }
   playSound("coin");
-}
-
-function directionFromDanceKey(key, code) {
-  if (["a", "A", "ArrowLeft"].includes(key) || code === "KeyA") {
-    return "left";
-  }
-  if (["d", "D", "ArrowRight"].includes(key) || code === "KeyD") {
-    return "right";
-  }
-  if (["w", "W", "ArrowUp", " ", "Spacebar"].includes(key) || code === "KeyW" || code === "Space") {
-    return "up";
-  }
-  if (["s", "S", "ArrowDown"].includes(key) || code === "KeyS") {
-    return "down";
-  }
-  return null;
-}
-
-function submitDanceInput(dir) {
-  if (!danceEvent.active || !dir) {
-    return false;
-  }
-
-  if (dir === danceEvent.sequence[danceEvent.index]) {
-    danceEvent.index += 1;
-    danceEvent.stepTimer = danceEvent.stepTimeLimit;
-    danceEvent.flash = 1;
-    playSound("stomp");
-    if (danceEvent.index >= danceEvent.sequence.length) {
-      resolveDanceEvent(true);
-    }
-  } else {
-    resolveDanceEvent(false);
-  }
-  return true;
 }
 
 function resolveDanceEvent(success) {
@@ -3569,29 +3160,12 @@ function clearGuardianState(resetPassive = false) {
   player.guardianFlash = 0;
 }
 
-function clearLightnerState(resetCombat = false) {
-  lightnerState.anchor = null;
-  lightnerState.stacks = LIGHTNER_RULES.maxStacks;
-  lightnerState.stackRechargeTimer = 0;
-  lightnerState.fieldCooldown = 0;
-  lightnerState.awakenTimer = 0;
-  lightnerState.effects.length = 0;
-  if (resetCombat) {
-    lightnerState.awakenKills = 0;
-  }
-}
-
 function resetPlayerPosition() {
   player.speed = isGuardianEquipped()
     ? 250 * GUARDIAN_RULES.speedMultiplier
     : isAssassinEquipped()
       ? 250 * ASSASSIN_RULES.speedMultiplier
-      : isLightnerEquipped()
-        ? 250 * LIGHTNER_RULES.speedMultiplier
-        : 250;
-  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
-    player.speed *= LIGHTNER_RULES.awakenSpeedMultiplier;
-  }
+      : 250;
   player.maxJumps = difficulty.maxJumps;
   if (level.theme === "frozen") {
     player.maxJumps = 3;
@@ -3621,9 +3195,6 @@ function resetPlayerPosition() {
   clearGuardianState();
   player.cloneTransferFlash = 0;
   clearChangerState();
-  if (!isLightnerEquipped()) {
-    clearLightnerState(true);
-  }
 }
 
 function loadStage(stageIndex, preserveScore = true) {
@@ -3651,7 +3222,7 @@ function loadStage(stageIndex, preserveScore = true) {
   }
   collectedCount = 0;
   factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
-  frozenTimeRemaining = level.theme === "frozen" ? 25 : 0;
+  frozenTimeRemaining = level.theme === "frozen" ? 70 : 0;
 
   // Each stage is defined as data so we can scale the route count cleanly.
   for (const [start, end] of stageDef.groundSegments) {
@@ -3665,9 +3236,6 @@ function loadStage(stageIndex, preserveScore = true) {
     addHazard(x, width);
   }
   for (const item of stageDef.collectibles) {
-    if (level.theme === "frozen") {
-      break;
-    }
     if (level.theme === "factory" && level.collectibles.length >= currentShardTarget()) {
       break;
     }
@@ -3699,15 +3267,9 @@ function loadStage(stageIndex, preserveScore = true) {
     addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]));
   }
 
-  clearLightnerState(true);
-  resetNightmareEvent();
   resetPlayerPosition();
   camera.x = 0;
-  screenShakeTimer = 0;
   stageMessageTimer = 2.2;
-  if (isArcadeHardDanceStage()) {
-    triggerDanceEvent();
-  }
 }
 
 function addGround(startTile, endTile) {
@@ -3776,18 +3338,18 @@ function addCollectible(tileX, tileY) {
     return;
   }
 
-    if (level.theme === "frozen") {
-      level.collectibles.push({
-        x: tileX * TILE + 2,
-        y: tileY * TILE + 2,
-        w: 24,
-        h: 24,
-        bob: Math.random() * Math.PI * 2,
-        collected: false,
-        style: "coin",
-      });
-      return;
-    }
+  if (level.theme === "frozen") {
+    level.collectibles.push({
+      x: tileX * TILE + 2,
+      y: tileY * TILE + 2,
+      w: 28,
+      h: 28,
+      bob: Math.random() * Math.PI * 2,
+      collected: false,
+      style: "core",
+    });
+    return;
+  }
 
   level.collectibles.push({
     x: tileX * TILE + 6,
@@ -3905,8 +3467,7 @@ function addFrostWarden(tileX, tileY) {
     cooldown: 1.4,
     telegraphTimer: 0,
     attackType: "",
-  auraPulse: 0,
-  qteMeltTimer: 0,
+    auraPulse: 0,
   });
 }
 
@@ -3953,7 +3514,6 @@ function hazardHasSerpent(hazard) {
 }
 
 function restartGame() {
-  activeDifficultyKey = DIFFICULTIES[difficultySelect.value] ? difficultySelect.value : activeDifficultyKey;
   difficulty = DIFFICULTIES[activeDifficultyKey];
   score = 0;
   collectedCount = 0;
@@ -4288,29 +3848,6 @@ function playSound(type) {
     return;
   }
 
-  if (type === "lightning") {
-    const osc2 = audioContext.createOscillator();
-    const gain2 = audioContext.createGain();
-    oscillator.type = "sawtooth";
-    osc2.type = "square";
-    oscillator.frequency.setValueAtTime(1180, now);
-    oscillator.frequency.exponentialRampToValueAtTime(180, now + 0.18);
-    osc2.frequency.setValueAtTime(72, now);
-    osc2.frequency.exponentialRampToValueAtTime(46, now + 0.22);
-    osc2.connect(gain2);
-    gain2.connect(audioContext.destination);
-    gain2.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.008);
-    gain2.gain.exponentialRampToValueAtTime(0.055, now + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-    oscillator.start(now);
-    osc2.start(now);
-    oscillator.stop(now + 0.22);
-    osc2.stop(now + 0.3);
-    return;
-  }
-
   if (type === "stomp") {
     oscillator.type = "square";
     oscillator.frequency.setValueAtTime(180, now);
@@ -4502,7 +4039,6 @@ function resetAssassinationEvent() {
   assassinationEvent.gauge = 0;
   assassinationEvent.flash = 0;
   assassinationEvent.successText = "";
-  assassinationEvent.advantaged = false;
 }
 
 function breakAssassinStealth() {
@@ -4576,129 +4112,6 @@ function activateGuardianShield() {
   player.guardianShieldTimer = GUARDIAN_RULES.shieldDuration;
   player.guardianShieldCooldown = GUARDIAN_RULES.shieldCooldown;
   player.guardianFlash = GUARDIAN_RULES.shieldDuration;
-  playSound("clear");
-}
-
-function currentLightnerStackCooldown() {
-  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedStackCooldown : LIGHTNER_RULES.stackCooldown;
-}
-
-function currentLightnerFieldCooldown() {
-  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedFieldCooldown : LIGHTNER_RULES.fieldCooldown;
-}
-
-function registerLightnerKill() {
-  if (!isLightnerEquipped() || lightnerState.awakenTimer > 0) {
-    return;
-  }
-  lightnerState.awakenKills = Math.min(LIGHTNER_RULES.awakenKillsRequired, lightnerState.awakenKills + 1);
-}
-
-function addLightnerEffect(type, x, y, duration = 0.45, extra = {}) {
-  lightnerState.effects.push({ type, x, y, duration, timer: duration, ...extra });
-}
-
-function activateLightnerAnchor() {
-  if (!isLightnerEquipped() || gameState !== "playing" || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
-    return;
-  }
-
-  if (lightnerState.anchor) {
-    const anchor = lightnerState.anchor;
-    if (anchor.x >= camera.x && anchor.x <= camera.x + GAME_WIDTH && anchor.y >= -40 && anchor.y <= GAME_HEIGHT + 40) {
-      addLightnerEffect("teleport", player.x + player.w * 0.5, player.y + player.h * 0.5, 0.52, { toX: anchor.x, toY: anchor.y });
-      player.x = Math.max(0, Math.min(worldWidth - player.w, anchor.x - player.w * 0.5));
-      player.y = Math.max(0, Math.min(GAME_HEIGHT - player.h, anchor.y - player.h * 0.5));
-      player.vx = 0;
-      player.vy = 0;
-      player.invulnerableTime = Math.max(player.invulnerableTime, 0.25);
-      lightnerState.anchor = null;
-      screenShakeTimer = Math.max(screenShakeTimer, 0.12);
-      playSound("lightning");
-    }
-    return;
-  }
-
-  if (lightnerState.stacks <= 0) {
-    return;
-  }
-  lightnerState.stacks -= 1;
-  if (lightnerState.stackRechargeTimer <= 0) {
-    lightnerState.stackRechargeTimer = currentLightnerStackCooldown();
-  }
-  lightnerState.anchor = {
-    x: player.x + player.w * 0.5,
-    y: player.y + player.h * 0.5,
-    timer: LIGHTNER_RULES.anchorLife,
-  };
-  addLightnerEffect("anchor", lightnerState.anchor.x, lightnerState.anchor.y, LIGHTNER_RULES.anchorLife);
-  playSound("button");
-}
-
-function stunEnemyWithLightner(enemy, duration, slow = false) {
-  enemy.lightnerStunTimer = Math.max(enemy.lightnerStunTimer || 0, duration);
-  if (slow) {
-    enemy.lightnerSlowTimer = Math.max(enemy.lightnerSlowTimer || 0, duration + 2);
-  }
-  enemy.vx = 0;
-  if (enemy.type === "frostWarden") {
-    enemy.state = "idle";
-    enemy.cooldown = Math.max(enemy.cooldown || 0, 0.65);
-  }
-}
-
-function activateLightnerField() {
-  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.fieldCooldown > 0 || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
-    return;
-  }
-  const cx = player.x + player.w * 0.5;
-  const cy = player.y + player.h * 0.5;
-  const radius = LIGHTNER_RULES.fieldRadius;
-  for (const enemy of level.enemies) {
-    if (!enemy.alive || enemy.defeated) {
-      continue;
-    }
-    const ex = enemy.x + enemy.w * 0.5;
-    if (Math.abs(ex - cx) > radius) {
-      continue;
-    }
-    const boss = isBossEntity(enemy, enemy.type);
-    stunEnemyWithLightner(enemy, boss ? LIGHTNER_RULES.bossStun : LIGHTNER_RULES.normalStun, boss);
-  }
-  for (const serpent of level.serpentEnemies) {
-    if (serpent.defeated || !serpent.alive) {
-      continue;
-    }
-    const hitbox = getSerpentHitbox(serpent);
-    const sx = hitbox.x + hitbox.w * 0.5;
-    if (Math.abs(sx - cx) <= radius) {
-      serpent.alive = false;
-      serpent.stunTimer = Math.max(serpent.stunTimer || 0, LIGHTNER_RULES.normalStun);
-      serpent.state = "stunned";
-    }
-  }
-  lightnerState.fieldCooldown = currentLightnerFieldCooldown();
-  addLightnerEffect("field", cx, cy, 0.72, { radius });
-  screenShakeTimer = Math.max(screenShakeTimer, 0.28);
-  playSound("lightning");
-}
-
-function activateLightnerAwaken() {
-  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.awakenTimer > 0 || lightnerState.awakenKills < LIGHTNER_RULES.awakenKillsRequired || assassinationEvent.active) {
-    return;
-  }
-  lightnerState.awakenTimer = LIGHTNER_RULES.awakenDuration;
-  lightnerState.awakenKills = 0;
-  if (lightnerState.stackRechargeTimer > LIGHTNER_RULES.awakenedStackCooldown) {
-    lightnerState.stackRechargeTimer = LIGHTNER_RULES.awakenedStackCooldown;
-  }
-  if (lightnerState.fieldCooldown > LIGHTNER_RULES.awakenedFieldCooldown) {
-    lightnerState.fieldCooldown = LIGHTNER_RULES.awakenedFieldCooldown;
-  }
-  if (lightnerState.stacks > 0) {
-    lightnerState.stacks = Math.min(LIGHTNER_RULES.maxStacks, lightnerState.stacks + 1);
-  }
-  addLightnerEffect("awaken", player.x + player.w * 0.5, player.y + player.h * 0.5, LIGHTNER_RULES.awakenDuration);
   playSound("clear");
 }
 
@@ -4866,8 +4279,7 @@ function findAssassinationTarget() {
 function finishAssassination(success) {
   const target = assassinationEvent.target;
   const targetType = assassinationEvent.targetType;
-  const eventMode = assassinationEvent.mode;
-  const failedFrontAttack = eventMode === "qte" || eventMode === "wardenQte";
+  const failedFrontAttack = assassinationEvent.mode === "qte";
   resetAssassinationEvent();
 
   if (!target) {
@@ -4875,14 +4287,6 @@ function finishAssassination(success) {
   }
 
   if (!success) {
-    if (eventMode === "wardenQte") {
-      lives = 0;
-      gameState = "gameover";
-      player.vx = 0;
-      player.vy = 0;
-      playSound("nightmare");
-      return;
-    }
     player.stunTimer = Math.max(player.stunTimer, failedFrontAttack ? ASSASSIN_RULES.frontalFailStun : 0.2);
     player.invulnerableTime = Math.max(player.invulnerableTime, 0.3);
     player.vx = 0;
@@ -4891,45 +4295,27 @@ function finishAssassination(success) {
   }
 
   if (targetType === "boss") {
-    const damage = target.type === "frostWarden" ? 999 : ASSASSIN_RULES.bossDamage;
-    target.hp = Math.max(0, (target.hp ?? 100) - damage);
+    target.hp = Math.max(0, (target.hp ?? 100) - ASSASSIN_RULES.bossDamage);
     if (target.hp <= 0) {
       target.alive = false;
       target.defeated = true;
-      registerLightnerKill();
-      if (target.type === "frostWarden") {
-        target.qteMeltTimer = 1.2;
-        target.vx = 0;
-        target.vy = 0;
-        screenShakeTimer = 0.55;
-        playSound("ice");
-        playSound("coin");
-        finishFrozenStageByWarden();
-        return;
-      }
     }
     score += 900 + currentStageIndex * 120;
     awardCoins(28 + currentStageIndex * 3);
   } else if (targetType === "serpent") {
     target.alive = false;
     target.defeated = true;
-    registerLightnerKill();
     target.stunTimer = 0;
     target.rise = 0;
     target.state = "stunned";
     score += 550 + currentStageIndex * 90;
-    if (level.theme !== "frozen") {
-      awardCoins(16 + currentStageIndex * 2);
-    }
+    awardCoins(16 + currentStageIndex * 2);
   } else {
     target.alive = false;
     target.defeated = true;
-    registerLightnerKill();
     target.squishTimer = 0.3;
     score += target.type === "excavator" ? 650 + currentStageIndex * 100 : 450 + currentStageIndex * 70;
-    if (level.theme !== "frozen") {
-      awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
-    }
+    awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
   }
 
   player.invulnerableTime = Math.max(player.invulnerableTime, 0.7);
@@ -4959,14 +4345,9 @@ function beginAssassination() {
   assassinationEvent.targetType = target.type;
   assassinationEvent.targetBounds = target.bounds;
   assassinationEvent.flash = 1;
-  assassinationEvent.gauge = target.entity?.type === "frostWarden" ? FROST_WARDEN_QTE.startGauge : 0;
+  assassinationEvent.gauge = 0;
 
-  if (target.entity?.type === "frostWarden") {
-    assassinationEvent.mode = "wardenQte";
-    assassinationEvent.timer = FROST_WARDEN_QTE.duration;
-    assassinationEvent.successText = "Frost Clash";
-    assassinationEvent.advantaged = true;
-  } else if (target.behind && target.type !== "boss") {
+  if (target.behind && target.type !== "boss") {
     assassinationEvent.mode = "backstab";
     assassinationEvent.timer = ASSASSIN_RULES.strikeWindup;
     assassinationEvent.successText = "Backstab";
@@ -4980,86 +4361,18 @@ function beginAssassination() {
   playSound("stomp");
 }
 
-function findNearbyFrostWarden() {
-  if (level.theme !== "frozen") {
-    return null;
-  }
-  const playerCenterX = player.x + player.w * 0.5;
-  const playerCenterY = player.y + player.h * 0.5;
-  let best = null;
-  let bestDistance = Infinity;
-  for (const enemy of level.enemies) {
-    if (enemy.type !== "frostWarden" || enemy.defeated || enemy.alive === false) {
-      continue;
-    }
-    const bounds = getEnemyBounds(enemy, enemy.type);
-    const enemyCenterX = bounds.x + bounds.w * 0.5;
-    const enemyCenterY = bounds.y + bounds.h * 0.5;
-    const dx = Math.abs(playerCenterX - enemyCenterX);
-    const dy = Math.abs(playerCenterY - enemyCenterY);
-    if (dx <= 120 && dy <= 96) {
-      const distance = dx + dy;
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        best = enemy;
-      }
-    }
-  }
-  return best;
-}
-
-function tryBeginFrostWardenSkillClash() {
-  return beginFrostWardenClash(findNearbyFrostWarden());
-}
-
-function beginFrostWardenClash(enemy) {
-  if (assassinationEvent.active || !enemy || enemy.defeated || enemy.alive === false || gameState !== "playing") {
-    return false;
-  }
-  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
-    return false;
-  }
-  if (isAssassinEquipped()) {
-    breakAssassinStealth();
-    player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
-  }
-  player.vx = 0;
-  player.vy = Math.min(player.vy, 0);
-  player.invulnerableTime = Math.max(player.invulnerableTime, 0.35);
-
-  assassinationEvent.active = true;
-  assassinationEvent.mode = "wardenQte";
-  assassinationEvent.target = enemy;
-  assassinationEvent.targetType = "boss";
-  assassinationEvent.targetBounds = getEnemyBounds(enemy, enemy.type);
-  assassinationEvent.timer = FROST_WARDEN_QTE.duration;
-  assassinationEvent.gauge = FROST_WARDEN_QTE.startGauge;
-  assassinationEvent.flash = 1;
-  assassinationEvent.successText = "Frost Clash";
-  assassinationEvent.advantaged = isAssassinEquipped();
-  playSound("stomp");
-  return true;
-}
-
 function tapAssassinationQte() {
-  if (!assassinationEvent.active || !["qte", "wardenQte"].includes(assassinationEvent.mode)) {
+  if (!assassinationEvent.active || assassinationEvent.mode !== "qte") {
     return;
   }
   const bossFight = assassinationEvent.targetType === "boss";
-  const tapGain = assassinationEvent.mode === "wardenQte"
-    ? assassinationEvent.advantaged
-      ? FROST_WARDEN_QTE.assassinTapGain
-      : FROST_WARDEN_QTE.defaultTapGain
-    : bossFight
-      ? ASSASSIN_RULES.qteBossTapGain
-      : ASSASSIN_RULES.qteTapGain;
   assassinationEvent.gauge = Math.min(
     1,
-    assassinationEvent.gauge + tapGain
+    assassinationEvent.gauge + (bossFight ? ASSASSIN_RULES.qteBossTapGain : ASSASSIN_RULES.qteTapGain)
   );
   assassinationEvent.flash = 1;
   playSound("button");
-  if (assassinationEvent.mode !== "wardenQte" && assassinationEvent.gauge >= 1) {
+  if (assassinationEvent.gauge >= 1) {
     finishAssassination(true);
   }
 }
@@ -5075,26 +4388,6 @@ function updateAssassinationEvent(dt) {
   if (assassinationEvent.mode === "backstab") {
     if (assassinationEvent.timer <= 0) {
       finishAssassination(true);
-    }
-    return;
-  }
-
-  if (assassinationEvent.mode === "wardenQte") {
-    const elapsed = FROST_WARDEN_QTE.duration - assassinationEvent.timer;
-    const inEntry = elapsed < FROST_WARDEN_QTE.entryDuration;
-    const inFinish = assassinationEvent.timer <= FROST_WARDEN_QTE.finishDuration;
-    if (!inEntry) {
-      const drainRate = assassinationEvent.advantaged
-        ? inFinish
-          ? FROST_WARDEN_QTE.assassinFinishDrainRate
-          : FROST_WARDEN_QTE.assassinDrainRate
-        : inFinish
-          ? FROST_WARDEN_QTE.defaultFinishDrainRate
-          : FROST_WARDEN_QTE.defaultDrainRate;
-      assassinationEvent.gauge = Math.max(0, assassinationEvent.gauge - drainRate * dt);
-    }
-    if (assassinationEvent.timer <= 0) {
-      finishAssassination(assassinationEvent.gauge >= FROST_WARDEN_QTE.successThreshold);
     }
     return;
   }
@@ -5123,13 +4416,32 @@ function handleInput(event, pressed) {
   }
 
   const arcadeHardDanceLive =
-    isArcadeHardDanceStage() &&
+    level.theme === "arcade" &&
+    difficulty.label === "Hard" &&
     (danceEvent.active || danceEvent.countdown);
 
   if (arcadeHardDanceLive) {
     if (pressed && danceEvent.active) {
-      const dir = directionFromDanceKey(event.key, event.code);
-      if (submitDanceInput(dir)) {
+      const key = event.key;
+      const dir =
+        ["a", "A"].includes(key) ? "left" :
+        ["d", "D"].includes(key) ? "right" :
+        ["w", "W"].includes(key) ? "up" :
+        ["s", "S"].includes(key) ? "down" :
+        null;
+
+      if (dir) {
+        if (dir === danceEvent.sequence[danceEvent.index]) {
+          danceEvent.index += 1;
+          danceEvent.stepTimer = danceEvent.stepTimeLimit;
+          danceEvent.flash = 1;
+          playSound("stomp");
+          if (danceEvent.index >= danceEvent.sequence.length) {
+            resolveDanceEvent(true);
+          }
+        } else {
+          resolveDanceEvent(false);
+        }
         return;
       }
     }
@@ -5144,7 +4456,11 @@ function handleInput(event, pressed) {
   }
 
   if (pressed && nightmareEvent.active && [" ", "Spacebar", "Enter"].includes(event.key)) {
-    attemptNightmareInput();
+    const marker = nightmareEvent.marker;
+    const success =
+      marker >= nightmareEvent.targetStart &&
+      marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
+    resolveNightmareEvent(success);
     return;
   }
 
@@ -5188,33 +4504,20 @@ function handleInput(event, pressed) {
     nextStage();
   }
   if (pressed && ["e", "E"].includes(event.key)) {
-    if (tryBeginFrostWardenSkillClash()) {
-      return;
-    }
     if (isChangerEquipped()) {
       createChangerClone();
-    } else if (isLightnerEquipped()) {
-      activateLightnerField();
     } else {
       activateAssassinStealth();
     }
   }
   if (pressed && ["q", "Q"].includes(event.key)) {
-    if (tryBeginFrostWardenSkillClash()) {
-      return;
-    }
     if (isGuardianEquipped()) {
       activateGuardianShield();
     } else if (isChangerEquipped()) {
       swapChangerWithClone();
-    } else if (isLightnerEquipped()) {
-      activateLightnerAnchor();
     } else {
       beginAssassination();
     }
-  }
-  if (pressed && ["x", "X"].includes(event.key)) {
-    activateLightnerAwaken();
   }
   if (pressed && ["Escape"].includes(event.key)) {
     openLobby();
@@ -5222,7 +4525,7 @@ function handleInput(event, pressed) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
     event.preventDefault();
   }
   handleInput(event, true);
@@ -5262,376 +4565,6 @@ canvas.addEventListener("pointerdown", (event) => {
     resolveClawEscapeEvent();
   }
 });
-
-function setMobileButtonActive(button, active) {
-  button.classList.toggle("active", active);
-}
-
-const mobileJoystick = document.getElementById("mobileJoystick");
-const mobileJoystickKnob = document.getElementById("mobileJoystickKnob");
-const mobileJoystickState = {
-  active: false,
-  pointerId: null,
-  touchId: null,
-  originX: 0,
-  originY: 0,
-  jumped: false,
-  danceDir: null,
-};
-
-function resetMobileJoystick() {
-  keys.left = false;
-  keys.right = false;
-  keys.crouch = false;
-  keys.jump = false;
-  mobileJoystickState.active = false;
-  mobileJoystickState.pointerId = null;
-  mobileJoystickState.touchId = null;
-  mobileJoystickState.originX = 0;
-  mobileJoystickState.originY = 0;
-  mobileJoystickState.jumped = false;
-  mobileJoystickState.danceDir = null;
-  if (mobileJoystickKnob) {
-    mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
-  }
-}
-
-function updateMobileJoystick(event) {
-  if (!mobileJoystick) {
-    return;
-  }
-  ensureAudioContext();
-  const rect = mobileJoystick.getBoundingClientRect();
-  const centerX = mobileJoystickState.originX || rect.left + rect.width * 0.5;
-  const centerY = mobileJoystickState.originY || rect.top + rect.height * 0.5;
-  const maxDistance = Math.max(34, rect.width * 0.34);
-  const dx = event.clientX - centerX;
-  const dy = event.clientY - centerY;
-  const distance = Math.min(maxDistance, Math.hypot(dx, dy));
-  const angle = Math.atan2(dy, dx);
-  const knobX = Math.cos(angle) * distance;
-  const knobY = Math.sin(angle) * distance;
-  const normalizedX = maxDistance > 0 ? knobX / maxDistance : 0;
-  const normalizedY = maxDistance > 0 ? knobY / maxDistance : 0;
-
-  if (mobileJoystickKnob) {
-    mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
-  }
-
-  const arcadeHardDanceLive =
-    isArcadeHardDanceStage() &&
-    (danceEvent.active || danceEvent.countdown);
-
-  if (arcadeHardDanceLive) {
-    keys.left = false;
-    keys.right = false;
-    keys.crouch = false;
-    keys.jump = false;
-    keys.jumpQueued = false;
-
-    let dir = null;
-    if (danceEvent.active && Math.hypot(normalizedX, normalizedY) > 0.42) {
-      if (Math.abs(normalizedX) > Math.abs(normalizedY)) {
-        dir = normalizedX < 0 ? "left" : "right";
-      } else {
-        dir = normalizedY < 0 ? "up" : "down";
-      }
-    }
-
-    if (dir && dir !== mobileJoystickState.danceDir) {
-      submitDanceInput(dir);
-    }
-    mobileJoystickState.danceDir = dir;
-    return;
-  }
-
-  keys.left = normalizedX < -0.32;
-  keys.right = normalizedX > 0.32;
-  keys.crouch = normalizedY > 0.45 && level.theme === "arcade" && gameState !== "lobby";
-  const wantsJump = normalizedY < -0.48;
-  if (wantsJump && !mobileJoystickState.jumped && !keys.jump) {
-    if (attemptNightmareInput()) {
-      keys.jump = false;
-      mobileJoystickState.jumped = true;
-      return;
-    }
-    keys.jumpQueued = true;
-    if (gameState === "stageclear") {
-      nextStage();
-    }
-  }
-  keys.jump = wantsJump;
-  mobileJoystickState.jumped = wantsJump;
-}
-
-function startMobileDrag(clientX, clientY, pointerId = null, touchId = null) {
-  if (controlMode !== "mobile" || gameState === "lobby" || clawEscapeEvent.active || lootBoxState.active) {
-    return false;
-  }
-  ensureAudioContext();
-  mobileJoystickState.active = true;
-  mobileJoystickState.pointerId = pointerId;
-  mobileJoystickState.touchId = touchId;
-  mobileJoystickState.originX = clientX;
-  mobileJoystickState.originY = clientY;
-  mobileJoystickState.jumped = false;
-  mobileJoystickState.danceDir = null;
-  updateMobileJoystick({ clientX, clientY });
-  return true;
-}
-
-mobileJoystick?.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  mobileJoystick.setPointerCapture?.(event.pointerId);
-  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
-});
-
-mobileJoystick?.addEventListener("pointermove", (event) => {
-  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId) {
-    return;
-  }
-  event.preventDefault();
-  updateMobileJoystick(event);
-});
-
-mobileJoystick?.addEventListener("pointerup", (event) => {
-  event.preventDefault();
-  resetMobileJoystick();
-});
-
-mobileJoystick?.addEventListener("pointercancel", (event) => {
-  event.preventDefault();
-  resetMobileJoystick();
-});
-
-mobileJoystick?.addEventListener("lostpointercapture", resetMobileJoystick);
-
-function findActiveJoystickTouch(touches) {
-  for (const touch of touches) {
-    if (touch.identifier === mobileJoystickState.touchId) {
-      return touch;
-    }
-  }
-  return null;
-}
-
-mobileJoystick?.addEventListener("touchstart", (event) => {
-  event.preventDefault();
-  const touch = event.changedTouches[0];
-  if (!touch) {
-    return;
-  }
-  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
-}, { passive: false });
-
-mobileJoystick?.addEventListener("touchmove", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!mobileJoystickState.active || !touch) {
-    return;
-  }
-  event.preventDefault();
-  updateMobileJoystick(touch);
-}, { passive: false });
-
-mobileJoystick?.addEventListener("touchend", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!touch) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-}, { passive: false });
-
-mobileJoystick?.addEventListener("touchcancel", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!touch) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-}, { passive: false });
-
-canvas.addEventListener("pointerdown", (event) => {
-  if (event.target?.closest?.("[data-mobile-action]") || controlMode !== "mobile" || gameState === "lobby") {
-    return;
-  }
-  event.preventDefault();
-  canvas.setPointerCapture?.(event.pointerId);
-  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
-});
-
-canvas.addEventListener("pointermove", (event) => {
-  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId || controlMode !== "mobile") {
-    return;
-  }
-  event.preventDefault();
-  updateMobileJoystick(event);
-});
-
-canvas.addEventListener("pointerup", (event) => {
-  if (event.pointerId !== mobileJoystickState.pointerId) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-});
-
-canvas.addEventListener("pointercancel", (event) => {
-  if (event.pointerId !== mobileJoystickState.pointerId) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-});
-
-canvas.addEventListener("touchstart", (event) => {
-  if (controlMode !== "mobile" || gameState === "lobby") {
-    return;
-  }
-  const touch = event.changedTouches[0];
-  if (!touch) {
-    return;
-  }
-  event.preventDefault();
-  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
-}, { passive: false });
-
-canvas.addEventListener("touchmove", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!mobileJoystickState.active || !touch || controlMode !== "mobile") {
-    return;
-  }
-  event.preventDefault();
-  updateMobileJoystick(touch);
-}, { passive: false });
-
-canvas.addEventListener("touchend", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!touch) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-}, { passive: false });
-
-canvas.addEventListener("touchcancel", (event) => {
-  const touch = findActiveJoystickTouch(event.changedTouches);
-  if (!touch) {
-    return;
-  }
-  event.preventDefault();
-  resetMobileJoystick();
-}, { passive: false });
-
-function applyMobileAction(action, pressed) {
-  ensureAudioContext();
-  if (!pressed) {
-    return;
-  }
-  if (action === "skill-e") {
-    if (tryBeginFrostWardenSkillClash()) {
-      return;
-    }
-    if (isChangerEquipped()) {
-      createChangerClone();
-    } else if (isLightnerEquipped()) {
-      activateLightnerField();
-    } else {
-      activateAssassinStealth();
-    }
-  } else if (action === "skill-q") {
-    if (assassinationEvent.active) {
-      tapAssassinationQte();
-      return;
-    }
-    if (tryBeginFrostWardenSkillClash()) {
-      return;
-    }
-    if (isGuardianEquipped()) {
-      activateGuardianShield();
-    } else if (isChangerEquipped()) {
-      swapChangerWithClone();
-    } else if (isLightnerEquipped()) {
-      activateLightnerAnchor();
-    } else {
-      beginAssassination();
-    }
-  } else if (action === "skill-x") {
-    activateLightnerAwaken();
-  } else if (action === "restart") {
-    restartGame();
-  }
-}
-
-document.querySelectorAll("[data-mobile-action]").forEach((button) => {
-  const action = button.dataset.mobileAction;
-  let handledTouch = false;
-  let lastTriggerTime = 0;
-  const trigger = () => {
-    const now = performance.now();
-    if (now - lastTriggerTime < 90) {
-      return;
-    }
-    lastTriggerTime = now;
-    applyMobileAction(action, true);
-  };
-  button.addEventListener("pointerdown", (event) => {
-    if (handledTouch) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    button.setPointerCapture?.(event.pointerId);
-    setMobileButtonActive(button, true);
-    trigger();
-  });
-  const release = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMobileButtonActive(button, false);
-    applyMobileAction(action, false);
-  };
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", () => {
-    setMobileButtonActive(button, false);
-    applyMobileAction(action, false);
-  });
-  button.addEventListener("touchstart", (event) => {
-    handledTouch = true;
-    event.preventDefault();
-    event.stopPropagation();
-    setMobileButtonActive(button, true);
-    trigger();
-  }, { passive: false });
-  button.addEventListener("touchend", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMobileButtonActive(button, false);
-    applyMobileAction(action, false);
-    window.setTimeout(() => {
-      handledTouch = false;
-    }, 0);
-  }, { passive: false });
-  button.addEventListener("touchcancel", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMobileButtonActive(button, false);
-    applyMobileAction(action, false);
-    window.setTimeout(() => {
-      handledTouch = false;
-    }, 0);
-  }, { passive: false });
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMobileButtonActive(button, true);
-    trigger();
-    window.setTimeout(() => {
-      setMobileButtonActive(button, false);
-    }, 80);
-  });
-});
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;
   updateMuteButtonLabel();
@@ -5658,11 +4591,6 @@ stageSelect.addEventListener("change", () => {
 screenModeSelect.addEventListener("change", () => {
   screenMode = screenModeSelect.value;
   applyScreenMode();
-});
-
-controlModeSelect.addEventListener("change", () => {
-  controlMode = controlModeSelect.value;
-  applyControlMode();
 });
 
 playButton.addEventListener("click", () => {
@@ -5900,7 +4828,6 @@ function updatePlayer(dt) {
   if (assassinationEvent.active) {
     player.animationTime += dt;
     player.vx = 0;
-    player.vy = 0;
     return;
   }
 
@@ -5943,10 +4870,7 @@ function updatePlayer(dt) {
   applyPlayerCrouch(keys.crouch);
 
   const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  let moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
-  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
-    moveSpeed *= LIGHTNER_RULES.awakenSpeedMultiplier;
-  }
+  const moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
   if (level.theme === "frozen") {
     const targetVx = inputX * moveSpeed;
     const slippery = isPlayerOnIce() || player.iceSlideTimer > 0;
@@ -5997,11 +4921,9 @@ function updatePlayer(dt) {
     if (!collectible.collected && overlaps(player, collectible)) {
       collectible.collected = true;
       score += Math.round(100 * difficulty.collectibleBonus);
-      if (level.theme !== "frozen") {
-        awardCoins(level.theme === "factory" ? 8 : 6);
-      }
+      awardCoins(level.theme === "factory" || level.theme === "frozen" ? 8 : 6);
       collectedCount += 1;
-      playSound(level.theme === "factory" ? "button" : "coin");
+      playSound(level.theme === "factory" ? "button" : level.theme === "frozen" ? "ice" : "coin");
     }
   }
 
@@ -6017,9 +4939,6 @@ function updatePlayer(dt) {
       }
 
       if (enemy.type === "frostWarden") {
-        if (beginFrostWardenClash(enemy)) {
-          break;
-        }
         loseLife();
         break;
       }
@@ -6038,13 +4957,10 @@ function updatePlayer(dt) {
         } else {
           enemy.alive = false;
           enemy.squishTimer = 0.35;
-          registerLightnerKill();
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 250 + currentStageIndex * 50;
-          if (level.theme !== "frozen") {
-            awardCoins(7 + currentStageIndex);
-          }
+          awardCoins(7 + currentStageIndex);
           playSound("stomp");
         }
       } else {
@@ -6083,14 +4999,11 @@ function updatePlayer(dt) {
           serpent.alive = false;
           serpent.stunTimer = 1.2;
           serpent.state = "stunned";
-          registerLightnerKill();
           serpent.strikeProgress = 0;
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 400 + currentStageIndex * 75;
-          if (level.theme !== "frozen") {
-            awardCoins(10 + currentStageIndex);
-          }
+          awardCoins(10 + currentStageIndex);
           playSound("stomp");
         }
       } else {
@@ -6100,9 +5013,8 @@ function updatePlayer(dt) {
     }
   }
 
-  const canUseGoal = level.theme === "frozen" ? false : collectedCount >= currentShardTarget();
-  if (gameState === "playing" && overlaps(player, level.goal) && canUseGoal) {
-    awardStageClearCoins();
+  if (gameState === "playing" && overlaps(player, level.goal) && collectedCount >= currentShardTarget()) {
+    awardCoins(25 + currentStageIndex * 5);
     rollStageClearBoxReward();
     if (level.theme === "arcade") {
       triggerClawEscapeEvent();
@@ -6154,34 +5066,8 @@ function resolveSolidCollisions(axis) {
 function updateEnemies(dt) {
   for (const enemy of level.enemies) {
     enemy.animationTime += dt;
-    enemy.lightnerStunTimer = Math.max(0, (enemy.lightnerStunTimer || 0) - dt);
-    enemy.lightnerSlowTimer = Math.max(0, (enemy.lightnerSlowTimer || 0) - dt);
     if (!enemy.alive || enemy.defeated) {
       enemy.squishTimer = Math.max(0, enemy.squishTimer - dt);
-      if (enemy.type === "frostWarden") {
-        enemy.qteMeltTimer = Math.max(0, (enemy.qteMeltTimer || 0) - dt);
-      }
-      continue;
-    }
-
-    if (enemy.lightnerStunTimer > 0) {
-      enemy.vx = 0;
-      if (enemy.type !== "frostWarden") {
-        enemy.vy += GRAVITY * dt;
-        enemy.y += enemy.vy * dt;
-        for (const solid of level.solids) {
-          if (!overlaps(enemy, solid)) {
-            continue;
-          }
-          if (enemy.vy > 0) {
-            enemy.y = solid.y - enemy.h;
-            enemy.vy = 0;
-          } else if (enemy.vy < 0) {
-            enemy.y = solid.y + solid.h;
-            enemy.vy = 0;
-          }
-        }
-      }
       continue;
     }
 
@@ -6388,8 +5274,7 @@ function updateFrostWardenEnemy(enemy, dt) {
     enemy.cooldown = Math.max(enemy.cooldown, 0.8);
   } else if (enemy.state === "idle") {
     enemy.cooldown -= dt;
-    const speedMultiplier = enemy.lightnerSlowTimer > 0 ? LIGHTNER_RULES.bossSlowMultiplier : 1;
-    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed * speedMultiplier : 0;
+    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed : 0;
     if (enemy.cooldown <= 0 && distance < 360) {
       enemy.state = "telegraph";
       enemy.attackType = distance < 88 ? "melee" : "wave";
@@ -6540,17 +5425,10 @@ function update(dt) {
   updatePlayer(dt);
   changerState.swapCooldown = Math.max(0, changerState.swapCooldown - dt);
   changerState.effectTimer = Math.max(0, changerState.effectTimer - dt);
-  updateLightnerState(dt);
   player.cloneTransferFlash = Math.max(0, player.cloneTransferFlash - dt);
-  screenShakeTimer = Math.max(0, screenShakeTimer - dt);
   if (gameState === "playing") {
     if (assassinationEvent.active) {
       updateAssassinationEvent(dt);
-      if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
-        updateCamera();
-        savePersistentProgress();
-        return;
-      }
     }
     if (level.theme === "factory") {
       factoryTimeRemaining = Math.max(0, factoryTimeRemaining - dt);
@@ -6591,45 +5469,19 @@ function update(dt) {
       updateClawEscapeEvent(dt);
     }
   }
+  if (isChangerEquipped()) {
+    ctx.fillText(t("changer_hint"), 470, 124);
+  } else if (isGuardianEquipped()) {
+    ctx.fillText(t("guardian_hint"), 470, 124);
+  } else if (isAssassinEquipped()) {
+    ctx.fillText(t("assassin_hint"), 470, 124);
+  }
+
   if (stageMessageTimer > 0) {
     stageMessageTimer = Math.max(0, stageMessageTimer - dt);
   }
   updateCamera();
   savePersistentProgress();
-}
-
-function updateLightnerState(dt) {
-  if (assassinationEvent.active) {
-    return;
-  }
-  for (const effect of lightnerState.effects) {
-    effect.timer = Math.max(0, effect.timer - dt);
-  }
-  for (let i = lightnerState.effects.length - 1; i >= 0; i -= 1) {
-    if (lightnerState.effects[i].timer <= 0) {
-      lightnerState.effects.splice(i, 1);
-    }
-  }
-  if (!isLightnerEquipped()) {
-    return;
-  }
-  lightnerState.fieldCooldown = Math.max(0, lightnerState.fieldCooldown - dt);
-  lightnerState.awakenTimer = Math.max(0, lightnerState.awakenTimer - dt);
-  if (lightnerState.anchor) {
-    lightnerState.anchor.timer -= dt;
-    if (lightnerState.anchor.timer <= 0) {
-      lightnerState.anchor = null;
-    }
-  }
-  if (lightnerState.stacks < LIGHTNER_RULES.maxStacks) {
-    lightnerState.stackRechargeTimer -= dt;
-    if (lightnerState.stackRechargeTimer <= 0) {
-      lightnerState.stacks += 1;
-      lightnerState.stackRechargeTimer = lightnerState.stacks < LIGHTNER_RULES.maxStacks ? currentLightnerStackCooldown() : 0;
-    }
-  } else {
-    lightnerState.stackRechargeTimer = 0;
-  }
 }
 
 function updateClawEscapeEvent(dt) {
@@ -6638,12 +5490,12 @@ function updateClawEscapeEvent(dt) {
 }
 
 function updateNightmareEvent(dt) {
-  if (isArcadeHardDanceStage()) {
-    updateDanceEvent(dt);
+  if (difficulty.label !== "Hard") {
     return;
   }
 
-  if (activeDifficultyKey !== "hard") {
+  if (level.theme === "arcade") {
+    updateDanceEvent(dt);
     return;
   }
 
@@ -7008,106 +5860,9 @@ function drawWorld() {
   drawCollectibles();
   drawEnemies();
   drawChangerClone();
-  drawLightnerEffects();
   drawPlayer();
   drawFrozenPlayerEffect();
   drawChangerSwapEffect();
-  ctx.restore();
-}
-
-function drawLightnerEffects() {
-  if (!isLightnerEquipped() && lightnerState.effects.length === 0) {
-    return;
-  }
-  ctx.save();
-  if (lightnerState.anchor) {
-    const anchor = lightnerState.anchor;
-    const pulse = 0.7 + Math.sin(lastTime * 0.025) * 0.18;
-    ctx.strokeStyle = `rgba(255, 215, 0, ${0.75 * pulse})`;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(anchor.x, anchor.y, 18 + pulse * 4, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = `rgba(255, 215, 0, ${0.18 * pulse})`;
-    ctx.fillRect(anchor.x - 5, anchor.y - 30, 10, 60);
-    ctx.fillStyle = "#ffd700";
-    ctx.fillRect(anchor.x - 2, anchor.y - 18, 4, 36);
-    ctx.fillRect(anchor.x - 12, anchor.y - 2, 24, 4);
-  }
-
-  for (const effect of lightnerState.effects) {
-    const t = Math.max(0, Math.min(1, effect.timer / effect.duration));
-    if (effect.type === "anchor") {
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.5 * t})`;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(effect.x - 18, effect.y + 34);
-      ctx.lineTo(effect.x, effect.y - 30);
-      ctx.lineTo(effect.x + 16, effect.y + 16);
-      ctx.stroke();
-    } else if (effect.type === "teleport") {
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(effect.x, effect.y);
-      ctx.lineTo(effect.toX, effect.toY);
-      ctx.stroke();
-      ctx.strokeStyle = `rgba(255, 246, 158, ${0.9 * t})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(effect.toX - 18, 0);
-      ctx.lineTo(effect.toX + 4, effect.toY - 38);
-      ctx.lineTo(effect.toX - 8, effect.toY - 8);
-      ctx.lineTo(effect.toX + 14, effect.toY + 26);
-      ctx.stroke();
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.55 * t})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(effect.x + 12, effect.y - 36);
-      ctx.lineTo(effect.x - 5, effect.y - 8);
-      ctx.lineTo(effect.x + 9, effect.y + 22);
-      ctx.stroke();
-      ctx.fillStyle = `rgba(255, 215, 0, ${0.22 * t})`;
-      ctx.fillRect(effect.x - 10, effect.y - 34, 20, 68);
-      ctx.fillRect(effect.toX - 10, effect.toY - 34, 20, 68);
-    } else if (effect.type === "field") {
-      const radius = effect.radius;
-      const groundY = Math.min(FLOOR_Y, effect.y + 72);
-      ctx.strokeStyle = `rgba(255, 246, 158, ${0.92 * t})`;
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(effect.x - 22, 0);
-      ctx.lineTo(effect.x + 8, groundY - 108);
-      ctx.lineTo(effect.x - 14, groundY - 42);
-      ctx.lineTo(effect.x + 6, groundY);
-      ctx.stroke();
-      ctx.fillStyle = `rgba(255, 215, 0, ${0.12 * t})`;
-      ctx.fillRect(effect.x - radius, groundY - 8, radius * 2, 16);
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(effect.x - radius, groundY);
-      ctx.lineTo(effect.x + radius, groundY);
-      ctx.stroke();
-      for (let i = 0; i < 7; i += 1) {
-        const side = i % 2 === 0 ? -1 : 1;
-        const offset = (i + 1) * radius / 8 * side;
-        ctx.strokeStyle = `rgba(255, 225, 70, ${0.62 * t})`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(effect.x, groundY);
-        ctx.lineTo(effect.x + offset, groundY + (i % 3 - 1) * 8);
-        ctx.lineTo(effect.x + offset + side * 18, groundY + 10);
-        ctx.stroke();
-      }
-    } else if (effect.type === "awaken") {
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.34 + Math.sin(lastTime * 0.026) * 0.12})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(player.x + player.w * 0.5, player.y + player.h * 0.5, 34, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
   ctx.restore();
 }
 
@@ -7394,18 +6149,18 @@ function drawCollectibles() {
       ctx.fillRect(x + 10, y + 10, 2, 2);
     } else if (level.theme === "frozen") {
       const pulse = 0.78 + Math.sin(lastTime * 0.009 + collectible.bob) * 0.18;
-      ctx.fillStyle = `rgba(255, 224, 80, ${0.24 * pulse})`;
+      ctx.fillStyle = `rgba(122, 229, 255, ${0.22 * pulse})`;
       ctx.beginPath();
-      ctx.arc(x + 12, y + 12, 15, 0, Math.PI * 2);
+      ctx.arc(x + 14, y + 14, 20, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#d58b1f";
-      ctx.fillRect(x + 5, y + 2, 14, 20);
-      ctx.fillRect(x + 2, y + 5, 20, 14);
-      ctx.fillStyle = `rgba(255, 239, 125, ${0.98 * pulse})`;
-      ctx.fillRect(x + 7, y + 4, 10, 16);
-      ctx.fillRect(x + 4, y + 7, 16, 10);
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
-      ctx.fillRect(x + 8, y + 5, 4, 3);
+      ctx.fillStyle = "#113657";
+      ctx.fillRect(x + 7, y + 3, 14, 22);
+      ctx.fillRect(x + 3, y + 7, 22, 14);
+      ctx.fillStyle = `rgba(126, 238, 255, ${0.95 * pulse})`;
+      ctx.fillRect(x + 10, y + 6, 8, 16);
+      ctx.fillRect(x + 6, y + 10, 16, 8);
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.fillRect(x + 12, y + 8, 4, 4);
     } else {
       ctx.fillStyle = "#ffe14d";
       ctx.fillRect(x + 4, y, 12, 20);
@@ -7522,46 +6277,7 @@ function drawExcavatorSprite(enemy) {
 }
 
 function drawFrostWardenSprite(enemy) {
-  if (enemy.defeated) {
-    if ((enemy.qteMeltTimer || 0) <= 0) {
-      return;
-    }
-    const x = enemy.x;
-    const y = enemy.y + 52;
-    const melt = Math.max(0, Math.min(1, enemy.qteMeltTimer / 1.2));
-    const steam = (0.45 + Math.sin(lastTime * 0.01) * 0.16) * melt;
-    ctx.save();
-    ctx.fillStyle = `rgba(124, 224, 255, ${0.22 * melt})`;
-    ctx.fillRect(x + 8, y + 26, 58, 10);
-    ctx.fillStyle = `rgba(213, 250, 255, ${0.62 * melt})`;
-    ctx.fillRect(x + 16, y + 18, 16, 8);
-    ctx.fillRect(x + 38, y + 20, 20, 7);
-    ctx.fillStyle = `rgba(206, 248, 255, ${steam})`;
-    ctx.fillRect(x + 18, y - 6, 5, 12);
-    ctx.fillRect(x + 34, y - 16, 6, 18);
-    ctx.fillRect(x + 52, y - 8, 5, 14);
-    for (let i = 0; i < 5; i += 1) {
-      const coinX = x + 12 + i * 11;
-      const coinY = y + 18 + Math.sin(lastTime * 0.006 + i) * 3;
-      ctx.fillStyle = `rgba(255, 213, 75, ${0.82 * melt})`;
-      ctx.beginPath();
-      ctx.arc(coinX, coinY, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `rgba(255, 249, 177, ${0.7 * melt})`;
-      ctx.fillRect(coinX - 1, coinY - 3, 2, 6);
-    }
-    ctx.strokeStyle = "rgba(126, 225, 255, 0.68)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x - 6, y + 34);
-    ctx.lineTo(x + 16, y + 26);
-    ctx.lineTo(x + 36, y + 36);
-    ctx.lineTo(x + 70, y + 24);
-    ctx.stroke();
-    ctx.restore();
-    return;
-  }
-  if (!enemy.alive) {
+  if (!enemy.alive || enemy.defeated) {
     return;
   }
   const x = enemy.x;
@@ -7626,10 +6342,10 @@ function drawPlayer() {
 
   ctx.save();
   if (player.facing < 0) {
-    ctx.translate(x + player.w + 2, y - 5);
+    ctx.translate(x + player.w, y);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(x - 2, y - 5);
+    ctx.translate(x, y);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
 
@@ -7652,12 +6368,6 @@ function drawPlayer() {
 
   if (isAssassinEquipped()) {
     drawAssassinPlayerSprite(legOffset, armOffset, scarfOffset);
-    ctx.restore();
-    return;
-  }
-
-  if (isLightnerEquipped()) {
-    drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset);
     ctx.restore();
     return;
   }
@@ -7737,32 +6447,22 @@ function drawPlayer() {
     ctx.fillStyle = "#070a12";
   }
   r(8, 2, 10, 6);
-  r(9, 0, 7, 3);
   r(7, 7, 12, 2);
   ctx.fillStyle = voidSkin ? "#0b0b10" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#111626" : "#ff9445";
   r(6, 5, 14, 10);
   ctx.fillStyle = voidSkin ? "#16161e" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#1b223a" : "#ffc98c";
   r(8, 8, 3, 4);
   r(16, 8, 2, 3);
-  ctx.fillStyle = voidSkin ? "#2b2b33" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2f3b63" : "#ffd0a0";
-  r(10, 7, 6, 3);
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#0d1220" : "#171f35";
   r(9, 9, 8, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#66d2ff";
   r(12, 11, 2, 2);
   r(16, 11, 1, 2);
-  ctx.fillStyle = voidSkin ? "#ffcaca" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ffffff" : "#f7fbff";
-  r(13, 11, 1, 1);
-  r(16, 11, 1, 1);
   ctx.fillStyle = voidSkin ? "#111116" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#171c35" : "#1a447b";
   r(5, 17, 16, 10);
   ctx.fillStyle = voidSkin ? "#1c1b23" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#232c4f" : "#2f74bc";
   r(6, 18, 14, 4);
   r(8, 22, 10, 2);
-  ctx.fillStyle = voidSkin ? "#66151b" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#79d9ff";
-  r(8, 18, 1, 6);
-  r(17, 18, 1, 6);
-  r(10, 20, 6, 1);
   ctx.fillStyle = voidSkin ? "#09090d" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#11182b" : "#18345e";
   r(9, 18, 3, 8);
   r(14, 18, 4, 8);
@@ -7785,76 +6485,6 @@ function drawPlayer() {
     r(11, 20, 4, 1);
     r(7, 6, 2, 3);
     r(18, 6, 2, 3);
-  }
-  drawPlayerSkinAccent();
-  ctx.restore();
-}
-
-function drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset) {
-  const awakened = lightnerState.awakenTimer > 0;
-  const pulse = awakened ? 0.82 + Math.sin(lastTime * 0.03) * 0.18 : 0.62 + Math.sin(lastTime * 0.014) * 0.12;
-  const palette = getLightnerSkinPalette();
-  const spark = (alpha) => `rgba(${palette.lightningRgb}, ${alpha})`;
-  const awakenSpark = (alpha) => `rgba(${palette.awakenRgb}, ${alpha})`;
-  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
-  ctx.save();
-
-  ctx.fillStyle = palette.hood;
-  r(7, 2, 12, 6);
-  r(6, 6, 14, 4);
-  ctx.fillStyle = palette.coat;
-  r(5, 8, 16, 9);
-  ctx.fillStyle = palette.coatDark;
-  r(8, 8, 10, 5);
-  ctx.fillStyle = palette.mask;
-  r(9, 10, 8, 7);
-  ctx.fillStyle = spark(pulse);
-  r(11, 11, 2, 2);
-  r(16, 11, 2, 2);
-  r(13, 15, 4, 1);
-
-  ctx.fillStyle = palette.pants;
-  r(5, 17, 17, 10);
-  ctx.fillStyle = palette.coatDark;
-  r(6, 18, 15, 4);
-  r(8, 22, 11, 2);
-  ctx.fillStyle = spark(0.85 * pulse);
-  r(9, 18, 1, 4);
-  r(13, 18, 1, 7);
-  r(17, 18, 2, 1);
-  r(18, 18 + scarfOffset, 5, 2);
-  r(20, 20 + scarfOffset, 3, 1);
-
-  ctx.fillStyle = palette.pants;
-  r(4, 27, 7, 4 + legOffset);
-  r(15, 27, 7, 4 + (2 - legOffset));
-  ctx.fillStyle = spark(0.72 * pulse);
-  r(6, 28, 2, 1);
-  r(17, 28, 2, 1);
-
-  ctx.fillStyle = palette.arm;
-  r(2, 19 + armOffset, 2, 8);
-  r(22, 19 - armOffset, 2, 8);
-  ctx.fillStyle = spark(0.78 * pulse);
-  r(3, 20 + armOffset, 1, 4);
-  r(22, 20 - armOffset, 1, 4);
-
-  if (shopState.equippedSkin === "angelDemon") {
-    ctx.fillStyle = "#f0e7da";
-    r(6, 18, 5, 5);
-    ctx.fillStyle = "#3b235c";
-    r(16, 18, 5, 5);
-    ctx.fillStyle = spark(0.74 * pulse);
-    r(13, 18, 1, 7);
-    r(17, 18, 2, 1);
-  }
-
-  if (awakened) {
-    ctx.fillStyle = awakenSpark(0.28 + pulse * 0.2);
-    r(3, 5, 2, 2);
-    r(20, 6, 2, 2);
-    r(11, 2, 1, 3);
-    r(18, 15, 3, 1);
   }
   drawPlayerSkinAccent();
   ctx.restore();
@@ -7895,10 +6525,10 @@ function drawChangerClone() {
 
   ctx.save();
   if ((clone.facing || 1) < 0) {
-    ctx.translate(clone.x + clone.w + 2, clone.y - 5);
+    ctx.translate(clone.x + clone.w, clone.y);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(clone.x - 2, clone.y - 5);
+    ctx.translate(clone.x, clone.y);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
   drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, true);
@@ -8009,7 +6639,6 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
 
   ctx.fillStyle = borderColor;
   r(4, 2, 18, 28);
-  r(6, 0, 14, 4);
   ctx.fillStyle = hoodColor;
   r(8, 4, 10, 8);
   r(7, 8, 12, 5);
@@ -8045,15 +6674,8 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
   ctx.fillStyle = eyeColor;
   r(11, 11, 2, 2);
   r(16, 11, 2, 2);
-  ctx.fillStyle = "#ffffff";
-  r(12, 11, 1, 1);
-  r(17, 11, 1, 1);
   ctx.fillStyle = isClone ? "#081b4b" : "#070d1a";
   r(12, 12, 5, 1);
-  ctx.fillStyle = glowColor;
-  r(9, 16, 1, 10);
-  r(17, 16, 1, 9);
-  r(10, 19, 7, 1);
   if (cyberSkin) {
     ctx.fillStyle = glowColor;
     r(10, 17, 1, 8);
@@ -8256,7 +6878,6 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(6, 2, 14, 28);
-  r(5, 7, 16, 4);
   ctx.fillStyle = palette.hood;
   r(8, 4, 10, 8);
   r(7, 8, 12, 4);
@@ -8265,13 +6886,8 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
   ctx.fillStyle = voidSkin ? `rgba(255, 76, 76, ${voidPulse})` : "#efe7d8";
   r(11, 11, 2, 2);
   r(15, 11, 2, 2);
-  ctx.fillStyle = palette.glow;
-  r(12, 11, 1, 1);
-  r(16, 11, 1, 1);
   ctx.fillStyle = palette.metal;
   r(7, 16, 12, 10);
-  r(5, 17, 3, 8);
-  r(18, 17, 3, 8);
   ctx.fillStyle = palette.cloth;
   r(10, 17, 6, 8);
   ctx.fillStyle = palette.trim;
@@ -8288,7 +6904,6 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(16, 15, 8, 15);
-  r(15, 14, 10, 3);
   ctx.fillStyle = palette.trim;
   r(17, 16, 6, 13);
   ctx.fillStyle = voidSkin ? "#16161c" : "#254d9e";
@@ -8388,7 +7003,6 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
 
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#05070e" : "#060910";
   r(7, 2, 12, 7);
-  r(8, 0, 9, 3);
   r(6, 7, 14, 4);
   ctx.fillStyle = voidSkin ? "#0d0d12" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#0d1220" : "#111724";
   r(7, 10, 12, 6);
@@ -8398,14 +7012,7 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
   r(7, 20, 12, 4);
   ctx.fillStyle = voidSkin ? "#5b0f17" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2d3470" : "#34415f";
   r(8, 16, 10, 3);
-  ctx.fillStyle = voidSkin ? "#0b0b0e" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#080b14" : "#09101d";
-  r(9, 11, 8, 3);
-  ctx.fillStyle = voidSkin ? "#7a141c" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
-  r(11, 17, 1, 9);
-  r(16, 17, 1, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
-  r(10, 8, 4, 1);
-  r(15, 8, 4, 1);
   r(12, 9, 2, 2);
   r(16, 9, 2, 2);
   ctx.fillStyle = voidSkin ? "#ffc0c0" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ddb5ff" : "#baf4ff";
@@ -8525,24 +7132,6 @@ function drawGoal() {
     return;
   }
 
-  if (level.theme === "frozen") {
-    const doorOpen = isFrostWardenDefeated();
-    const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
-    ctx.fillStyle = "#10243a";
-    ctx.fillRect(x + 6, y, 52, h);
-    ctx.fillStyle = doorOpen ? "rgba(108, 235, 255, 0.26)" : "rgba(22, 60, 92, 0.88)";
-    ctx.fillRect(x + 14, y + 10, 36, h - 20);
-    ctx.fillStyle = doorOpen ? `rgba(154, 244, 255, ${0.5 * pulse})` : "rgba(190, 238, 255, 0.32)";
-    for (let i = 0; i < 5; i += 1) {
-      ctx.fillRect(x + 18, y + 18 + i * 24, 28, 4);
-    }
-    ctx.fillStyle = doorOpen ? `rgba(126, 238, 255, ${0.65 * pulse})` : "rgba(75, 149, 190, 0.72)";
-    ctx.beginPath();
-    ctx.arc(x + 56, y + 18, 9, 0, Math.PI * 2);
-    ctx.fill();
-    return;
-  }
-
   if (level.theme === "arcade") {
     const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
 
@@ -8601,10 +7190,7 @@ function drawHud() {
 
   ctx.fillStyle = "#d8fbff";
   ctx.font = "16px Verdana";
-  const collectibleText = level.theme === "frozen"
-    ? `${currentCollectibleLabel()} ${collectedCount}`
-    : `${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`;
-  ctx.fillText(collectibleText, 190, 46);
+  ctx.fillText(`${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`, 190, 46);
   ctx.fillText(t("hud_difficulty", { difficulty: getDifficultyLabel(activeDifficultyKey) }), 190, 76);
   ctx.fillText(t("hud_jumps", { current: player.jumpsRemaining, total: player.maxJumps }), 190, 106);
   const stealthStatus = isChangerEquipped()
@@ -8629,20 +7215,6 @@ function drawHud() {
           : t("guardian_status_ready", {
             state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
           })
-    : isLightnerEquipped()
-      ? t("lightner_status", {
-        stacks: lightnerState.stacks,
-        max: LIGHTNER_RULES.maxStacks,
-        e: lightnerState.fieldCooldown.toFixed(1),
-        awaken: lightnerState.awakenTimer > 0
-          ? t("lightner_awaken_active", { time: lightnerState.awakenTimer.toFixed(1) })
-          : lightnerState.awakenKills >= LIGHTNER_RULES.awakenKillsRequired
-            ? t("lightner_awaken_ready")
-            : t("lightner_awaken_charge", {
-              kills: lightnerState.awakenKills,
-              required: LIGHTNER_RULES.awakenKillsRequired,
-            }),
-      })
     : !isAssassinEquipped()
       ? t("hud_character", { name: formatCatalogName(shopState.equippedCharacter) })
       : player.stealthActive
@@ -8668,7 +7240,7 @@ function drawHud() {
     ctx.fillText(t("hud_factory_hint"), 470, 96);
   } else if (level.theme === "frozen") {
     ctx.fillText(t("hud_clock", { time: formatStageTimer(frozenTimeRemaining) }), 470, 68);
-    ctx.fillText(t("hud_frozen_warden_hint"), 470, 96);
+    ctx.fillText(t("hud_frozen_hint"), 470, 96);
   } else {
     ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
@@ -8679,15 +7251,13 @@ function drawHud() {
     ctx.fillText(t("guardian_hint"), 470, 124);
   } else if (isAssassinEquipped()) {
     ctx.fillText(t("assassin_hint"), 470, 124);
-  } else if (isLightnerEquipped()) {
-    ctx.fillText(t("lightner_hint"), 470, 124);
   }
 
   if (stageMessageTimer > 0) {
     if (level.theme === "factory") {
       drawCenterPanel(level.name, t("stage_objective_factory", { count: currentShardTarget() }), "");
     } else if (level.theme === "frozen") {
-      drawCenterPanel(level.name, t("stage_objective_frozen_warden"), "");
+      drawCenterPanel(level.name, t("stage_objective_frozen", { count: currentShardTarget() }), "");
     } else {
       drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
     }
@@ -8697,22 +7267,21 @@ function drawHud() {
     drawCenterPanel(
       t("center_stage_clear"),
       t("center_next_stage"),
-      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) }),
-      stageClearRewardText()
+      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) })
     );
   } else if (gameState === "finished") {
-    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), stageClearRewardText(), t("center_restart"));
+    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), t("center_restart"));
   } else if (gameState === "gameover") {
     drawCenterPanel(t("center_game_over"), t("center_game_over_copy"), t("center_restart"));
   }
 }
 
-function drawCenterPanel(title, line1, line2, line3) {
+function drawCenterPanel(title, line1, line2) {
   ctx.fillStyle = "rgba(7, 19, 33, 0.72)";
-  ctx.fillRect(180, 140, 600, line3 ? 220 : 190);
+  ctx.fillRect(180, 140, 600, 190);
   ctx.strokeStyle = "#ffe98a";
   ctx.lineWidth = 4;
-  ctx.strokeRect(180, 140, 600, line3 ? 220 : 190);
+  ctx.strokeRect(180, 140, 600, 190);
   ctx.fillStyle = "#fff6ca";
   ctx.textAlign = "center";
   ctx.font = "bold 40px Verdana";
@@ -8722,29 +7291,12 @@ function drawCenterPanel(title, line1, line2, line3) {
   if (line2) {
     ctx.fillText(line2, GAME_WIDTH / 2, 278);
   }
-  if (line3) {
-    ctx.fillText(line3, GAME_WIDTH / 2, 314);
-  }
   ctx.textAlign = "left";
 }
 
 function render() {
-  ctx.save();
-  if (screenShakeTimer > 0) {
-    const shake = Math.ceil(screenShakeTimer * 10);
-    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-  }
   drawBackground();
-  if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
-    ctx.save();
-    ctx.translate(GAME_WIDTH / 2, GAME_HEIGHT / 2);
-    ctx.scale(1.08, 1.08);
-    ctx.translate(-GAME_WIDTH / 2, -GAME_HEIGHT / 2);
-    drawWorld();
-    ctx.restore();
-  } else {
-    drawWorld();
-  }
+  drawWorld();
   drawFrozenAtmosphere();
   drawHud();
   if (assassinationEvent.active) {
@@ -8756,7 +7308,6 @@ function render() {
   } else if (nightmareEvent.active || nightmareEvent.countdown) {
     drawNightmareOverlay();
   }
-  ctx.restore();
 }
 
 function drawFrozenAtmosphere() {
@@ -8792,53 +7343,24 @@ function drawFrozenAtmosphere() {
 
 function drawAssassinationOverlay() {
   const bossFight = assassinationEvent.targetType === "boss";
-  const wardenFight = assassinationEvent.mode === "wardenQte";
   const panelAlpha = 0.48 + assassinationEvent.flash * 0.18;
-  ctx.fillStyle = wardenFight ? `rgba(2, 10, 22, ${Math.min(0.82, panelAlpha + 0.14)})` : `rgba(4, 7, 16, ${panelAlpha})`;
+  ctx.fillStyle = `rgba(4, 7, 16, ${panelAlpha})`;
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-  if (wardenFight && assassinationEvent.target) {
-    const bounds = assassinationEvent.targetBounds || getEnemyBounds(assassinationEvent.target, assassinationEvent.target.type);
-    const focusX = bounds.x + bounds.w * 0.5 - camera.x;
-    const focusY = bounds.y + bounds.h * 0.45;
-    if (assassinationEvent.timer <= 0.5) {
-      const tension = 1 - Math.max(0, assassinationEvent.timer / 0.5);
-      ctx.fillStyle = `rgba(153, 230, 255, ${0.12 + tension * 0.18})`;
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    }
-    ctx.fillStyle = "rgba(112, 229, 255, 0.2)";
-    ctx.beginPath();
-    ctx.ellipse(focusX, focusY, 108, 124, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(208, 252, 255, 0.52)";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.ellipse(focusX, focusY, 116, 132, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
 
   ctx.fillStyle = "rgba(10, 15, 28, 0.86)";
   ctx.fillRect(180, 146, 600, 204);
-  ctx.strokeStyle = wardenFight
-    ? `rgba(126, 229, 255, ${0.62 + assassinationEvent.flash * 0.22})`
-    : `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
+  ctx.strokeStyle = `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
   ctx.lineWidth = 4;
   ctx.strokeRect(180, 146, 600, 204);
 
   ctx.fillStyle = "#f7f9ff";
   ctx.textAlign = "center";
   ctx.font = "bold 30px Verdana";
-  ctx.fillText(
-    wardenFight ? t("assassinate_warden_title") : assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"),
-    GAME_WIDTH / 2,
-    188
-  );
+  ctx.fillText(assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"), GAME_WIDTH / 2, 188);
   ctx.font = "18px Verdana";
   ctx.fillStyle = "#d5efff";
   ctx.fillText(
-    wardenFight
-      ? t("assassinate_warden_copy")
-      : assassinationEvent.mode === "backstab"
+    assassinationEvent.mode === "backstab"
       ? t("assassinate_locking")
       : bossFight
         ? t("assassinate_boss_copy")
@@ -8853,20 +7375,11 @@ function drawAssassinationOverlay() {
   const meterH = 24;
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.fillRect(meterX, meterY, meterW, meterH);
-  ctx.fillStyle = wardenFight
-    ? "rgba(107, 222, 255, 0.78)"
-    : assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
+  ctx.fillStyle = assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
   const fillAmount = assassinationEvent.mode === "backstab"
     ? 1 - Math.max(0, assassinationEvent.timer / ASSASSIN_RULES.strikeWindup)
     : assassinationEvent.gauge;
   ctx.fillRect(meterX, meterY, meterW * fillAmount, meterH);
-  if (wardenFight) {
-    const markerX = meterX + meterW * FROST_WARDEN_QTE.successThreshold;
-    ctx.fillStyle = "rgba(255, 245, 180, 0.72)";
-    ctx.fillRect(markerX - 3, meterY - 7, 6, meterH + 14);
-    ctx.fillStyle = "rgba(255, 110, 110, 0.56)";
-    ctx.fillRect(meterX, meterY, meterW * 0.5, 3);
-  }
   ctx.strokeStyle = "rgba(255, 241, 173, 0.7)";
   ctx.lineWidth = 2;
   ctx.strokeRect(meterX, meterY, meterW, meterH);
@@ -8875,7 +7388,7 @@ function drawAssassinationOverlay() {
   ctx.font = "bold 22px Verdana";
   ctx.fillText(assassinationEvent.successText, GAME_WIDTH / 2, 308);
   ctx.font = "17px Verdana";
-  if (assassinationEvent.mode === "qte" || wardenFight) {
+  if (assassinationEvent.mode === "qte") {
     ctx.fillText(t("assassinate_time", { time: assassinationEvent.timer.toFixed(1) }), GAME_WIDTH / 2, 334);
   }
   ctx.textAlign = "left";
@@ -9206,7 +7719,6 @@ applyLanguage(currentLanguage);
 loadPersistentProgress();
 updateStageSelectLocks();
 applyScreenMode();
-applyControlMode();
 openLobby();
 initializeAuthControls();
 savePersistentProgress(true);
