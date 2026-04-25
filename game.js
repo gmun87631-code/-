@@ -83,6 +83,9 @@ const PATCH_NOTES = [
       "모바일 조이스틱 시각 요소를 숨기고 화면 드래그 방향으로 조작하도록 변경",
       "모바일 조이스틱 테두리는 숨기고 가운데 버튼만 표시하도록 조정",
       "모바일 하드 악몽 이벤트에서 점프 드래그를 스페이스 입력처럼 처리하도록 수정",
+      "모바일 스킬 버튼 터치와 클릭 입력 안정성 개선",
+      "서리 워든은 점프로 처치되지 않고 어쌔신 암살 성공으로 처치되도록 조정",
+      "어쌔신과 서리 워든이 접촉하면 즉시 연타 싸움이 시작되도록 변경",
     ],
   },
   {
@@ -4440,7 +4443,8 @@ function finishAssassination(success) {
   }
 
   if (targetType === "boss") {
-    target.hp = Math.max(0, (target.hp ?? 100) - ASSASSIN_RULES.bossDamage);
+    const damage = target.type === "frostWarden" ? 999 : ASSASSIN_RULES.bossDamage;
+    target.hp = Math.max(0, (target.hp ?? 100) - damage);
     if (target.hp <= 0) {
       target.alive = false;
       target.defeated = true;
@@ -4504,6 +4508,29 @@ function beginAssassination() {
   }
 
   playSound("stomp");
+}
+
+function beginFrostWardenClash(enemy) {
+  if (!isAssassinEquipped() || assassinationEvent.active || !enemy || enemy.defeated || enemy.alive === false) {
+    return false;
+  }
+  breakAssassinStealth();
+  player.vx = 0;
+  player.vy = Math.min(player.vy, 0);
+  player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
+  player.invulnerableTime = Math.max(player.invulnerableTime, 0.35);
+
+  assassinationEvent.active = true;
+  assassinationEvent.mode = "qte";
+  assassinationEvent.target = enemy;
+  assassinationEvent.targetType = "boss";
+  assassinationEvent.targetBounds = getEnemyBounds(enemy, enemy.type);
+  assassinationEvent.timer = ASSASSIN_RULES.qteBossDuration;
+  assassinationEvent.gauge = 0;
+  assassinationEvent.flash = 1;
+  assassinationEvent.successText = "Boss Break";
+  playSound("stomp");
+  return true;
 }
 
 function tapAssassinationQte() {
@@ -4968,17 +4995,28 @@ function applyMobileAction(action, pressed) {
 document.querySelectorAll("[data-mobile-action]").forEach((button) => {
   const action = button.dataset.mobileAction;
   let handledTouch = false;
+  let lastTriggerTime = 0;
+  const trigger = () => {
+    const now = performance.now();
+    if (now - lastTriggerTime < 90) {
+      return;
+    }
+    lastTriggerTime = now;
+    applyMobileAction(action, true);
+  };
   button.addEventListener("pointerdown", (event) => {
     if (handledTouch) {
       return;
     }
     event.preventDefault();
+    event.stopPropagation();
     button.setPointerCapture?.(event.pointerId);
     setMobileButtonActive(button, true);
-    applyMobileAction(action, true);
+    trigger();
   });
   const release = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setMobileButtonActive(button, false);
     applyMobileAction(action, false);
   };
@@ -4991,11 +5029,13 @@ document.querySelectorAll("[data-mobile-action]").forEach((button) => {
   button.addEventListener("touchstart", (event) => {
     handledTouch = true;
     event.preventDefault();
+    event.stopPropagation();
     setMobileButtonActive(button, true);
-    applyMobileAction(action, true);
+    trigger();
   }, { passive: false });
   button.addEventListener("touchend", (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setMobileButtonActive(button, false);
     applyMobileAction(action, false);
     window.setTimeout(() => {
@@ -5004,12 +5044,22 @@ document.querySelectorAll("[data-mobile-action]").forEach((button) => {
   }, { passive: false });
   button.addEventListener("touchcancel", (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setMobileButtonActive(button, false);
     applyMobileAction(action, false);
     window.setTimeout(() => {
       handledTouch = false;
     }, 0);
   }, { passive: false });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, true);
+    trigger();
+    window.setTimeout(() => {
+      setMobileButtonActive(button, false);
+    }, 80);
+  });
 });
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;
@@ -5390,6 +5440,9 @@ function updatePlayer(dt) {
       }
 
       if (enemy.type === "frostWarden") {
+        if (beginFrostWardenClash(enemy)) {
+          break;
+        }
         loseLife();
         break;
       }

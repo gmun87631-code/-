@@ -1396,6 +1396,8 @@ body.touch-controls-enabled .mobile-controls {
 }
 
 body.touch-controls-enabled .mobile-actions {
+  position: relative;
+  z-index: 12;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1465,6 +1467,8 @@ body.touch-controls-enabled .mobile-joystick-knob {
 }
 
 body.touch-controls-enabled .mobile-control-button {
+  position: relative;
+  z-index: 13;
   width: 64px;
   height: 64px;
   padding: 0;
