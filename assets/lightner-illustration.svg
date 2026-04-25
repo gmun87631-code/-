@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 160">
+  <defs>
+    <radialGradient id="aura" cx="50%" cy="72%" r="62%">
+      <stop offset="0" stop-color="#ffd700" stop-opacity=".55"/>
+      <stop offset=".48" stop-color="#ffd700" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#ffd700" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="coat" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff8eb"/>
+      <stop offset=".54" stop-color="#d7dae0"/>
+      <stop offset="1" stop-color="#7b8491"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#34343a"/>
+      <stop offset=".45" stop-color="#111216"/>
+      <stop offset="1" stop-color="#030304"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f4bf8b"/>
+      <stop offset=".65" stop-color="#d99b69"/>
+      <stop offset="1" stop-color="#a96645"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <ellipse cx="64" cy="100" rx="58" ry="60" fill="url(#aura)"/>
+  <g fill="none" stroke="#ffd700" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M28 40 15 67h10L10 110" stroke-width="3"/>
+    <path d="M96 36 113 66h-12l18 46" stroke-width="3"/>
+    <path d="M22 124 54 139 90 124" stroke-width="2"/>
+    <path d="M43 72 35 93h7l-10 27" stroke-width="2"/>
+    <path d="M88 74 96 94h-7l12 27" stroke-width="2"/>
+  </g>
+
+  <g>
+    <path d="M45 100 35 143h-17l14-46z" fill="#050506"/>
+    <path d="M79 100 92 143h18L96 97z" fill="#050506"/>
+    <path d="M21 142h23v7H16z" fill="#101116"/>
+    <path d="M84 142h25l6 7H86z" fill="#101116"/>
+    <path d="M21 144h18" stroke="#ffd700" stroke-width="3" stroke-linecap="round"/>
+    <path d="M88 144h19" stroke="#ffd700" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g>
+    <path d="M30 55c-13 13-18 44-8 78l37 5-11-84c-7-5-13-5-18 1z" fill="#4e535e"/>
+    <path d="M98 55c13 13 18 44 8 78l-37 5 11-84c7-5 13-5 18 1z" fill="#4e535e"/>
+    <path d="M27 56c-11 13-13 43-4 72l31 4-8-75c-7-4-13-4-19-1z" fill="url(#coat)"/>
+    <path d="M101 56c11 13 13 43 4 72l-31 4 8-75c7-4 13-4 19-1z" fill="url(#coat)"/>
+    <path d="M35 61c-8 18-8 43-1 62l18 2-6-65z" fill="#fdf8ed"/>
+    <path d="M93 61c8 18 8 43 1 62l-18 2 6-65z" fill="#fdf8ed"/>
+    <path d="M45 65 34 79l8 57 15-5z" fill="#bfc4cc"/>
+    <path d="M83 65 94 79l-8 57-15-5z" fill="#bfc4cc"/>
+  </g>
+
+  <g>
+    <path d="M47 61h34l10 77H37z" fill="#07080b"/>
+    <path d="M50 66h28v25H50z" fill="#202126"/>
+    <path d="M60 63h12l-8 19h10L55 115l6-24H50z" fill="#ffd700" filter="url(#glow)"/>
+    <path d="M47 62v54M82 62v54" stroke="#ffd700" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+  </g>
+
+  <g>
+    <path d="M30 70c-18 14-22 39-15 55l17-3c-3-20 2-35 13-46z" fill="url(#coat)"/>
+    <path d="M98 70c18 14 22 39 15 55l-17-3c3-20-2-35-13-46z" fill="url(#coat)"/>
+    <path d="M17 121h18v11H15z" fill="#050506"/>
+    <path d="M93 121h18l2 11H93z" fill="#050506"/>
+    <path d="M28 78v34M100 78v34" stroke="#ffd700" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g>
+    <ellipse cx="64" cy="38" rx="23" ry="27" fill="url(#skin)"/>
+    <path d="M41 30c6-30 38-29 52-11 13 17-2 34-12 39l-6-20-9 22-9-24-11 21c-4-9-8-15-5-27z" fill="url(#hair)"/>
+    <path d="M31 41c11-17 23-20 44-17-15 0-29 5-44 17z" fill="#2a2a30"/>
+    <path d="M56 13c15-10 34 1 40 12-12-7-23-11-40-12z" fill="#222329"/>
+    <path d="M38 48c12-11 18-18 21-36 2 16-2 30-21 36z" fill="#050506"/>
+    <path d="M76 14c11 10 13 23 6 40 13-10 20-23 13-35-4-7-10-9-19-5z" fill="#050506"/>
+    <path d="M47 40h13M69 40h13" stroke="#2a180f" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="55" cy="43" rx="4" ry="3" fill="#ffd700" filter="url(#glow)"/>
+    <ellipse cx="74" cy="43" rx="4" ry="3" fill="#ffd700" filter="url(#glow)"/>
+    <path d="M60 57h10" stroke="#2a180f" stroke-width="3" stroke-linecap="round"/>
+    <path d="M65 44v7" stroke="#b87952" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

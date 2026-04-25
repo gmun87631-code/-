@@ -72,6 +72,22 @@ const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const PATCH_NOTES = [
   {
+    version: "Beta v0.7",
+    date: "2026-04-25",
+    items: [
+      "신규 캐릭터 라이트너 추가: 스파크 앵커, 체인 라이트닝 필드, 각성 스킬 구현",
+      "모바일 조작에 X 스킬 버튼 추가",
+      "라이트너 얼굴을 살색과 검은 마스크 조합으로 조정하고 번개 연출/효과음 개선",
+      "모든 캐릭터 픽셀 스프라이트 디테일과 식별성을 개선",
+      "라이트너 픽셀 스프라이트를 검은 머리, 살색 얼굴, 흰 재킷 중심 디자인으로 재작업",
+      "라이트너 픽셀 스프라이트를 참고 이미지에 맞춰 더 크게 재정비",
+      "라이트너 픽셀 스프라이트를 참고 이미지 실루엣에 맞춰 전면 재작업",
+      "라이트너 픽셀 스프라이트를 참고 이미지 오른쪽 아래 형태에 맞춰 재구성",
+      "라이트너 스프라이트를 비픽셀 일러스트 방식으로 재작업",
+      "라이트너 스프라이트를 참고 이미지의 정면 흰 코트 전격 포즈로 재작업",
+    ],
+  },
+  {
     version: "Beta v0.6",
     date: "2026-04-25",
     items: [
@@ -86,6 +102,10 @@ const PATCH_NOTES = [
       "모바일 스킬 버튼 터치와 클릭 입력 안정성 개선",
       "서리 워든은 점프로 처치되지 않고 어쌔신 암살 성공으로 처치되도록 조정",
       "어쌔신과 서리 워든이 접촉하면 즉시 연타 싸움이 시작되도록 변경",
+      "서리 워든 전용 암살 QTE 추가: 시간 정지, 중앙 게이지, 피니시 구간, 성공/실패 연출 적용",
+      "서리 워든 QTE를 모든 캐릭터가 도전 가능하도록 확장하고 캐릭터별 게이지 난이도 차이 적용",
+      "6스테이지 제한 시간을 25초로 단축하고, 서리 워든 처치 즉시 클리어되도록 변경",
+      "6스테이지 기본 코인 드랍을 제거하고, 서리 워든 처치 보상을 25코인으로 고정",
     ],
   },
   {
@@ -190,6 +210,13 @@ const CHARACTER_DEFS = {
     purchasable: true,
     defaultOwned: false,
     price: 1000,
+  },
+  lightner: {
+    name: "Lightner",
+    summary: "Electric speed controller",
+    purchasable: true,
+    defaultOwned: false,
+    price: 1200,
   },
 };
 const SKIN_DEFS = {
@@ -324,7 +351,37 @@ const ASSASSIN_RULES = {
   frontalFailStun: 0.42,
   jumpGlanceBounce: -210,
 };
-const PLAYER_SPRITE_RENDER_SCALE = 0.5;
+const FROST_WARDEN_QTE = {
+  duration: 5.6,
+  entryDuration: 0.5,
+  finishDuration: 1,
+  startGauge: 0.5,
+  assassinTapGain: 0.064,
+  defaultTapGain: 0.044,
+  assassinDrainRate: 0.17,
+  defaultDrainRate: 0.23,
+  assassinFinishDrainRate: 0.28,
+  defaultFinishDrainRate: 0.36,
+  successThreshold: 0.7,
+  clearCoins: 25,
+};
+const LIGHTNER_RULES = {
+  speedMultiplier: 1.06,
+  maxStacks: 3,
+  anchorLife: 5,
+  stackCooldown: 5,
+  awakenedStackCooldown: 3,
+  fieldCooldown: 15,
+  awakenedFieldCooldown: 5,
+  fieldRadius: 96,
+  normalStun: 3.25,
+  bossStun: 2.5,
+  bossSlowMultiplier: 0.45,
+  awakenKillsRequired: 5,
+  awakenDuration: 10,
+  awakenSpeedMultiplier: 1.25,
+};
+const PLAYER_SPRITE_RENDER_SCALE = 0.62;
 const STRINGS = {
   en: {
     meta_description: "Starling Sprint is an original retro-inspired 2D side-scrolling platformer with multiple stages, difficulty settings, special enemies, and arcade-style action.",
@@ -332,7 +389,7 @@ const STRINGS = {
     language_label: "Language",
     control_move: "A/D or Left/Right Move",
     control_jump: "W, Up, or Space Double Jump",
-    control_skill: "E Skill / Q Skill",
+    control_skill: "E Skill / Q Skill / X Skill",
     control_restart: "R Restart",
     canvas_label: "Starling Sprint game canvas",
     auth_eyebrow: "Account",
@@ -474,6 +531,7 @@ const STRINGS = {
     collectible_shards: "Shards",
     collectible_buttons: "Buttons",
     collectible_cores: "Cores",
+    collectible_coins: "Coins",
     hud_score: "Score {score}",
     hud_lives: "Lives {lives}",
     hud_stage: "Stage {current}/{total}",
@@ -484,6 +542,7 @@ const STRINGS = {
     hud_return_lobby: "Esc or Lobby button to return",
     hud_factory_hint: "Press every button before time runs out",
     hud_frozen_hint: "Activate 3 energy cores before the freeze",
+    hud_frozen_warden_hint: "Defeat the Frost Warden, then reach the relay gate",
     difficulty_bonus: "Difficulty bonus: x{value}",
     stage_clear_coins: "Clear coins: {coins}",
     hud_character: "Character {name}",
@@ -500,11 +559,17 @@ const STRINGS = {
     assassin_status_stealth_cd: "Stealth CD {time}s | Q {cooldown}s",
     assassin_status_q_cd: "Q Cooldown {time}s",
     assassin_status_ready: "Stealth Ready | Q Ready",
+    lightner_status: "Q {stacks}/{max} | E {e}s | X {awaken}",
+    lightner_awaken_ready: "Ready",
+    lightner_awaken_charge: "{kills}/{required}",
+    lightner_awaken_active: "{time}s",
     changer_hint: "One clone per run | Q works only while clone lives",
     guardian_hint: "Q shield 2s | passive blocks one death",
     assassin_hint: "E stealth (3s) | Q assassinate | no stomp kills",
+    lightner_hint: "Q spark anchor | E lightning field | X awaken",
     stage_objective_factory: "Press {count} buttons to power the lever.",
     stage_objective_frozen: "Activate {count} energy cores and reach the relay gate.",
+    stage_objective_frozen_warden: "Defeat the Frost Warden before the relay freezes.",
     stage_objective_normal: "Collect {count} shards and reach the gate.",
     center_stage_clear: "Stage Clear",
     center_next_stage: "Press Enter for the next stage.",
@@ -519,6 +584,8 @@ const STRINGS = {
     assassinate_locking: "Locking the strike...",
     assassinate_boss_copy: "Mash Q fast. Bosses need a much stronger break.",
     assassinate_enemy_copy: "Mash Q before the enemy overpowers you.",
+    assassinate_warden_title: "Frost Warden Clash",
+    assassinate_warden_copy: "Mash Q. Hold the gauge through the finish.",
     assassinate_time: "Time {time}s",
     claw_title: "Claw Machine Escape",
     claw_copy: "Click the lever to pull and fill the meter.",
@@ -537,6 +604,8 @@ const STRINGS = {
     character_changer_summary: "Clone survival specialist",
     character_assassin_name: "Assassin",
     character_assassin_summary: "Stealth specialist",
+    character_lightner_name: "Lightner",
+    character_lightner_summary: "High-speed electric controller",
     skin_classic_name: "Classic",
     skin_classic_summary: "Default look",
     skin_desert_name: "Desert",
@@ -566,7 +635,7 @@ const STRINGS = {
     language_label: "언어",
     control_move: "A/D 또는 좌/우 이동",
     control_jump: "W, 위쪽, 또는 스페이스 이단 점프",
-    control_skill: "E 스킬 / Q 스킬",
+    control_skill: "E 스킬 / Q 스킬 / X 스킬",
     control_restart: "R 다시 시작",
     canvas_label: "스타링 스프린트 게임 화면",
     auth_eyebrow: "계정",
@@ -708,6 +777,7 @@ const STRINGS = {
     collectible_shards: "파편",
     collectible_buttons: "버튼",
     collectible_cores: "코어",
+    collectible_coins: "코인",
     hud_score: "점수 {score}",
     hud_lives: "목숨 {lives}",
     hud_stage: "스테이지 {current}/{total}",
@@ -718,6 +788,7 @@ const STRINGS = {
     hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
     hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
     hud_frozen_hint: "완전 동결 전에 에너지 코어 3개를 활성화하세요",
+    hud_frozen_warden_hint: "서리 워든을 처치한 뒤 중계 게이트에 도달하세요",
     difficulty_bonus: "난이도 보너스: x{value}",
     stage_clear_coins: "클리어 코인: {coins}",
     hud_character: "캐릭터 {name}",
@@ -734,11 +805,17 @@ const STRINGS = {
     assassin_status_stealth_cd: "은신 쿨타임 {time}초 | Q {cooldown}초",
     assassin_status_q_cd: "Q 쿨타임 {time}초",
     assassin_status_ready: "은신 준비 완료 | Q 준비 완료",
+    lightner_status: "Q {stacks}/{max} | E {e}초 | X {awaken}",
+    lightner_awaken_ready: "준비",
+    lightner_awaken_charge: "{kills}/{required}",
+    lightner_awaken_active: "{time}초",
     changer_hint: "한 판에 분신 1회만 생성 가능 | Q는 분신이 살아 있을 때만 사용 가능",
     guardian_hint: "Q 방패 2초 | 패시브로 죽음 1회 무효화",
     assassin_hint: "E 은신 (3초) | Q 암살 | 점프 처치 불가",
+    lightner_hint: "Q 스파크 앵커 | E 번개장 | X 각성",
     stage_objective_factory: "버튼 {count}개를 눌러 레버에 전력을 공급하세요.",
     stage_objective_frozen: "에너지 코어 {count}개를 활성화하고 중계 게이트에 도달하세요.",
+    stage_objective_frozen_warden: "중계탑이 완전히 얼기 전에 서리 워든을 처치하세요.",
     stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
     center_stage_clear: "스테이지 클리어",
     center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
@@ -753,6 +830,8 @@ const STRINGS = {
     assassinate_locking: "일격을 고정하는 중...",
     assassinate_boss_copy: "Q를 빠르게 연타하세요. 보스는 훨씬 강한 돌파가 필요합니다.",
     assassinate_enemy_copy: "적이 밀어붙이기 전에 Q를 연타하세요.",
+    assassinate_warden_title: "서리 워든 대치",
+    assassinate_warden_copy: "Q를 연타하세요. 피니시까지 게이지를 버텨야 합니다.",
     assassinate_time: "시간 {time}초",
     claw_title: "집게 탈출",
     claw_copy: "레버를 클릭해 게이지를 채우세요.",
@@ -771,6 +850,8 @@ const STRINGS = {
     character_changer_summary: "분신 생존 특화 캐릭터",
     character_assassin_name: "어쌔신",
     character_assassin_summary: "은신 특화 캐릭터",
+    character_lightner_name: "라이트너",
+    character_lightner_summary: "전기를 다루는 고속 컨트롤형 캐릭터",
     skin_classic_name: "기본외형",
     skin_classic_summary: "기본 외형",
     skin_desert_name: "데저트",
@@ -1091,6 +1172,7 @@ let controlMode = controlModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
 let lastStageClearReward = null;
+let screenShakeTimer = 0;
 let lastSavedStateJson = "";
 const accountState = {
   currentNickname: null,
@@ -1147,6 +1229,15 @@ const changerState = {
   effectFrom: null,
   effectTo: null,
 };
+const lightnerState = {
+  anchor: null,
+  stacks: LIGHTNER_RULES.maxStacks,
+  stackRechargeTimer: 0,
+  fieldCooldown: 0,
+  awakenKills: 0,
+  awakenTimer: 0,
+  effects: [],
+};
 const nightmareEvent = {
   active: false,
   countdown: false,
@@ -1189,6 +1280,7 @@ const assassinationEvent = {
   gauge: 0,
   flash: 0,
   successText: "",
+  advantaged: false,
 };
 
 function currentShardTarget() {
@@ -1196,7 +1288,7 @@ function currentShardTarget() {
     return 12;
   }
   if (level.theme === "frozen") {
-    return 3;
+    return 0;
   }
   return difficulty.shardGoal;
 }
@@ -1251,7 +1343,7 @@ function currentCollectibleLabel() {
     return t("collectible_buttons");
   }
   if (level.theme === "frozen") {
-    return t("collectible_cores");
+    return t("collectible_coins");
   }
   return t("collectible_shards");
 }
@@ -1573,6 +1665,24 @@ function stageClearRewardText() {
   return `${t("stage_clear_coins", { coins: lastStageClearReward.finalCoins })} | ${t("difficulty_bonus", { value: lastStageClearReward.multiplier.toFixed(1) })}`;
 }
 
+function isFrostWardenDefeated() {
+  if (level.theme !== "frozen") {
+    return true;
+  }
+  return level.enemies.some((enemy) => enemy.type === "frostWarden" && enemy.defeated);
+}
+
+function finishFrozenStageByWarden() {
+  lastStageClearReward = {
+    baseCoins: FROST_WARDEN_QTE.clearCoins,
+    multiplier: 1,
+    finalCoins: FROST_WARDEN_QTE.clearCoins,
+  };
+  awardCoins(FROST_WARDEN_QTE.clearCoins);
+  playSound("clear");
+  gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
+}
+
 function getShopActionLabel({ owned, purchasable, available, canAfford, price }) {
   if (owned) {
     return t("shop_owned");
@@ -1669,6 +1779,10 @@ function isChangerEquipped() {
 
 function isGuardianEquipped() {
   return shopState.equippedCharacter === "guardian";
+}
+
+function isLightnerEquipped() {
+  return shopState.equippedCharacter === "lightner";
 }
 
 function isChangerAngelDemonSkinEquipped() {
@@ -2687,6 +2801,7 @@ function resetProgressState() {
   betaRewardState.selectedSkin = null;
   clearGuardianState(true);
   clearChangerState(true);
+  clearLightnerState(true);
   resetNightmareEvent();
   resetAssassinationEvent();
 }
@@ -3134,7 +3249,9 @@ function resolveNightmareEvent(success) {
   nightmareEvent.countdown = false;
   if (success) {
     score += 600 + currentStageIndex * 100;
-    awardCoins(18 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(18 + currentStageIndex * 2);
+    }
     player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
     resetNightmareEvent();
     return;
@@ -3308,12 +3425,29 @@ function clearGuardianState(resetPassive = false) {
   player.guardianFlash = 0;
 }
 
+function clearLightnerState(resetCombat = false) {
+  lightnerState.anchor = null;
+  lightnerState.stacks = LIGHTNER_RULES.maxStacks;
+  lightnerState.stackRechargeTimer = 0;
+  lightnerState.fieldCooldown = 0;
+  lightnerState.awakenTimer = 0;
+  lightnerState.effects.length = 0;
+  if (resetCombat) {
+    lightnerState.awakenKills = 0;
+  }
+}
+
 function resetPlayerPosition() {
   player.speed = isGuardianEquipped()
     ? 250 * GUARDIAN_RULES.speedMultiplier
     : isAssassinEquipped()
       ? 250 * ASSASSIN_RULES.speedMultiplier
-      : 250;
+      : isLightnerEquipped()
+        ? 250 * LIGHTNER_RULES.speedMultiplier
+        : 250;
+  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
+    player.speed *= LIGHTNER_RULES.awakenSpeedMultiplier;
+  }
   player.maxJumps = difficulty.maxJumps;
   if (level.theme === "frozen") {
     player.maxJumps = 3;
@@ -3343,6 +3477,9 @@ function resetPlayerPosition() {
   clearGuardianState();
   player.cloneTransferFlash = 0;
   clearChangerState();
+  if (!isLightnerEquipped()) {
+    clearLightnerState(true);
+  }
 }
 
 function loadStage(stageIndex, preserveScore = true) {
@@ -3370,7 +3507,7 @@ function loadStage(stageIndex, preserveScore = true) {
   }
   collectedCount = 0;
   factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
-  frozenTimeRemaining = level.theme === "frozen" ? 70 : 0;
+  frozenTimeRemaining = level.theme === "frozen" ? 25 : 0;
 
   // Each stage is defined as data so we can scale the route count cleanly.
   for (const [start, end] of stageDef.groundSegments) {
@@ -3384,6 +3521,9 @@ function loadStage(stageIndex, preserveScore = true) {
     addHazard(x, width);
   }
   for (const item of stageDef.collectibles) {
+    if (level.theme === "frozen") {
+      break;
+    }
     if (level.theme === "factory" && level.collectibles.length >= currentShardTarget()) {
       break;
     }
@@ -3415,8 +3555,10 @@ function loadStage(stageIndex, preserveScore = true) {
     addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]));
   }
 
+  clearLightnerState(true);
   resetPlayerPosition();
   camera.x = 0;
+  screenShakeTimer = 0;
   stageMessageTimer = 2.2;
 }
 
@@ -3486,18 +3628,18 @@ function addCollectible(tileX, tileY) {
     return;
   }
 
-  if (level.theme === "frozen") {
-    level.collectibles.push({
-      x: tileX * TILE + 2,
-      y: tileY * TILE + 2,
-      w: 28,
-      h: 28,
-      bob: Math.random() * Math.PI * 2,
-      collected: false,
-      style: "core",
-    });
-    return;
-  }
+    if (level.theme === "frozen") {
+      level.collectibles.push({
+        x: tileX * TILE + 2,
+        y: tileY * TILE + 2,
+        w: 24,
+        h: 24,
+        bob: Math.random() * Math.PI * 2,
+        collected: false,
+        style: "coin",
+      });
+      return;
+    }
 
   level.collectibles.push({
     x: tileX * TILE + 6,
@@ -3615,7 +3757,8 @@ function addFrostWarden(tileX, tileY) {
     cooldown: 1.4,
     telegraphTimer: 0,
     attackType: "",
-    auraPulse: 0,
+  auraPulse: 0,
+  qteMeltTimer: 0,
   });
 }
 
@@ -3996,6 +4139,29 @@ function playSound(type) {
     return;
   }
 
+  if (type === "lightning") {
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    oscillator.type = "sawtooth";
+    osc2.type = "square";
+    oscillator.frequency.setValueAtTime(1180, now);
+    oscillator.frequency.exponentialRampToValueAtTime(180, now + 0.18);
+    osc2.frequency.setValueAtTime(72, now);
+    osc2.frequency.exponentialRampToValueAtTime(46, now + 0.22);
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.008);
+    gain2.gain.exponentialRampToValueAtTime(0.055, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    oscillator.start(now);
+    osc2.start(now);
+    oscillator.stop(now + 0.22);
+    osc2.stop(now + 0.3);
+    return;
+  }
+
   if (type === "stomp") {
     oscillator.type = "square";
     oscillator.frequency.setValueAtTime(180, now);
@@ -4187,6 +4353,7 @@ function resetAssassinationEvent() {
   assassinationEvent.gauge = 0;
   assassinationEvent.flash = 0;
   assassinationEvent.successText = "";
+  assassinationEvent.advantaged = false;
 }
 
 function breakAssassinStealth() {
@@ -4260,6 +4427,129 @@ function activateGuardianShield() {
   player.guardianShieldTimer = GUARDIAN_RULES.shieldDuration;
   player.guardianShieldCooldown = GUARDIAN_RULES.shieldCooldown;
   player.guardianFlash = GUARDIAN_RULES.shieldDuration;
+  playSound("clear");
+}
+
+function currentLightnerStackCooldown() {
+  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedStackCooldown : LIGHTNER_RULES.stackCooldown;
+}
+
+function currentLightnerFieldCooldown() {
+  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedFieldCooldown : LIGHTNER_RULES.fieldCooldown;
+}
+
+function registerLightnerKill() {
+  if (!isLightnerEquipped() || lightnerState.awakenTimer > 0) {
+    return;
+  }
+  lightnerState.awakenKills = Math.min(LIGHTNER_RULES.awakenKillsRequired, lightnerState.awakenKills + 1);
+}
+
+function addLightnerEffect(type, x, y, duration = 0.45, extra = {}) {
+  lightnerState.effects.push({ type, x, y, duration, timer: duration, ...extra });
+}
+
+function activateLightnerAnchor() {
+  if (!isLightnerEquipped() || gameState !== "playing" || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+
+  if (lightnerState.anchor) {
+    const anchor = lightnerState.anchor;
+    if (anchor.x >= camera.x && anchor.x <= camera.x + GAME_WIDTH && anchor.y >= -40 && anchor.y <= GAME_HEIGHT + 40) {
+      addLightnerEffect("teleport", player.x + player.w * 0.5, player.y + player.h * 0.5, 0.52, { toX: anchor.x, toY: anchor.y });
+      player.x = Math.max(0, Math.min(worldWidth - player.w, anchor.x - player.w * 0.5));
+      player.y = Math.max(0, Math.min(GAME_HEIGHT - player.h, anchor.y - player.h * 0.5));
+      player.vx = 0;
+      player.vy = 0;
+      player.invulnerableTime = Math.max(player.invulnerableTime, 0.25);
+      lightnerState.anchor = null;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.12);
+      playSound("lightning");
+    }
+    return;
+  }
+
+  if (lightnerState.stacks <= 0) {
+    return;
+  }
+  lightnerState.stacks -= 1;
+  if (lightnerState.stackRechargeTimer <= 0) {
+    lightnerState.stackRechargeTimer = currentLightnerStackCooldown();
+  }
+  lightnerState.anchor = {
+    x: player.x + player.w * 0.5,
+    y: player.y + player.h * 0.5,
+    timer: LIGHTNER_RULES.anchorLife,
+  };
+  addLightnerEffect("anchor", lightnerState.anchor.x, lightnerState.anchor.y, LIGHTNER_RULES.anchorLife);
+  playSound("button");
+}
+
+function stunEnemyWithLightner(enemy, duration, slow = false) {
+  enemy.lightnerStunTimer = Math.max(enemy.lightnerStunTimer || 0, duration);
+  if (slow) {
+    enemy.lightnerSlowTimer = Math.max(enemy.lightnerSlowTimer || 0, duration + 2);
+  }
+  enemy.vx = 0;
+  if (enemy.type === "frostWarden") {
+    enemy.state = "idle";
+    enemy.cooldown = Math.max(enemy.cooldown || 0, 0.65);
+  }
+}
+
+function activateLightnerField() {
+  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.fieldCooldown > 0 || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+  const cx = player.x + player.w * 0.5;
+  const cy = player.y + player.h * 0.5;
+  const radius = LIGHTNER_RULES.fieldRadius;
+  for (const enemy of level.enemies) {
+    if (!enemy.alive || enemy.defeated) {
+      continue;
+    }
+    const ex = enemy.x + enemy.w * 0.5;
+    if (Math.abs(ex - cx) > radius) {
+      continue;
+    }
+    const boss = isBossEntity(enemy, enemy.type);
+    stunEnemyWithLightner(enemy, boss ? LIGHTNER_RULES.bossStun : LIGHTNER_RULES.normalStun, boss);
+  }
+  for (const serpent of level.serpentEnemies) {
+    if (serpent.defeated || !serpent.alive) {
+      continue;
+    }
+    const hitbox = getSerpentHitbox(serpent);
+    const sx = hitbox.x + hitbox.w * 0.5;
+    if (Math.abs(sx - cx) <= radius) {
+      serpent.alive = false;
+      serpent.stunTimer = Math.max(serpent.stunTimer || 0, LIGHTNER_RULES.normalStun);
+      serpent.state = "stunned";
+    }
+  }
+  lightnerState.fieldCooldown = currentLightnerFieldCooldown();
+  addLightnerEffect("field", cx, cy, 0.72, { radius });
+  screenShakeTimer = Math.max(screenShakeTimer, 0.28);
+  playSound("lightning");
+}
+
+function activateLightnerAwaken() {
+  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.awakenTimer > 0 || lightnerState.awakenKills < LIGHTNER_RULES.awakenKillsRequired || assassinationEvent.active) {
+    return;
+  }
+  lightnerState.awakenTimer = LIGHTNER_RULES.awakenDuration;
+  lightnerState.awakenKills = 0;
+  if (lightnerState.stackRechargeTimer > LIGHTNER_RULES.awakenedStackCooldown) {
+    lightnerState.stackRechargeTimer = LIGHTNER_RULES.awakenedStackCooldown;
+  }
+  if (lightnerState.fieldCooldown > LIGHTNER_RULES.awakenedFieldCooldown) {
+    lightnerState.fieldCooldown = LIGHTNER_RULES.awakenedFieldCooldown;
+  }
+  if (lightnerState.stacks > 0) {
+    lightnerState.stacks = Math.min(LIGHTNER_RULES.maxStacks, lightnerState.stacks + 1);
+  }
+  addLightnerEffect("awaken", player.x + player.w * 0.5, player.y + player.h * 0.5, LIGHTNER_RULES.awakenDuration);
   playSound("clear");
 }
 
@@ -4427,7 +4717,8 @@ function findAssassinationTarget() {
 function finishAssassination(success) {
   const target = assassinationEvent.target;
   const targetType = assassinationEvent.targetType;
-  const failedFrontAttack = assassinationEvent.mode === "qte";
+  const eventMode = assassinationEvent.mode;
+  const failedFrontAttack = eventMode === "qte" || eventMode === "wardenQte";
   resetAssassinationEvent();
 
   if (!target) {
@@ -4435,6 +4726,14 @@ function finishAssassination(success) {
   }
 
   if (!success) {
+    if (eventMode === "wardenQte") {
+      lives = 0;
+      gameState = "gameover";
+      player.vx = 0;
+      player.vy = 0;
+      playSound("nightmare");
+      return;
+    }
     player.stunTimer = Math.max(player.stunTimer, failedFrontAttack ? ASSASSIN_RULES.frontalFailStun : 0.2);
     player.invulnerableTime = Math.max(player.invulnerableTime, 0.3);
     player.vx = 0;
@@ -4448,23 +4747,40 @@ function finishAssassination(success) {
     if (target.hp <= 0) {
       target.alive = false;
       target.defeated = true;
+      registerLightnerKill();
+      if (target.type === "frostWarden") {
+        target.qteMeltTimer = 1.2;
+        target.vx = 0;
+        target.vy = 0;
+        screenShakeTimer = 0.55;
+        playSound("ice");
+        playSound("coin");
+        finishFrozenStageByWarden();
+        return;
+      }
     }
     score += 900 + currentStageIndex * 120;
     awardCoins(28 + currentStageIndex * 3);
   } else if (targetType === "serpent") {
     target.alive = false;
     target.defeated = true;
+    registerLightnerKill();
     target.stunTimer = 0;
     target.rise = 0;
     target.state = "stunned";
     score += 550 + currentStageIndex * 90;
-    awardCoins(16 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(16 + currentStageIndex * 2);
+    }
   } else {
     target.alive = false;
     target.defeated = true;
+    registerLightnerKill();
     target.squishTimer = 0.3;
     score += target.type === "excavator" ? 650 + currentStageIndex * 100 : 450 + currentStageIndex * 70;
-    awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
+    }
   }
 
   player.invulnerableTime = Math.max(player.invulnerableTime, 0.7);
@@ -4494,9 +4810,14 @@ function beginAssassination() {
   assassinationEvent.targetType = target.type;
   assassinationEvent.targetBounds = target.bounds;
   assassinationEvent.flash = 1;
-  assassinationEvent.gauge = 0;
+  assassinationEvent.gauge = target.entity?.type === "frostWarden" ? FROST_WARDEN_QTE.startGauge : 0;
 
-  if (target.behind && target.type !== "boss") {
+  if (target.entity?.type === "frostWarden") {
+    assassinationEvent.mode = "wardenQte";
+    assassinationEvent.timer = FROST_WARDEN_QTE.duration;
+    assassinationEvent.successText = "Frost Clash";
+    assassinationEvent.advantaged = true;
+  } else if (target.behind && target.type !== "boss") {
     assassinationEvent.mode = "backstab";
     assassinationEvent.timer = ASSASSIN_RULES.strikeWindup;
     assassinationEvent.successText = "Backstab";
@@ -4510,41 +4831,86 @@ function beginAssassination() {
   playSound("stomp");
 }
 
+function findNearbyFrostWarden() {
+  if (level.theme !== "frozen") {
+    return null;
+  }
+  const playerCenterX = player.x + player.w * 0.5;
+  const playerCenterY = player.y + player.h * 0.5;
+  let best = null;
+  let bestDistance = Infinity;
+  for (const enemy of level.enemies) {
+    if (enemy.type !== "frostWarden" || enemy.defeated || enemy.alive === false) {
+      continue;
+    }
+    const bounds = getEnemyBounds(enemy, enemy.type);
+    const enemyCenterX = bounds.x + bounds.w * 0.5;
+    const enemyCenterY = bounds.y + bounds.h * 0.5;
+    const dx = Math.abs(playerCenterX - enemyCenterX);
+    const dy = Math.abs(playerCenterY - enemyCenterY);
+    if (dx <= 120 && dy <= 96) {
+      const distance = dx + dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = enemy;
+      }
+    }
+  }
+  return best;
+}
+
+function tryBeginFrostWardenSkillClash() {
+  return beginFrostWardenClash(findNearbyFrostWarden());
+}
+
 function beginFrostWardenClash(enemy) {
-  if (!isAssassinEquipped() || assassinationEvent.active || !enemy || enemy.defeated || enemy.alive === false) {
+  if (assassinationEvent.active || !enemy || enemy.defeated || enemy.alive === false || gameState !== "playing") {
     return false;
   }
-  breakAssassinStealth();
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return false;
+  }
+  if (isAssassinEquipped()) {
+    breakAssassinStealth();
+    player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
+  }
   player.vx = 0;
   player.vy = Math.min(player.vy, 0);
-  player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
   player.invulnerableTime = Math.max(player.invulnerableTime, 0.35);
 
   assassinationEvent.active = true;
-  assassinationEvent.mode = "qte";
+  assassinationEvent.mode = "wardenQte";
   assassinationEvent.target = enemy;
   assassinationEvent.targetType = "boss";
   assassinationEvent.targetBounds = getEnemyBounds(enemy, enemy.type);
-  assassinationEvent.timer = ASSASSIN_RULES.qteBossDuration;
-  assassinationEvent.gauge = 0;
+  assassinationEvent.timer = FROST_WARDEN_QTE.duration;
+  assassinationEvent.gauge = FROST_WARDEN_QTE.startGauge;
   assassinationEvent.flash = 1;
-  assassinationEvent.successText = "Boss Break";
+  assassinationEvent.successText = "Frost Clash";
+  assassinationEvent.advantaged = isAssassinEquipped();
   playSound("stomp");
   return true;
 }
 
 function tapAssassinationQte() {
-  if (!assassinationEvent.active || assassinationEvent.mode !== "qte") {
+  if (!assassinationEvent.active || !["qte", "wardenQte"].includes(assassinationEvent.mode)) {
     return;
   }
   const bossFight = assassinationEvent.targetType === "boss";
+  const tapGain = assassinationEvent.mode === "wardenQte"
+    ? assassinationEvent.advantaged
+      ? FROST_WARDEN_QTE.assassinTapGain
+      : FROST_WARDEN_QTE.defaultTapGain
+    : bossFight
+      ? ASSASSIN_RULES.qteBossTapGain
+      : ASSASSIN_RULES.qteTapGain;
   assassinationEvent.gauge = Math.min(
     1,
-    assassinationEvent.gauge + (bossFight ? ASSASSIN_RULES.qteBossTapGain : ASSASSIN_RULES.qteTapGain)
+    assassinationEvent.gauge + tapGain
   );
   assassinationEvent.flash = 1;
   playSound("button");
-  if (assassinationEvent.gauge >= 1) {
+  if (assassinationEvent.mode !== "wardenQte" && assassinationEvent.gauge >= 1) {
     finishAssassination(true);
   }
 }
@@ -4560,6 +4926,26 @@ function updateAssassinationEvent(dt) {
   if (assassinationEvent.mode === "backstab") {
     if (assassinationEvent.timer <= 0) {
       finishAssassination(true);
+    }
+    return;
+  }
+
+  if (assassinationEvent.mode === "wardenQte") {
+    const elapsed = FROST_WARDEN_QTE.duration - assassinationEvent.timer;
+    const inEntry = elapsed < FROST_WARDEN_QTE.entryDuration;
+    const inFinish = assassinationEvent.timer <= FROST_WARDEN_QTE.finishDuration;
+    if (!inEntry) {
+      const drainRate = assassinationEvent.advantaged
+        ? inFinish
+          ? FROST_WARDEN_QTE.assassinFinishDrainRate
+          : FROST_WARDEN_QTE.assassinDrainRate
+        : inFinish
+          ? FROST_WARDEN_QTE.defaultFinishDrainRate
+          : FROST_WARDEN_QTE.defaultDrainRate;
+      assassinationEvent.gauge = Math.max(0, assassinationEvent.gauge - drainRate * dt);
+    }
+    if (assassinationEvent.timer <= 0) {
+      finishAssassination(assassinationEvent.gauge >= FROST_WARDEN_QTE.successThreshold);
     }
     return;
   }
@@ -4672,20 +5058,33 @@ function handleInput(event, pressed) {
     nextStage();
   }
   if (pressed && ["e", "E"].includes(event.key)) {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isChangerEquipped()) {
       createChangerClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerField();
     } else {
       activateAssassinStealth();
     }
   }
   if (pressed && ["q", "Q"].includes(event.key)) {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isGuardianEquipped()) {
       activateGuardianShield();
     } else if (isChangerEquipped()) {
       swapChangerWithClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerAnchor();
     } else {
       beginAssassination();
     }
+  }
+  if (pressed && ["x", "X"].includes(event.key)) {
+    activateLightnerAwaken();
   }
   if (pressed && ["Escape"].includes(event.key)) {
     openLobby();
@@ -4970,8 +5369,13 @@ function applyMobileAction(action, pressed) {
     return;
   }
   if (action === "skill-e") {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isChangerEquipped()) {
       createChangerClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerField();
     } else {
       activateAssassinStealth();
     }
@@ -4980,13 +5384,20 @@ function applyMobileAction(action, pressed) {
       tapAssassinationQte();
       return;
     }
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isGuardianEquipped()) {
       activateGuardianShield();
     } else if (isChangerEquipped()) {
       swapChangerWithClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerAnchor();
     } else {
       beginAssassination();
     }
+  } else if (action === "skill-x") {
+    activateLightnerAwaken();
   } else if (action === "restart") {
     restartGame();
   }
@@ -5329,6 +5740,7 @@ function updatePlayer(dt) {
   if (assassinationEvent.active) {
     player.animationTime += dt;
     player.vx = 0;
+    player.vy = 0;
     return;
   }
 
@@ -5371,7 +5783,10 @@ function updatePlayer(dt) {
   applyPlayerCrouch(keys.crouch);
 
   const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
+  let moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
+  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
+    moveSpeed *= LIGHTNER_RULES.awakenSpeedMultiplier;
+  }
   if (level.theme === "frozen") {
     const targetVx = inputX * moveSpeed;
     const slippery = isPlayerOnIce() || player.iceSlideTimer > 0;
@@ -5422,9 +5837,11 @@ function updatePlayer(dt) {
     if (!collectible.collected && overlaps(player, collectible)) {
       collectible.collected = true;
       score += Math.round(100 * difficulty.collectibleBonus);
-      awardCoins(level.theme === "factory" || level.theme === "frozen" ? 8 : 6);
+      if (level.theme !== "frozen") {
+        awardCoins(level.theme === "factory" ? 8 : 6);
+      }
       collectedCount += 1;
-      playSound(level.theme === "factory" ? "button" : level.theme === "frozen" ? "ice" : "coin");
+      playSound(level.theme === "factory" ? "button" : "coin");
     }
   }
 
@@ -5461,10 +5878,13 @@ function updatePlayer(dt) {
         } else {
           enemy.alive = false;
           enemy.squishTimer = 0.35;
+          registerLightnerKill();
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 250 + currentStageIndex * 50;
-          awardCoins(7 + currentStageIndex);
+          if (level.theme !== "frozen") {
+            awardCoins(7 + currentStageIndex);
+          }
           playSound("stomp");
         }
       } else {
@@ -5503,11 +5923,14 @@ function updatePlayer(dt) {
           serpent.alive = false;
           serpent.stunTimer = 1.2;
           serpent.state = "stunned";
+          registerLightnerKill();
           serpent.strikeProgress = 0;
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 400 + currentStageIndex * 75;
-          awardCoins(10 + currentStageIndex);
+          if (level.theme !== "frozen") {
+            awardCoins(10 + currentStageIndex);
+          }
           playSound("stomp");
         }
       } else {
@@ -5517,7 +5940,8 @@ function updatePlayer(dt) {
     }
   }
 
-  if (gameState === "playing" && overlaps(player, level.goal) && collectedCount >= currentShardTarget()) {
+  const canUseGoal = level.theme === "frozen" ? false : collectedCount >= currentShardTarget();
+  if (gameState === "playing" && overlaps(player, level.goal) && canUseGoal) {
     awardStageClearCoins();
     rollStageClearBoxReward();
     if (level.theme === "arcade") {
@@ -5570,8 +5994,34 @@ function resolveSolidCollisions(axis) {
 function updateEnemies(dt) {
   for (const enemy of level.enemies) {
     enemy.animationTime += dt;
+    enemy.lightnerStunTimer = Math.max(0, (enemy.lightnerStunTimer || 0) - dt);
+    enemy.lightnerSlowTimer = Math.max(0, (enemy.lightnerSlowTimer || 0) - dt);
     if (!enemy.alive || enemy.defeated) {
       enemy.squishTimer = Math.max(0, enemy.squishTimer - dt);
+      if (enemy.type === "frostWarden") {
+        enemy.qteMeltTimer = Math.max(0, (enemy.qteMeltTimer || 0) - dt);
+      }
+      continue;
+    }
+
+    if (enemy.lightnerStunTimer > 0) {
+      enemy.vx = 0;
+      if (enemy.type !== "frostWarden") {
+        enemy.vy += GRAVITY * dt;
+        enemy.y += enemy.vy * dt;
+        for (const solid of level.solids) {
+          if (!overlaps(enemy, solid)) {
+            continue;
+          }
+          if (enemy.vy > 0) {
+            enemy.y = solid.y - enemy.h;
+            enemy.vy = 0;
+          } else if (enemy.vy < 0) {
+            enemy.y = solid.y + solid.h;
+            enemy.vy = 0;
+          }
+        }
+      }
       continue;
     }
 
@@ -5778,7 +6228,8 @@ function updateFrostWardenEnemy(enemy, dt) {
     enemy.cooldown = Math.max(enemy.cooldown, 0.8);
   } else if (enemy.state === "idle") {
     enemy.cooldown -= dt;
-    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed : 0;
+    const speedMultiplier = enemy.lightnerSlowTimer > 0 ? LIGHTNER_RULES.bossSlowMultiplier : 1;
+    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed * speedMultiplier : 0;
     if (enemy.cooldown <= 0 && distance < 360) {
       enemy.state = "telegraph";
       enemy.attackType = distance < 88 ? "melee" : "wave";
@@ -5929,10 +6380,17 @@ function update(dt) {
   updatePlayer(dt);
   changerState.swapCooldown = Math.max(0, changerState.swapCooldown - dt);
   changerState.effectTimer = Math.max(0, changerState.effectTimer - dt);
+  updateLightnerState(dt);
   player.cloneTransferFlash = Math.max(0, player.cloneTransferFlash - dt);
+  screenShakeTimer = Math.max(0, screenShakeTimer - dt);
   if (gameState === "playing") {
     if (assassinationEvent.active) {
       updateAssassinationEvent(dt);
+      if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
+        updateCamera();
+        savePersistentProgress();
+        return;
+      }
     }
     if (level.theme === "factory") {
       factoryTimeRemaining = Math.max(0, factoryTimeRemaining - dt);
@@ -5973,19 +6431,45 @@ function update(dt) {
       updateClawEscapeEvent(dt);
     }
   }
-  if (isChangerEquipped()) {
-    ctx.fillText(t("changer_hint"), 470, 124);
-  } else if (isGuardianEquipped()) {
-    ctx.fillText(t("guardian_hint"), 470, 124);
-  } else if (isAssassinEquipped()) {
-    ctx.fillText(t("assassin_hint"), 470, 124);
-  }
-
   if (stageMessageTimer > 0) {
     stageMessageTimer = Math.max(0, stageMessageTimer - dt);
   }
   updateCamera();
   savePersistentProgress();
+}
+
+function updateLightnerState(dt) {
+  if (assassinationEvent.active) {
+    return;
+  }
+  for (const effect of lightnerState.effects) {
+    effect.timer = Math.max(0, effect.timer - dt);
+  }
+  for (let i = lightnerState.effects.length - 1; i >= 0; i -= 1) {
+    if (lightnerState.effects[i].timer <= 0) {
+      lightnerState.effects.splice(i, 1);
+    }
+  }
+  if (!isLightnerEquipped()) {
+    return;
+  }
+  lightnerState.fieldCooldown = Math.max(0, lightnerState.fieldCooldown - dt);
+  lightnerState.awakenTimer = Math.max(0, lightnerState.awakenTimer - dt);
+  if (lightnerState.anchor) {
+    lightnerState.anchor.timer -= dt;
+    if (lightnerState.anchor.timer <= 0) {
+      lightnerState.anchor = null;
+    }
+  }
+  if (lightnerState.stacks < LIGHTNER_RULES.maxStacks) {
+    lightnerState.stackRechargeTimer -= dt;
+    if (lightnerState.stackRechargeTimer <= 0) {
+      lightnerState.stacks += 1;
+      lightnerState.stackRechargeTimer = lightnerState.stacks < LIGHTNER_RULES.maxStacks ? currentLightnerStackCooldown() : 0;
+    }
+  } else {
+    lightnerState.stackRechargeTimer = 0;
+  }
 }
 
 function updateClawEscapeEvent(dt) {
@@ -6364,9 +6848,106 @@ function drawWorld() {
   drawCollectibles();
   drawEnemies();
   drawChangerClone();
+  drawLightnerEffects();
   drawPlayer();
   drawFrozenPlayerEffect();
   drawChangerSwapEffect();
+  ctx.restore();
+}
+
+function drawLightnerEffects() {
+  if (!isLightnerEquipped() && lightnerState.effects.length === 0) {
+    return;
+  }
+  ctx.save();
+  if (lightnerState.anchor) {
+    const anchor = lightnerState.anchor;
+    const pulse = 0.7 + Math.sin(lastTime * 0.025) * 0.18;
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.75 * pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, 18 + pulse * 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255, 215, 0, ${0.18 * pulse})`;
+    ctx.fillRect(anchor.x - 5, anchor.y - 30, 10, 60);
+    ctx.fillStyle = "#ffd700";
+    ctx.fillRect(anchor.x - 2, anchor.y - 18, 4, 36);
+    ctx.fillRect(anchor.x - 12, anchor.y - 2, 24, 4);
+  }
+
+  for (const effect of lightnerState.effects) {
+    const t = Math.max(0, Math.min(1, effect.timer / effect.duration));
+    if (effect.type === "anchor") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.5 * t})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - 18, effect.y + 34);
+      ctx.lineTo(effect.x, effect.y - 30);
+      ctx.lineTo(effect.x + 16, effect.y + 16);
+      ctx.stroke();
+    } else if (effect.type === "teleport") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.toX, effect.toY);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 246, 158, ${0.9 * t})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(effect.toX - 18, 0);
+      ctx.lineTo(effect.toX + 4, effect.toY - 38);
+      ctx.lineTo(effect.toX - 8, effect.toY - 8);
+      ctx.lineTo(effect.toX + 14, effect.toY + 26);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.55 * t})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(effect.x + 12, effect.y - 36);
+      ctx.lineTo(effect.x - 5, effect.y - 8);
+      ctx.lineTo(effect.x + 9, effect.y + 22);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.22 * t})`;
+      ctx.fillRect(effect.x - 10, effect.y - 34, 20, 68);
+      ctx.fillRect(effect.toX - 10, effect.toY - 34, 20, 68);
+    } else if (effect.type === "field") {
+      const radius = effect.radius;
+      const groundY = Math.min(FLOOR_Y, effect.y + 72);
+      ctx.strokeStyle = `rgba(255, 246, 158, ${0.92 * t})`;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - 22, 0);
+      ctx.lineTo(effect.x + 8, groundY - 108);
+      ctx.lineTo(effect.x - 14, groundY - 42);
+      ctx.lineTo(effect.x + 6, groundY);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.12 * t})`;
+      ctx.fillRect(effect.x - radius, groundY - 8, radius * 2, 16);
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - radius, groundY);
+      ctx.lineTo(effect.x + radius, groundY);
+      ctx.stroke();
+      for (let i = 0; i < 7; i += 1) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const offset = (i + 1) * radius / 8 * side;
+        ctx.strokeStyle = `rgba(255, 225, 70, ${0.62 * t})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(effect.x, groundY);
+        ctx.lineTo(effect.x + offset, groundY + (i % 3 - 1) * 8);
+        ctx.lineTo(effect.x + offset + side * 18, groundY + 10);
+        ctx.stroke();
+      }
+    } else if (effect.type === "awaken") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.34 + Math.sin(lastTime * 0.026) * 0.12})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x + player.w * 0.5, player.y + player.h * 0.5, 34, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 
@@ -6653,18 +7234,18 @@ function drawCollectibles() {
       ctx.fillRect(x + 10, y + 10, 2, 2);
     } else if (level.theme === "frozen") {
       const pulse = 0.78 + Math.sin(lastTime * 0.009 + collectible.bob) * 0.18;
-      ctx.fillStyle = `rgba(122, 229, 255, ${0.22 * pulse})`;
+      ctx.fillStyle = `rgba(255, 224, 80, ${0.24 * pulse})`;
       ctx.beginPath();
-      ctx.arc(x + 14, y + 14, 20, 0, Math.PI * 2);
+      ctx.arc(x + 12, y + 12, 15, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#113657";
-      ctx.fillRect(x + 7, y + 3, 14, 22);
-      ctx.fillRect(x + 3, y + 7, 22, 14);
-      ctx.fillStyle = `rgba(126, 238, 255, ${0.95 * pulse})`;
-      ctx.fillRect(x + 10, y + 6, 8, 16);
-      ctx.fillRect(x + 6, y + 10, 16, 8);
-      ctx.fillStyle = "rgba(255,255,255,0.72)";
-      ctx.fillRect(x + 12, y + 8, 4, 4);
+      ctx.fillStyle = "#d58b1f";
+      ctx.fillRect(x + 5, y + 2, 14, 20);
+      ctx.fillRect(x + 2, y + 5, 20, 14);
+      ctx.fillStyle = `rgba(255, 239, 125, ${0.98 * pulse})`;
+      ctx.fillRect(x + 7, y + 4, 10, 16);
+      ctx.fillRect(x + 4, y + 7, 16, 10);
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillRect(x + 8, y + 5, 4, 3);
     } else {
       ctx.fillStyle = "#ffe14d";
       ctx.fillRect(x + 4, y, 12, 20);
@@ -6781,7 +7362,46 @@ function drawExcavatorSprite(enemy) {
 }
 
 function drawFrostWardenSprite(enemy) {
-  if (!enemy.alive || enemy.defeated) {
+  if (enemy.defeated) {
+    if ((enemy.qteMeltTimer || 0) <= 0) {
+      return;
+    }
+    const x = enemy.x;
+    const y = enemy.y + 52;
+    const melt = Math.max(0, Math.min(1, enemy.qteMeltTimer / 1.2));
+    const steam = (0.45 + Math.sin(lastTime * 0.01) * 0.16) * melt;
+    ctx.save();
+    ctx.fillStyle = `rgba(124, 224, 255, ${0.22 * melt})`;
+    ctx.fillRect(x + 8, y + 26, 58, 10);
+    ctx.fillStyle = `rgba(213, 250, 255, ${0.62 * melt})`;
+    ctx.fillRect(x + 16, y + 18, 16, 8);
+    ctx.fillRect(x + 38, y + 20, 20, 7);
+    ctx.fillStyle = `rgba(206, 248, 255, ${steam})`;
+    ctx.fillRect(x + 18, y - 6, 5, 12);
+    ctx.fillRect(x + 34, y - 16, 6, 18);
+    ctx.fillRect(x + 52, y - 8, 5, 14);
+    for (let i = 0; i < 5; i += 1) {
+      const coinX = x + 12 + i * 11;
+      const coinY = y + 18 + Math.sin(lastTime * 0.006 + i) * 3;
+      ctx.fillStyle = `rgba(255, 213, 75, ${0.82 * melt})`;
+      ctx.beginPath();
+      ctx.arc(coinX, coinY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 249, 177, ${0.7 * melt})`;
+      ctx.fillRect(coinX - 1, coinY - 3, 2, 6);
+    }
+    ctx.strokeStyle = "rgba(126, 225, 255, 0.68)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y + 34);
+    ctx.lineTo(x + 16, y + 26);
+    ctx.lineTo(x + 36, y + 36);
+    ctx.lineTo(x + 70, y + 24);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (!enemy.alive) {
     return;
   }
   const x = enemy.x;
@@ -6846,10 +7466,10 @@ function drawPlayer() {
 
   ctx.save();
   if (player.facing < 0) {
-    ctx.translate(x + player.w, y);
+    ctx.translate(x + player.w + 2, y - 5);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(x, y);
+    ctx.translate(x - 2, y - 5);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
 
@@ -6872,6 +7492,12 @@ function drawPlayer() {
 
   if (isAssassinEquipped()) {
     drawAssassinPlayerSprite(legOffset, armOffset, scarfOffset);
+    ctx.restore();
+    return;
+  }
+
+  if (isLightnerEquipped()) {
+    drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset);
     ctx.restore();
     return;
   }
@@ -6951,22 +7577,32 @@ function drawPlayer() {
     ctx.fillStyle = "#070a12";
   }
   r(8, 2, 10, 6);
+  r(9, 0, 7, 3);
   r(7, 7, 12, 2);
   ctx.fillStyle = voidSkin ? "#0b0b10" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#111626" : "#ff9445";
   r(6, 5, 14, 10);
   ctx.fillStyle = voidSkin ? "#16161e" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#1b223a" : "#ffc98c";
   r(8, 8, 3, 4);
   r(16, 8, 2, 3);
+  ctx.fillStyle = voidSkin ? "#2b2b33" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2f3b63" : "#ffd0a0";
+  r(10, 7, 6, 3);
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#0d1220" : "#171f35";
   r(9, 9, 8, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#66d2ff";
   r(12, 11, 2, 2);
   r(16, 11, 1, 2);
+  ctx.fillStyle = voidSkin ? "#ffcaca" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ffffff" : "#f7fbff";
+  r(13, 11, 1, 1);
+  r(16, 11, 1, 1);
   ctx.fillStyle = voidSkin ? "#111116" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#171c35" : "#1a447b";
   r(5, 17, 16, 10);
   ctx.fillStyle = voidSkin ? "#1c1b23" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#232c4f" : "#2f74bc";
   r(6, 18, 14, 4);
   r(8, 22, 10, 2);
+  ctx.fillStyle = voidSkin ? "#66151b" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#79d9ff";
+  r(8, 18, 1, 6);
+  r(17, 18, 1, 6);
+  r(10, 20, 6, 1);
   ctx.fillStyle = voidSkin ? "#09090d" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#11182b" : "#18345e";
   r(9, 18, 3, 8);
   r(14, 18, 4, 8);
@@ -6991,6 +7627,223 @@ function drawPlayer() {
     r(18, 6, 2, 3);
   }
   drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset) {
+  const awakened = lightnerState.awakenTimer > 0;
+  const pulse = awakened ? 0.82 + Math.sin(lastTime * 0.03) * 0.18 : 0.62 + Math.sin(lastTime * 0.014) * 0.12;
+  ctx.save();
+  ctx.translate(26, 34);
+  ctx.scale(1.28, 1.28);
+
+  const boltAlpha = awakened ? 0.75 : 0.34;
+  ctx.strokeStyle = `rgba(255, 215, 0, ${boltAlpha})`;
+  ctx.lineWidth = awakened ? 2.6 : 1.6;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const lightning = (points) => {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i += 1) {
+      ctx.lineTo(points[i][0], points[i][1]);
+    }
+    ctx.stroke();
+  };
+  lightning([[-24, -22], [-33, -5], [-26, -6], [-36, 20]]);
+  lightning([[20, -24], [32, -4], [24, -5], [36, 20]]);
+  lightning([[-22, 29], [-4, 36], [18, 30], [28, 36]]);
+
+  const shadow = ctx.createRadialGradient(0, 12, 8, 0, 12, 42);
+  shadow.addColorStop(0, "rgba(255, 213, 0, 0.18)");
+  shadow.addColorStop(1, "rgba(255, 213, 0, 0)");
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.ellipse(0, 18, 40, 48, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Back legs and boots.
+  ctx.fillStyle = "#050506";
+  ctx.beginPath();
+  ctx.moveTo(-11, 9);
+  ctx.lineTo(-3, 10);
+  ctx.lineTo(-7 + legOffset * 0.55, 34);
+  ctx.lineTo(-18, 34);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(3, 10);
+  ctx.lineTo(11, 9);
+  ctx.lineTo(18, 34 + (2 - legOffset) * 0.55);
+  ctx.lineTo(7, 34);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ffd700";
+  ctx.fillRect(-18, 32, 12, 2);
+  ctx.fillRect(7, 32, 12, 2);
+
+  // White coat, wide and open like the reference.
+  ctx.fillStyle = "#4d535f";
+  ctx.beginPath();
+  ctx.moveTo(-25, -10);
+  ctx.quadraticCurveTo(-18, -24, -4, -18);
+  ctx.lineTo(0, 31);
+  ctx.lineTo(-24, 29);
+  ctx.quadraticCurveTo(-32, 12, -25, -10);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(25, -10);
+  ctx.quadraticCurveTo(18, -24, 4, -18);
+  ctx.lineTo(0, 31);
+  ctx.lineTo(24, 29);
+  ctx.quadraticCurveTo(32, 12, 25, -10);
+  ctx.fill();
+
+  ctx.fillStyle = "#f4efe4";
+  ctx.beginPath();
+  ctx.moveTo(-26, -10);
+  ctx.quadraticCurveTo(-18, -20, -5, -16);
+  ctx.quadraticCurveTo(-9, 7, -3, 31);
+  ctx.lineTo(-22, 28);
+  ctx.quadraticCurveTo(-29, 10, -26, -10);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(26, -10);
+  ctx.quadraticCurveTo(18, -20, 5, -16);
+  ctx.quadraticCurveTo(9, 7, 3, 31);
+  ctx.lineTo(22, 28);
+  ctx.quadraticCurveTo(29, 10, 26, -10);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.moveTo(-20, -8);
+  ctx.quadraticCurveTo(-14, 2, -15, 23);
+  ctx.lineTo(-21, 25);
+  ctx.quadraticCurveTo(-24, 6, -20, -8);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(20, -8);
+  ctx.quadraticCurveTo(14, 2, 15, 23);
+  ctx.lineTo(21, 25);
+  ctx.quadraticCurveTo(24, 6, 20, -8);
+  ctx.fill();
+  ctx.fillStyle = "#bfc4cc";
+  ctx.beginPath();
+  ctx.moveTo(-12, -7);
+  ctx.lineTo(-6, 4);
+  ctx.lineTo(-5, 26);
+  ctx.lineTo(-14, 24);
+  ctx.quadraticCurveTo(-17, 7, -12, -7);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(12, -7);
+  ctx.lineTo(6, 4);
+  ctx.lineTo(5, 26);
+  ctx.lineTo(14, 24);
+  ctx.quadraticCurveTo(17, 7, 12, -7);
+  ctx.fill();
+
+  // Black suit and yellow chest bolt.
+  ctx.fillStyle = "#07080b";
+  ctx.beginPath();
+  ctx.moveTo(-9, -12);
+  ctx.lineTo(9, -12);
+  ctx.lineTo(13, 30);
+  ctx.lineTo(-13, 30);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#202126";
+  ctx.fillRect(-8, -8, 16, 11);
+  ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 * pulse})`;
+  ctx.lineWidth = 1.8;
+  lightning([[-8, -9], [-8, 3], [-6, 11], [-7, 20]]);
+  lightning([[8, -9], [8, 4], [6, 12], [7, 20]]);
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath();
+  ctx.moveTo(-1, -8);
+  ctx.lineTo(6, -8);
+  ctx.lineTo(1, 1);
+  ctx.lineTo(7, 1);
+  ctx.lineTo(-3, 16);
+  ctx.lineTo(0, 4);
+  ctx.lineTo(-6, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Sleeves and dark gloves.
+  ctx.fillStyle = "#f4efe4";
+  ctx.beginPath();
+  ctx.moveTo(-23, -4 + armOffset);
+  ctx.quadraticCurveTo(-33, 3 + armOffset, -30, 19 + armOffset);
+  ctx.lineTo(-21, 20 + armOffset);
+  ctx.quadraticCurveTo(-18, 5 + armOffset, -15, -7 + armOffset);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(23, -4 - armOffset);
+  ctx.quadraticCurveTo(33, 3 - armOffset, 30, 19 - armOffset);
+  ctx.lineTo(21, 20 - armOffset);
+  ctx.quadraticCurveTo(18, 5 - armOffset, 15, -7 - armOffset);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#050506";
+  ctx.fillRect(-31, 18 + armOffset, 8, 5);
+  ctx.fillRect(23, 18 - armOffset, 8, 5);
+  ctx.fillStyle = "#ffd700";
+  ctx.fillRect(-26, 3 + armOffset, 2, 11);
+  ctx.fillRect(24, 3 - armOffset, 2, 11);
+
+  // Head and hair. This is intentionally drawn last so it reads like the reference portrait.
+  ctx.fillStyle = "#d79b6d";
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 11.5, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f1bf8a";
+  ctx.beginPath();
+  ctx.ellipse(-4, -23, 4.5, 6.2, 0.18, 0, Math.PI * 2);
+  ctx.ellipse(5, -23, 3.8, 5.7, -0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#050506";
+  ctx.beginPath();
+  ctx.moveTo(-14, -27);
+  ctx.quadraticCurveTo(-8, -43, 8, -38);
+  ctx.quadraticCurveTo(22, -35, 15, -20);
+  ctx.lineTo(9, -28);
+  ctx.lineTo(4, -18);
+  ctx.lineTo(-2, -30);
+  ctx.lineTo(-8, -19);
+  ctx.lineTo(-12, -25);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#222329";
+  ctx.beginPath();
+  ctx.moveTo(-8, -35);
+  ctx.quadraticCurveTo(1, -39, 10, -34);
+  ctx.quadraticCurveTo(1, -35, -8, -31);
+  ctx.fill();
+  ctx.fillStyle = "#34343a";
+  ctx.beginPath();
+  ctx.moveTo(-13, -26);
+  ctx.quadraticCurveTo(-7, -32, -1, -31);
+  ctx.quadraticCurveTo(-7, -29, -13, -23);
+  ctx.fill();
+
+  ctx.strokeStyle = "#2a180f";
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(-8, -23);
+  ctx.lineTo(-2, -23);
+  ctx.moveTo(4, -23);
+  ctx.lineTo(10, -23);
+  ctx.stroke();
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath();
+  ctx.ellipse(-5, -22, 2.3, 1.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(7, -22, 2.3, 1.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2a180f";
+  ctx.fillRect(-2, -15, 5, 1.2);
   ctx.restore();
 }
 
@@ -7029,10 +7882,10 @@ function drawChangerClone() {
 
   ctx.save();
   if ((clone.facing || 1) < 0) {
-    ctx.translate(clone.x + clone.w, clone.y);
+    ctx.translate(clone.x + clone.w + 2, clone.y - 5);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(clone.x, clone.y);
+    ctx.translate(clone.x - 2, clone.y - 5);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
   drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, true);
@@ -7143,6 +7996,7 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
 
   ctx.fillStyle = borderColor;
   r(4, 2, 18, 28);
+  r(6, 0, 14, 4);
   ctx.fillStyle = hoodColor;
   r(8, 4, 10, 8);
   r(7, 8, 12, 5);
@@ -7178,8 +8032,15 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
   ctx.fillStyle = eyeColor;
   r(11, 11, 2, 2);
   r(16, 11, 2, 2);
+  ctx.fillStyle = "#ffffff";
+  r(12, 11, 1, 1);
+  r(17, 11, 1, 1);
   ctx.fillStyle = isClone ? "#081b4b" : "#070d1a";
   r(12, 12, 5, 1);
+  ctx.fillStyle = glowColor;
+  r(9, 16, 1, 10);
+  r(17, 16, 1, 9);
+  r(10, 19, 7, 1);
   if (cyberSkin) {
     ctx.fillStyle = glowColor;
     r(10, 17, 1, 8);
@@ -7382,6 +8243,7 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(6, 2, 14, 28);
+  r(5, 7, 16, 4);
   ctx.fillStyle = palette.hood;
   r(8, 4, 10, 8);
   r(7, 8, 12, 4);
@@ -7390,8 +8252,13 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
   ctx.fillStyle = voidSkin ? `rgba(255, 76, 76, ${voidPulse})` : "#efe7d8";
   r(11, 11, 2, 2);
   r(15, 11, 2, 2);
+  ctx.fillStyle = palette.glow;
+  r(12, 11, 1, 1);
+  r(16, 11, 1, 1);
   ctx.fillStyle = palette.metal;
   r(7, 16, 12, 10);
+  r(5, 17, 3, 8);
+  r(18, 17, 3, 8);
   ctx.fillStyle = palette.cloth;
   r(10, 17, 6, 8);
   ctx.fillStyle = palette.trim;
@@ -7408,6 +8275,7 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(16, 15, 8, 15);
+  r(15, 14, 10, 3);
   ctx.fillStyle = palette.trim;
   r(17, 16, 6, 13);
   ctx.fillStyle = voidSkin ? "#16161c" : "#254d9e";
@@ -7507,6 +8375,7 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
 
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#05070e" : "#060910";
   r(7, 2, 12, 7);
+  r(8, 0, 9, 3);
   r(6, 7, 14, 4);
   ctx.fillStyle = voidSkin ? "#0d0d12" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#0d1220" : "#111724";
   r(7, 10, 12, 6);
@@ -7516,7 +8385,14 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
   r(7, 20, 12, 4);
   ctx.fillStyle = voidSkin ? "#5b0f17" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2d3470" : "#34415f";
   r(8, 16, 10, 3);
+  ctx.fillStyle = voidSkin ? "#0b0b0e" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#080b14" : "#09101d";
+  r(9, 11, 8, 3);
+  ctx.fillStyle = voidSkin ? "#7a141c" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
+  r(11, 17, 1, 9);
+  r(16, 17, 1, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
+  r(10, 8, 4, 1);
+  r(15, 8, 4, 1);
   r(12, 9, 2, 2);
   r(16, 9, 2, 2);
   ctx.fillStyle = voidSkin ? "#ffc0c0" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ddb5ff" : "#baf4ff";
@@ -7636,6 +8512,24 @@ function drawGoal() {
     return;
   }
 
+  if (level.theme === "frozen") {
+    const doorOpen = isFrostWardenDefeated();
+    const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
+    ctx.fillStyle = "#10243a";
+    ctx.fillRect(x + 6, y, 52, h);
+    ctx.fillStyle = doorOpen ? "rgba(108, 235, 255, 0.26)" : "rgba(22, 60, 92, 0.88)";
+    ctx.fillRect(x + 14, y + 10, 36, h - 20);
+    ctx.fillStyle = doorOpen ? `rgba(154, 244, 255, ${0.5 * pulse})` : "rgba(190, 238, 255, 0.32)";
+    for (let i = 0; i < 5; i += 1) {
+      ctx.fillRect(x + 18, y + 18 + i * 24, 28, 4);
+    }
+    ctx.fillStyle = doorOpen ? `rgba(126, 238, 255, ${0.65 * pulse})` : "rgba(75, 149, 190, 0.72)";
+    ctx.beginPath();
+    ctx.arc(x + 56, y + 18, 9, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
   if (level.theme === "arcade") {
     const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
 
@@ -7694,7 +8588,10 @@ function drawHud() {
 
   ctx.fillStyle = "#d8fbff";
   ctx.font = "16px Verdana";
-  ctx.fillText(`${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`, 190, 46);
+  const collectibleText = level.theme === "frozen"
+    ? `${currentCollectibleLabel()} ${collectedCount}`
+    : `${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`;
+  ctx.fillText(collectibleText, 190, 46);
   ctx.fillText(t("hud_difficulty", { difficulty: getDifficultyLabel(activeDifficultyKey) }), 190, 76);
   ctx.fillText(t("hud_jumps", { current: player.jumpsRemaining, total: player.maxJumps }), 190, 106);
   const stealthStatus = isChangerEquipped()
@@ -7719,6 +8616,20 @@ function drawHud() {
           : t("guardian_status_ready", {
             state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
           })
+    : isLightnerEquipped()
+      ? t("lightner_status", {
+        stacks: lightnerState.stacks,
+        max: LIGHTNER_RULES.maxStacks,
+        e: lightnerState.fieldCooldown.toFixed(1),
+        awaken: lightnerState.awakenTimer > 0
+          ? t("lightner_awaken_active", { time: lightnerState.awakenTimer.toFixed(1) })
+          : lightnerState.awakenKills >= LIGHTNER_RULES.awakenKillsRequired
+            ? t("lightner_awaken_ready")
+            : t("lightner_awaken_charge", {
+              kills: lightnerState.awakenKills,
+              required: LIGHTNER_RULES.awakenKillsRequired,
+            }),
+      })
     : !isAssassinEquipped()
       ? t("hud_character", { name: formatCatalogName(shopState.equippedCharacter) })
       : player.stealthActive
@@ -7744,7 +8655,7 @@ function drawHud() {
     ctx.fillText(t("hud_factory_hint"), 470, 96);
   } else if (level.theme === "frozen") {
     ctx.fillText(t("hud_clock", { time: formatStageTimer(frozenTimeRemaining) }), 470, 68);
-    ctx.fillText(t("hud_frozen_hint"), 470, 96);
+    ctx.fillText(t("hud_frozen_warden_hint"), 470, 96);
   } else {
     ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
@@ -7755,13 +8666,15 @@ function drawHud() {
     ctx.fillText(t("guardian_hint"), 470, 124);
   } else if (isAssassinEquipped()) {
     ctx.fillText(t("assassin_hint"), 470, 124);
+  } else if (isLightnerEquipped()) {
+    ctx.fillText(t("lightner_hint"), 470, 124);
   }
 
   if (stageMessageTimer > 0) {
     if (level.theme === "factory") {
       drawCenterPanel(level.name, t("stage_objective_factory", { count: currentShardTarget() }), "");
     } else if (level.theme === "frozen") {
-      drawCenterPanel(level.name, t("stage_objective_frozen", { count: currentShardTarget() }), "");
+      drawCenterPanel(level.name, t("stage_objective_frozen_warden"), "");
     } else {
       drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
     }
@@ -7803,8 +8716,22 @@ function drawCenterPanel(title, line1, line2, line3) {
 }
 
 function render() {
+  ctx.save();
+  if (screenShakeTimer > 0) {
+    const shake = Math.ceil(screenShakeTimer * 10);
+    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  }
   drawBackground();
-  drawWorld();
+  if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
+    ctx.save();
+    ctx.translate(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    ctx.scale(1.08, 1.08);
+    ctx.translate(-GAME_WIDTH / 2, -GAME_HEIGHT / 2);
+    drawWorld();
+    ctx.restore();
+  } else {
+    drawWorld();
+  }
   drawFrozenAtmosphere();
   drawHud();
   if (assassinationEvent.active) {
@@ -7816,6 +8743,7 @@ function render() {
   } else if (nightmareEvent.active || nightmareEvent.countdown) {
     drawNightmareOverlay();
   }
+  ctx.restore();
 }
 
 function drawFrozenAtmosphere() {
@@ -7851,24 +8779,53 @@ function drawFrozenAtmosphere() {
 
 function drawAssassinationOverlay() {
   const bossFight = assassinationEvent.targetType === "boss";
+  const wardenFight = assassinationEvent.mode === "wardenQte";
   const panelAlpha = 0.48 + assassinationEvent.flash * 0.18;
-  ctx.fillStyle = `rgba(4, 7, 16, ${panelAlpha})`;
+  ctx.fillStyle = wardenFight ? `rgba(2, 10, 22, ${Math.min(0.82, panelAlpha + 0.14)})` : `rgba(4, 7, 16, ${panelAlpha})`;
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  if (wardenFight && assassinationEvent.target) {
+    const bounds = assassinationEvent.targetBounds || getEnemyBounds(assassinationEvent.target, assassinationEvent.target.type);
+    const focusX = bounds.x + bounds.w * 0.5 - camera.x;
+    const focusY = bounds.y + bounds.h * 0.45;
+    if (assassinationEvent.timer <= 0.5) {
+      const tension = 1 - Math.max(0, assassinationEvent.timer / 0.5);
+      ctx.fillStyle = `rgba(153, 230, 255, ${0.12 + tension * 0.18})`;
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
+    ctx.fillStyle = "rgba(112, 229, 255, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(focusX, focusY, 108, 124, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(208, 252, 255, 0.52)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(focusX, focusY, 116, 132, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   ctx.fillStyle = "rgba(10, 15, 28, 0.86)";
   ctx.fillRect(180, 146, 600, 204);
-  ctx.strokeStyle = `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
+  ctx.strokeStyle = wardenFight
+    ? `rgba(126, 229, 255, ${0.62 + assassinationEvent.flash * 0.22})`
+    : `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
   ctx.lineWidth = 4;
   ctx.strokeRect(180, 146, 600, 204);
 
   ctx.fillStyle = "#f7f9ff";
   ctx.textAlign = "center";
   ctx.font = "bold 30px Verdana";
-  ctx.fillText(assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"), GAME_WIDTH / 2, 188);
+  ctx.fillText(
+    wardenFight ? t("assassinate_warden_title") : assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"),
+    GAME_WIDTH / 2,
+    188
+  );
   ctx.font = "18px Verdana";
   ctx.fillStyle = "#d5efff";
   ctx.fillText(
-    assassinationEvent.mode === "backstab"
+    wardenFight
+      ? t("assassinate_warden_copy")
+      : assassinationEvent.mode === "backstab"
       ? t("assassinate_locking")
       : bossFight
         ? t("assassinate_boss_copy")
@@ -7883,11 +8840,20 @@ function drawAssassinationOverlay() {
   const meterH = 24;
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.fillRect(meterX, meterY, meterW, meterH);
-  ctx.fillStyle = assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
+  ctx.fillStyle = wardenFight
+    ? "rgba(107, 222, 255, 0.78)"
+    : assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
   const fillAmount = assassinationEvent.mode === "backstab"
     ? 1 - Math.max(0, assassinationEvent.timer / ASSASSIN_RULES.strikeWindup)
     : assassinationEvent.gauge;
   ctx.fillRect(meterX, meterY, meterW * fillAmount, meterH);
+  if (wardenFight) {
+    const markerX = meterX + meterW * FROST_WARDEN_QTE.successThreshold;
+    ctx.fillStyle = "rgba(255, 245, 180, 0.72)";
+    ctx.fillRect(markerX - 3, meterY - 7, 6, meterH + 14);
+    ctx.fillStyle = "rgba(255, 110, 110, 0.56)";
+    ctx.fillRect(meterX, meterY, meterW * 0.5, 3);
+  }
   ctx.strokeStyle = "rgba(255, 241, 173, 0.7)";
   ctx.lineWidth = 2;
   ctx.strokeRect(meterX, meterY, meterW, meterH);
@@ -7896,7 +8862,7 @@ function drawAssassinationOverlay() {
   ctx.font = "bold 22px Verdana";
   ctx.fillText(assassinationEvent.successText, GAME_WIDTH / 2, 308);
   ctx.font = "17px Verdana";
-  if (assassinationEvent.mode === "qte") {
+  if (assassinationEvent.mode === "qte" || wardenFight) {
     ctx.fillText(t("assassinate_time", { time: assassinationEvent.timer.toFixed(1) }), GAME_WIDTH / 2, 334);
   }
   ctx.textAlign = "left";
