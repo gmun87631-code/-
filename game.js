@@ -82,6 +82,10 @@ const PATCH_NOTES = [
       "6스테이지에서 서리 워든이 정상 등장하지 않던 문제 수정",
       "6스테이지는 난이도와 상관없이 트리플 점프가 가능하도록 변경",
       "서리 워든이 가시 위에 서면 가시가 얼어붙고 워든이 떨어지지 않도록 수정",
+      "스테이지 클리어 코인에 난이도 보상 배율 적용 및 결과 화면 표시 추가",
+      "어드민계정 비밀번호가 항상 지정된 값으로 강제 동기화되도록 수정",
+      "어드민계정이 없을 때도 자동 생성되어 바로 로그인 가능하도록 수정",
+      "관리자 로그인 닉네임을 admin으로 변경하고 기존 어드민계정 진행도 이전 처리 추가",
     ],
   },
   {
@@ -123,7 +127,8 @@ const PATCH_NOTES = [
   },
 ];
 const LATEST_PATCH_NOTES_VERSION = PATCH_NOTES[0]?.version || "";
-const ADMIN_NICKNAME = "어드민계정";
+const LEGACY_ADMIN_NICKNAME = "어드민계정";
+const ADMIN_NICKNAME = "admin";
 const ADMIN_TITLE = "별빛 통치자";
 const ADMIN_PASSWORD_RESET = "ks54259671";
 const BETA_ACCOUNT_NICKNAME = "베타";
@@ -458,6 +463,8 @@ const STRINGS = {
     hud_return_lobby: "Esc or Lobby button to return",
     hud_factory_hint: "Press every button before time runs out",
     hud_frozen_hint: "Activate 3 energy cores before the freeze",
+    difficulty_bonus: "Difficulty bonus: x{value}",
+    stage_clear_coins: "Clear coins: {coins}",
     hud_character: "Character {name}",
     changer_status_ready_cd: "Clone Ready | Swap CD {time}s",
     changer_status_ready: "Clone Ready | Swap Ready",
@@ -687,6 +694,8 @@ const STRINGS = {
     hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
     hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
     hud_frozen_hint: "완전 동결 전에 에너지 코어 3개를 활성화하세요",
+    difficulty_bonus: "난이도 보너스: x{value}",
+    stage_clear_coins: "클리어 코인: {coins}",
     hud_character: "캐릭터 {name}",
     changer_status_ready_cd: "분신 준비 완료 | 교체 대기 {time}초",
     changer_status_ready: "분신 준비 완료 | 교체 가능",
@@ -1056,6 +1065,7 @@ let unlockedStageIndex = 0;
 let screenMode = screenModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
+let lastStageClearReward = null;
 let lastSavedStateJson = "";
 const accountState = {
   currentNickname: null,
@@ -1175,6 +1185,16 @@ function t(key, vars = {}) {
 
 function getDifficultyLabel(key = activeDifficultyKey) {
   return t(`difficulty_${key}`);
+}
+
+function difficultyCoinMultiplier(key = activeDifficultyKey) {
+  if (key === "hard") {
+    return 1.6;
+  }
+  if (key === "normal") {
+    return 1.3;
+  }
+  return 1;
 }
 
 function getScreenModeLabel(mode) {
@@ -1509,6 +1529,25 @@ function awardCoins(amount) {
   shopState.coins += Math.floor(amount);
 }
 
+function awardStageClearCoins() {
+  const baseCoins = 25 + currentStageIndex * 5;
+  const multiplier = difficultyCoinMultiplier(activeDifficultyKey);
+  const finalCoins = Math.round(baseCoins * multiplier);
+  lastStageClearReward = {
+    baseCoins,
+    finalCoins,
+    multiplier,
+  };
+  awardCoins(finalCoins);
+}
+
+function stageClearRewardText() {
+  if (!lastStageClearReward) {
+    return "";
+  }
+  return `${t("stage_clear_coins", { coins: lastStageClearReward.finalCoins })} | ${t("difficulty_bonus", { value: lastStageClearReward.multiplier.toFixed(1) })}`;
+}
+
 function getShopActionLabel({ owned, purchasable, available, canAfford, price }) {
   if (owned) {
     return t("shop_owned");
@@ -1715,7 +1754,7 @@ function readAccounts() {
     if (changed) {
       localStorage.setItem(ACCOUNT_KEY, JSON.stringify(data));
     }
-    return syncBetaAccountCoins(data);
+    return syncAdminAccountPassword(syncBetaAccountCoins(data));
   } catch (_) {
     return {};
   }
@@ -1726,11 +1765,58 @@ function writeAccounts(accounts) {
 }
 
 function syncAdminAccountPassword(accounts) {
-  const adminAccount = accounts[ADMIN_NICKNAME];
-  if (!adminAccount || adminAccount.password === ADMIN_PASSWORD_RESET) {
+  if (!accounts || typeof accounts !== "object") {
     return accounts;
   }
-  adminAccount.password = ADMIN_PASSWORD_RESET;
+  const legacyAdminAccount = accounts[LEGACY_ADMIN_NICKNAME];
+  if (!accounts[ADMIN_NICKNAME] || typeof accounts[ADMIN_NICKNAME] !== "object") {
+    accounts[ADMIN_NICKNAME] = {
+      password: ADMIN_PASSWORD_RESET,
+      isAdmin: true,
+      hasBetaReward: Boolean(legacyAdminAccount?.hasBetaReward),
+      lastSeenPatchNoteVersion: legacyAdminAccount?.lastSeenPatchNoteVersion || "",
+      progress: legacyAdminAccount?.progress && typeof legacyAdminAccount.progress === "object"
+        ? legacyAdminAccount.progress
+        : createDefaultProgress(),
+    };
+    writeAccounts(accounts);
+    return accounts;
+  }
+
+  const adminAccount = accounts[ADMIN_NICKNAME];
+  let changed = false;
+  if (legacyAdminAccount && typeof legacyAdminAccount === "object") {
+    if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
+      adminAccount.progress = legacyAdminAccount.progress && typeof legacyAdminAccount.progress === "object"
+        ? legacyAdminAccount.progress
+        : createDefaultProgress();
+      changed = true;
+    }
+    if (!adminAccount.hasBetaReward && legacyAdminAccount.hasBetaReward) {
+      adminAccount.hasBetaReward = true;
+      changed = true;
+    }
+    if (!adminAccount.lastSeenPatchNoteVersion && legacyAdminAccount.lastSeenPatchNoteVersion) {
+      adminAccount.lastSeenPatchNoteVersion = legacyAdminAccount.lastSeenPatchNoteVersion;
+      changed = true;
+    }
+  }
+  if (adminAccount.password !== ADMIN_PASSWORD_RESET) {
+    adminAccount.password = ADMIN_PASSWORD_RESET;
+    changed = true;
+  }
+  if (!adminAccount.isAdmin) {
+    adminAccount.isAdmin = true;
+    changed = true;
+  }
+  changed = ensureAccountMeta(adminAccount) || changed;
+  if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
+    adminAccount.progress = createDefaultProgress();
+    changed = true;
+  }
+  if (!changed) {
+    return accounts;
+  }
   writeAccounts(accounts);
   return accounts;
 }
@@ -2447,8 +2533,12 @@ function savePersistentProgress(force = false) {
 
 function loadPersistentProgress() {
   try {
-    const currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+    let currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
     const accounts = syncAdminAccountPassword(readAccounts());
+    if (currentNickname === LEGACY_ADMIN_NICKNAME && accounts[ADMIN_NICKNAME]) {
+      currentNickname = ADMIN_NICKNAME;
+      localStorage.setItem(CURRENT_ACCOUNT_KEY, ADMIN_NICKNAME);
+    }
     if (!currentNickname || !accounts[currentNickname]) {
       accountState.currentNickname = null;
       accountState.isAdmin = false;
@@ -2648,7 +2738,7 @@ function registerAccount() {
   }
 
   accounts[nickname] = {
-    password,
+    password: nickname === ADMIN_NICKNAME ? ADMIN_PASSWORD_RESET : password,
     isAdmin: nickname === ADMIN_NICKNAME,
     hasBetaReward: false,
     lastSeenPatchNoteVersion: "",
@@ -5014,7 +5104,7 @@ function updatePlayer(dt) {
   }
 
   if (gameState === "playing" && overlaps(player, level.goal) && collectedCount >= currentShardTarget()) {
-    awardCoins(25 + currentStageIndex * 5);
+    awardStageClearCoins();
     rollStageClearBoxReward();
     if (level.theme === "arcade") {
       triggerClawEscapeEvent();
@@ -7267,21 +7357,22 @@ function drawHud() {
     drawCenterPanel(
       t("center_stage_clear"),
       t("center_next_stage"),
-      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) })
+      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) }),
+      stageClearRewardText()
     );
   } else if (gameState === "finished") {
-    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), t("center_restart"));
+    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), stageClearRewardText(), t("center_restart"));
   } else if (gameState === "gameover") {
     drawCenterPanel(t("center_game_over"), t("center_game_over_copy"), t("center_restart"));
   }
 }
 
-function drawCenterPanel(title, line1, line2) {
+function drawCenterPanel(title, line1, line2, line3) {
   ctx.fillStyle = "rgba(7, 19, 33, 0.72)";
-  ctx.fillRect(180, 140, 600, 190);
+  ctx.fillRect(180, 140, 600, line3 ? 220 : 190);
   ctx.strokeStyle = "#ffe98a";
   ctx.lineWidth = 4;
-  ctx.strokeRect(180, 140, 600, 190);
+  ctx.strokeRect(180, 140, 600, line3 ? 220 : 190);
   ctx.fillStyle = "#fff6ca";
   ctx.textAlign = "center";
   ctx.font = "bold 40px Verdana";
@@ -7290,6 +7381,9 @@ function drawCenterPanel(title, line1, line2) {
   ctx.fillText(line1, GAME_WIDTH / 2, 242);
   if (line2) {
     ctx.fillText(line2, GAME_WIDTH / 2, 278);
+  }
+  if (line3) {
+    ctx.fillText(line3, GAME_WIDTH / 2, 314);
   }
   ctx.textAlign = "left";
 }
