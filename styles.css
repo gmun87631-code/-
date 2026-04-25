@@ -1384,6 +1384,117 @@ button:active {
   transform: translateY(1px);
 }
 
+body.touch-controls-enabled .mobile-controls {
+  position: absolute;
+  inset: auto 14px 16px;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  pointer-events: none;
+}
+
+body.touch-controls-enabled .mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+body.touch-controls-enabled .mobile-joystick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.touch-controls-enabled .mobile-joystick-ring {
+  position: absolute;
+  inset: 0;
+  border: 3px solid rgba(221, 250, 255, 0.46);
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at center, rgba(128, 221, 255, 0.18), rgba(7, 24, 44, 0.72));
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+body.touch-controls-enabled .mobile-joystick-ring::before,
+body.touch-controls-enabled .mobile-joystick-ring::after {
+  content: "";
+  position: absolute;
+  background: rgba(225, 252, 255, 0.28);
+}
+
+body.touch-controls-enabled .mobile-joystick-ring::before {
+  left: 50%;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+body.touch-controls-enabled .mobile-joystick-ring::after {
+  top: 50%;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+body.touch-controls-enabled .mobile-joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  border: 2px solid rgba(255, 236, 146, 0.78);
+  border-radius: 50%;
+  background:
+    linear-gradient(180deg, rgba(255, 141, 77, 0.94), rgba(63, 38, 72, 0.96));
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+}
+
+body.touch-controls-enabled .mobile-control-button {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid rgba(221, 250, 255, 0.55);
+  border-radius: 50%;
+  color: #eefcff;
+  background:
+    linear-gradient(180deg, rgba(26, 83, 128, 0.86), rgba(7, 26, 48, 0.9));
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.touch-controls-enabled .mobile-control-button.small {
+  width: 54px;
+  height: 54px;
+  font-size: 0.95rem;
+}
+
+body.touch-controls-enabled .mobile-control-button.active {
+  filter: brightness(1.22);
+  transform: translateY(2px);
+  border-color: rgba(255, 236, 146, 0.82);
+  background:
+    linear-gradient(180deg, rgba(255, 141, 77, 0.9), rgba(63, 38, 72, 0.95));
+}
+
 @media (pointer: coarse) {
   .mobile-controls {
     position: absolute;

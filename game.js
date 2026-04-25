@@ -76,6 +76,7 @@ const PATCH_NOTES = [
     items: [
       "모바일 터치 조작 버튼 추가: 이동, 점프, 웅크리기, 스킬, 재시작 지원",
       "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
+      "모바일 조이스틱 감지와 터치 이벤트 호환성 개선",
     ],
   },
   {
@@ -4673,8 +4674,19 @@ const mobileJoystickKnob = document.getElementById("mobileJoystickKnob");
 const mobileJoystickState = {
   active: false,
   pointerId: null,
+  touchId: null,
   jumped: false,
 };
+
+function isTouchControlDevice() {
+  return Boolean(
+    navigator.maxTouchPoints > 0 ||
+    navigator.msMaxTouchPoints > 0 ||
+    window.matchMedia?.("(pointer: coarse)")?.matches
+  );
+}
+
+document.body.classList.toggle("touch-controls-enabled", isTouchControlDevice());
 
 function resetMobileJoystick() {
   keys.left = false;
@@ -4683,6 +4695,7 @@ function resetMobileJoystick() {
   keys.jump = false;
   mobileJoystickState.active = false;
   mobileJoystickState.pointerId = null;
+  mobileJoystickState.touchId = null;
   mobileJoystickState.jumped = false;
   if (mobileJoystickKnob) {
     mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
@@ -4707,7 +4720,7 @@ function updateMobileJoystick(event) {
   const normalizedX = maxDistance > 0 ? knobX / maxDistance : 0;
   const normalizedY = maxDistance > 0 ? knobY / maxDistance : 0;
 
-  mobileJoystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+  mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
 
   keys.left = normalizedX < -0.32;
   keys.right = normalizedX > 0.32;
@@ -4750,6 +4763,53 @@ mobileJoystick?.addEventListener("pointercancel", (event) => {
 });
 
 mobileJoystick?.addEventListener("lostpointercapture", resetMobileJoystick);
+
+function findActiveJoystickTouch(touches) {
+  for (const touch of touches) {
+    if (touch.identifier === mobileJoystickState.touchId) {
+      return touch;
+    }
+  }
+  return null;
+}
+
+mobileJoystick?.addEventListener("touchstart", (event) => {
+  event.preventDefault();
+  const touch = event.changedTouches[0];
+  if (!touch) {
+    return;
+  }
+  mobileJoystickState.active = true;
+  mobileJoystickState.touchId = touch.identifier;
+  updateMobileJoystick(touch);
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchmove", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!mobileJoystickState.active || !touch) {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(touch);
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchend", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchcancel", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
 
 function applyMobileAction(action, pressed) {
   ensureAudioContext();
