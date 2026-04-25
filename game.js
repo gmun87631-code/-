@@ -5,6 +5,7 @@ ctx.imageSmoothingEnabled = false;
 const muteButton = document.getElementById("muteButton");
 const difficultySelect = document.getElementById("difficultySelect");
 const screenModeSelect = document.getElementById("screenModeSelect");
+const controlModeSelect = document.getElementById("controlModeSelect");
 const stageSelect = document.getElementById("stageSelect");
 const languageSelect = document.getElementById("languageSelect");
 const stageLockText = document.getElementById("stageLockText");
@@ -71,6 +72,42 @@ const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const PATCH_NOTES = [
   {
+    version: "Beta v0.7",
+    date: "2026-04-25",
+    items: [
+      "신규 캐릭터 라이트너 추가: 스파크 앵커, 체인 라이트닝 필드, 각성 스킬 구현",
+      "모바일 조작에 X 스킬 버튼 추가",
+      "모든 캐릭터 픽셀 스프라이트 디테일과 식별성을 개선",
+      "라이트너 이미지 에셋 렌더링을 제거하고 기존 코드 스프라이트로 복구",
+      "라이트너 픽셀 스프라이트가 보유 스킨 팔레트와 특수 스킨 효과를 반영하도록 수정",
+      "4스테이지 하드 댄스머신 시스템 제거: 하드 모드는 기존 하드 이벤트 흐름으로 복귀",
+      "8스테이지 정글 추가: 바나나 수집/운반, 원숭이 제출, 화남 예고 공격 시스템 구현",
+      "원숭이 정글에서는 모든 난이도에서 펜타 점프가 가능하도록 변경",
+      "신규 캐릭터 와일드헌터 추가: 사냥 본능, 헌트 블래스트, 내려찍기, 짐승화 구현",
+    ],
+  },
+  {
+    version: "Beta v0.6",
+    date: "2026-04-25",
+    items: [
+      "모바일 터치 조작 버튼 추가: 이동, 점프, 웅크리기, 스킬, 재시작 지원",
+      "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
+      "모바일 조이스틱 감지와 터치 이벤트 호환성 개선",
+      "로비에서 컴퓨터 버전과 모바일 버전을 직접 선택하는 설정 추가",
+      "모바일 Q 버튼으로 어쌔신 연타 QTE를 진행할 수 있도록 수정",
+      "모바일 조이스틱 시각 요소를 숨기고 화면 드래그 방향으로 조작하도록 변경",
+      "모바일 조이스틱 테두리는 숨기고 가운데 버튼만 표시하도록 조정",
+      "모바일 하드 악몽 이벤트에서 점프 드래그를 스페이스 입력처럼 처리하도록 수정",
+      "모바일 스킬 버튼 터치와 클릭 입력 안정성 개선",
+      "서리 워든은 점프로 처치되지 않고 어쌔신 암살 성공으로 처치되도록 조정",
+      "어쌔신과 서리 워든이 접촉하면 즉시 연타 싸움이 시작되도록 변경",
+      "서리 워든 전용 암살 QTE 추가: 시간 정지, 중앙 게이지, 피니시 구간, 성공/실패 연출 적용",
+      "서리 워든 QTE를 모든 캐릭터가 도전 가능하도록 확장하고 캐릭터별 게이지 난이도 차이 적용",
+      "6스테이지 제한 시간을 25초로 단축하고, 서리 워든 처치 즉시 클리어되도록 변경",
+      "6스테이지 기본 코인 드랍을 제거하고, 서리 워든 처치 보상을 25코인으로 고정",
+    ],
+  },
+  {
     version: "Beta v0.5",
     date: "2026-04-25",
     items: [
@@ -82,6 +119,10 @@ const PATCH_NOTES = [
       "6스테이지에서 서리 워든이 정상 등장하지 않던 문제 수정",
       "6스테이지는 난이도와 상관없이 트리플 점프가 가능하도록 변경",
       "서리 워든이 가시 위에 서면 가시가 얼어붙고 워든이 떨어지지 않도록 수정",
+      "스테이지 클리어 코인에 난이도 보상 배율 적용 및 결과 화면 표시 추가",
+      "어드민계정 비밀번호가 항상 지정된 값으로 강제 동기화되도록 수정",
+      "어드민계정이 없을 때도 자동 생성되어 바로 로그인 가능하도록 수정",
+      "관리자 로그인 닉네임을 admin으로 변경하고 기존 어드민계정 진행도 이전 처리 추가",
     ],
   },
   {
@@ -123,7 +164,8 @@ const PATCH_NOTES = [
   },
 ];
 const LATEST_PATCH_NOTES_VERSION = PATCH_NOTES[0]?.version || "";
-const ADMIN_NICKNAME = "어드민계정";
+const LEGACY_ADMIN_NICKNAME = "어드민계정";
+const ADMIN_NICKNAME = "admin";
 const ADMIN_TITLE = "별빛 통치자";
 const ADMIN_PASSWORD_RESET = "ks54259671";
 const BETA_ACCOUNT_NICKNAME = "베타";
@@ -167,6 +209,20 @@ const CHARACTER_DEFS = {
     purchasable: true,
     defaultOwned: false,
     price: 1000,
+  },
+  lightner: {
+    name: "Lightner",
+    summary: "Electric speed controller",
+    purchasable: true,
+    defaultOwned: false,
+    price: 1200,
+  },
+  wildHunter: {
+    name: "Wild Hunter",
+    summary: "High-risk jungle tracker",
+    purchasable: true,
+    defaultOwned: false,
+    price: 1400,
   },
 };
 const SKIN_DEFS = {
@@ -301,7 +357,56 @@ const ASSASSIN_RULES = {
   frontalFailStun: 0.42,
   jumpGlanceBounce: -210,
 };
-const PLAYER_SPRITE_RENDER_SCALE = 0.5;
+const FROST_WARDEN_QTE = {
+  duration: 5.6,
+  entryDuration: 0.5,
+  finishDuration: 1,
+  startGauge: 0.5,
+  assassinTapGain: 0.064,
+  defaultTapGain: 0.044,
+  assassinDrainRate: 0.17,
+  defaultDrainRate: 0.23,
+  assassinFinishDrainRate: 0.28,
+  defaultFinishDrainRate: 0.36,
+  successThreshold: 0.7,
+  clearCoins: 25,
+};
+const LIGHTNER_RULES = {
+  speedMultiplier: 1.06,
+  maxStacks: 3,
+  anchorLife: 5,
+  stackCooldown: 5,
+  awakenedStackCooldown: 3,
+  fieldCooldown: 15,
+  awakenedFieldCooldown: 5,
+  fieldRadius: 96,
+  normalStun: 3.25,
+  bossStun: 2.5,
+  bossSlowMultiplier: 0.45,
+  awakenKillsRequired: 5,
+  awakenDuration: 10,
+  awakenSpeedMultiplier: 1.25,
+};
+const WILD_HUNTER_RULES = {
+  speedMultiplier: 1.08,
+  lifePenalty: 1,
+  instinctDuration: 5,
+  instinctSpeedMultiplier: 1.2,
+  instinctJumpMultiplier: 1.2,
+  blastRadius: 118,
+  blastMaxNormalKills: 4,
+  bossBlastDamageRatio: 0.25,
+  blastDelay: 0.22,
+  slamSpeed: 1180,
+  slamHitBounce: -420,
+  slamMissDelay: 0.65,
+  slamCooldown: 0.45,
+  awakenKillsRequired: 7,
+  awakenDuration: 4,
+  awakenSpeedMultiplier: 1.35,
+  awakenBossDps: 50,
+};
+const PLAYER_SPRITE_RENDER_SCALE = 0.62;
 const STRINGS = {
   en: {
     meta_description: "Starling Sprint is an original retro-inspired 2D side-scrolling platformer with multiple stages, difficulty settings, special enemies, and arcade-style action.",
@@ -309,7 +414,7 @@ const STRINGS = {
     language_label: "Language",
     control_move: "A/D or Left/Right Move",
     control_jump: "W, Up, or Space Double Jump",
-    control_skill: "E Skill / Q Skill",
+    control_skill: "E Skill / Q Skill / X Skill",
     control_restart: "R Restart",
     canvas_label: "Starling Sprint game canvas",
     auth_eyebrow: "Account",
@@ -333,6 +438,9 @@ const STRINGS = {
     settings_title: "Settings",
     difficulty_label: "Difficulty",
     screen_label: "Screen",
+    control_mode_label: "Controls",
+    control_desktop: "Computer",
+    control_mobile: "Mobile",
     collection_eyebrow: "Collection",
     collection_title: "Characters & Skins",
     shop_heading: "Shop",
@@ -448,6 +556,8 @@ const STRINGS = {
     collectible_shards: "Shards",
     collectible_buttons: "Buttons",
     collectible_cores: "Cores",
+    collectible_coins: "Coins",
+    collectible_bananas: "Bananas",
     hud_score: "Score {score}",
     hud_lives: "Lives {lives}",
     hud_stage: "Stage {current}/{total}",
@@ -458,6 +568,11 @@ const STRINGS = {
     hud_return_lobby: "Esc or Lobby button to return",
     hud_factory_hint: "Press every button before time runs out",
     hud_frozen_hint: "Activate 3 energy cores before the freeze",
+    hud_frozen_warden_hint: "Defeat the Frost Warden, then reach the relay gate",
+    hud_jungle_hint: "Carry up to 3 bananas and feed the monkey",
+    hud_jungle_bananas: "Bananas {delivered}/{target} | Carry {carried}/{capacity}",
+    difficulty_bonus: "Difficulty bonus: x{value}",
+    stage_clear_coins: "Clear coins: {coins}",
     hud_character: "Character {name}",
     changer_status_ready_cd: "Clone Ready | Swap CD {time}s",
     changer_status_ready: "Clone Ready | Swap Ready",
@@ -472,12 +587,25 @@ const STRINGS = {
     assassin_status_stealth_cd: "Stealth CD {time}s | Q {cooldown}s",
     assassin_status_q_cd: "Q Cooldown {time}s",
     assassin_status_ready: "Stealth Ready | Q Ready",
+    lightner_status: "Q {stacks}/{max} | E {e}s | X {awaken}",
+    lightner_awaken_ready: "Ready",
+    lightner_awaken_charge: "{kills}/{required}",
+    lightner_awaken_active: "{time}s",
+    wild_hunter_status: "Instinct {instinct} | Q {blast} | X {awaken}",
+    wild_hunter_ready: "Ready",
+    wild_hunter_used: "Used",
+    wild_hunter_charge: "{kills}/{required}",
+    wild_hunter_active: "{time}s",
     changer_hint: "One clone per run | Q works only while clone lives",
     guardian_hint: "Q shield 2s | passive blocks one death",
     assassin_hint: "E stealth (3s) | Q assassinate | no stomp kills",
+    lightner_hint: "Q spark anchor | E lightning field | X awaken",
+    wild_hunter_hint: "Q hunt blast once | E aerial slam | X beast form",
     stage_objective_factory: "Press {count} buttons to power the lever.",
     stage_objective_frozen: "Activate {count} energy cores and reach the relay gate.",
+    stage_objective_frozen_warden: "Defeat the Frost Warden before the relay freezes.",
     stage_objective_normal: "Collect {count} shards and reach the gate.",
+    stage_objective_jungle: "Deliver 15 bananas to the monkey. Carry only 3 at once.",
     center_stage_clear: "Stage Clear",
     center_next_stage: "Press Enter for the next stage.",
     center_now_entering: "Now entering {name}",
@@ -491,12 +619,14 @@ const STRINGS = {
     assassinate_locking: "Locking the strike...",
     assassinate_boss_copy: "Mash Q fast. Bosses need a much stronger break.",
     assassinate_enemy_copy: "Mash Q before the enemy overpowers you.",
+    assassinate_warden_title: "Frost Warden Clash",
+    assassinate_warden_copy: "Mash Q. Hold the gauge through the finish.",
     assassinate_time: "Time {time}s",
     claw_title: "Claw Machine Escape",
     claw_copy: "Click the lever to pull and fill the meter.",
     claw_pull: "PULL!",
     dance_title: "Dance Machine",
-    dance_copy: "Follow the lit arrow. Press WASD (6 steps).",
+    dance_copy: "Follow the lit arrow. Press WASD, arrow keys, or drag (6 steps).",
     dance_ready: "Ready...",
     nightmare_title: "Nightmare Ambush",
     nightmare_countdown: "Get ready. The nightmare is closing in.",
@@ -509,6 +639,10 @@ const STRINGS = {
     character_changer_summary: "Clone survival specialist",
     character_assassin_name: "Assassin",
     character_assassin_summary: "Stealth specialist",
+    character_lightner_name: "Lightner",
+    character_lightner_summary: "High-speed electric controller",
+    character_wildHunter_name: "Wild Hunter",
+    character_wildHunter_summary: "High-risk jungle tracker with burst mobility",
     skin_classic_name: "Classic",
     skin_classic_summary: "Default look",
     skin_desert_name: "Desert",
@@ -531,6 +665,8 @@ const STRINGS = {
     stage_4_name: "Stage 4 - Neon Arcade",
     stage_5_name: "Stage 5 - Clockwork Factory",
     stage_6_name: "Stage 6 - Frozen Relay",
+    stage_7_name: "Stage 7 - Storm Grove",
+    stage_8_name: "Stage 8 - Monkey Jungle",
   },
   ko: {
     meta_description: "스타링 스프린트는 여러 스테이지, 난이도 설정, 특수 적, 아케이드 감각의 액션을 담은 오리지널 레트로풍 2D 횡스크롤 플랫폼 게임입니다.",
@@ -538,7 +674,7 @@ const STRINGS = {
     language_label: "언어",
     control_move: "A/D 또는 좌/우 이동",
     control_jump: "W, 위쪽, 또는 스페이스 이단 점프",
-    control_skill: "E 스킬 / Q 스킬",
+    control_skill: "E 스킬 / Q 스킬 / X 스킬",
     control_restart: "R 다시 시작",
     canvas_label: "스타링 스프린트 게임 화면",
     auth_eyebrow: "계정",
@@ -562,6 +698,9 @@ const STRINGS = {
     settings_title: "설정",
     difficulty_label: "난이도",
     screen_label: "화면",
+    control_mode_label: "조작",
+    control_desktop: "컴퓨터",
+    control_mobile: "모바일",
     collection_eyebrow: "컬렉션",
     collection_title: "캐릭터 & 스킨",
     shop_heading: "상점",
@@ -677,6 +816,8 @@ const STRINGS = {
     collectible_shards: "파편",
     collectible_buttons: "버튼",
     collectible_cores: "코어",
+    collectible_coins: "코인",
+    collectible_bananas: "바나나",
     hud_score: "점수 {score}",
     hud_lives: "목숨 {lives}",
     hud_stage: "스테이지 {current}/{total}",
@@ -687,6 +828,11 @@ const STRINGS = {
     hud_return_lobby: "Esc 또는 로비 버튼으로 돌아가기",
     hud_factory_hint: "시간이 끝나기 전에 모든 버튼을 누르세요",
     hud_frozen_hint: "완전 동결 전에 에너지 코어 3개를 활성화하세요",
+    hud_frozen_warden_hint: "서리 워든을 처치한 뒤 중계 게이트에 도달하세요",
+    hud_jungle_hint: "바나나는 3개까지 들고 원숭이에게 전달하세요",
+    hud_jungle_bananas: "바나나 {delivered}/{target} | 소지 {carried}/{capacity}",
+    difficulty_bonus: "난이도 보너스: x{value}",
+    stage_clear_coins: "클리어 코인: {coins}",
     hud_character: "캐릭터 {name}",
     changer_status_ready_cd: "분신 준비 완료 | 교체 대기 {time}초",
     changer_status_ready: "분신 준비 완료 | 교체 가능",
@@ -701,12 +847,25 @@ const STRINGS = {
     assassin_status_stealth_cd: "은신 쿨타임 {time}초 | Q {cooldown}초",
     assassin_status_q_cd: "Q 쿨타임 {time}초",
     assassin_status_ready: "은신 준비 완료 | Q 준비 완료",
+    lightner_status: "Q {stacks}/{max} | E {e}초 | X {awaken}",
+    lightner_awaken_ready: "준비",
+    lightner_awaken_charge: "{kills}/{required}",
+    lightner_awaken_active: "{time}초",
+    wild_hunter_status: "본능 {instinct} | Q {blast} | X {awaken}",
+    wild_hunter_ready: "준비",
+    wild_hunter_used: "사용됨",
+    wild_hunter_charge: "{kills}/{required}",
+    wild_hunter_active: "{time}초",
     changer_hint: "한 판에 분신 1회만 생성 가능 | Q는 분신이 살아 있을 때만 사용 가능",
     guardian_hint: "Q 방패 2초 | 패시브로 죽음 1회 무효화",
     assassin_hint: "E 은신 (3초) | Q 암살 | 점프 처치 불가",
+    lightner_hint: "Q 스파크 앵커 | E 번개장 | X 각성",
+    wild_hunter_hint: "Q 헌트 블래스트 1회 | E 공중 내려찍기 | X 짐승화",
     stage_objective_factory: "버튼 {count}개를 눌러 레버에 전력을 공급하세요.",
     stage_objective_frozen: "에너지 코어 {count}개를 활성화하고 중계 게이트에 도달하세요.",
+    stage_objective_frozen_warden: "중계탑이 완전히 얼기 전에 서리 워든을 처치하세요.",
     stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
+    stage_objective_jungle: "바나나 15개를 원숭이에게 전달하세요. 한 번에 3개까지만 소지합니다.",
     center_stage_clear: "스테이지 클리어",
     center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
     center_now_entering: "다음 구역: {name}",
@@ -720,12 +879,14 @@ const STRINGS = {
     assassinate_locking: "일격을 고정하는 중...",
     assassinate_boss_copy: "Q를 빠르게 연타하세요. 보스는 훨씬 강한 돌파가 필요합니다.",
     assassinate_enemy_copy: "적이 밀어붙이기 전에 Q를 연타하세요.",
+    assassinate_warden_title: "서리 워든 대치",
+    assassinate_warden_copy: "Q를 연타하세요. 피니시까지 게이지를 버텨야 합니다.",
     assassinate_time: "시간 {time}초",
     claw_title: "집게 탈출",
     claw_copy: "레버를 클릭해 게이지를 채우세요.",
     claw_pull: "당기기!",
     dance_title: "댄스 머신",
-    dance_copy: "빛나는 화살표를 따라가세요. WASD 입력 (6단계).",
+    dance_copy: "빛나는 화살표를 따라가세요. WASD/방향키/드래그 입력 (6단계).",
     dance_ready: "준비...",
     nightmare_title: "악몽 습격",
     nightmare_countdown: "준비하세요. 악몽이 다가오고 있습니다.",
@@ -738,6 +899,10 @@ const STRINGS = {
     character_changer_summary: "분신 생존 특화 캐릭터",
     character_assassin_name: "어쌔신",
     character_assassin_summary: "은신 특화 캐릭터",
+    character_lightner_name: "라이트너",
+    character_lightner_summary: "전기를 다루는 고속 컨트롤형 캐릭터",
+    character_wildHunter_name: "와일드헌터",
+    character_wildHunter_summary: "높은 기동성과 폭발력을 가진 하이리스크 정글 추적자",
     skin_classic_name: "기본외형",
     skin_classic_summary: "기본 외형",
     skin_desert_name: "데저트",
@@ -760,6 +925,8 @@ const STRINGS = {
     stage_4_name: "스테이지 4 - 네온 아케이드",
     stage_5_name: "스테이지 5 - 시계 공장",
     stage_6_name: "스테이지 6 - 얼어붙은 중계탑",
+    stage_7_name: "스테이지 7 - 폭풍 숲길",
+    stage_8_name: "스테이지 8 - 원숭이 정글",
   },
 };
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ko";
@@ -1037,6 +1204,71 @@ const STAGE_DEFS = [
     ],
     serpentSpawns: [],
   },
+  {
+    name: "Stage 7 - Storm Grove",
+    widthTiles: 208,
+    theme: "forest",
+    start: { x: 2, y: 11 },
+    goal: { x: 200, y: 8 },
+    groundSegments: [
+      [0, 9], [12, 20], [24, 32], [36, 45], [49, 57], [61, 70],
+      [74, 83], [87, 96], [101, 110], [114, 123], [128, 137],
+      [142, 151], [156, 165], [170, 179], [184, 207],
+    ],
+    platforms: [
+      [7, 12, 2], [16, 10, 3], [29, 8, 3], [42, 6, 4], [54, 9, 3],
+      [67, 7, 4], [80, 10, 2], [93, 8, 3], [106, 6, 4], [120, 9, 3],
+      [134, 7, 4], [148, 5, 4], [162, 8, 3], [176, 6, 4], [191, 8, 3],
+    ],
+    hazards: [
+      [9, 3], [20, 4], [32, 4], [45, 4], [57, 4], [70, 4], [83, 4],
+      [96, 5], [110, 4], [123, 5], [137, 5], [151, 5], [165, 5], [179, 5],
+    ],
+    collectibles: [
+      { row: [16, 8, 4] }, { row: [29, 6, 4] }, { row: [42, 4, 5] }, { row: [67, 5, 5] },
+      { row: [93, 6, 4] }, { row: [106, 4, 5] }, { row: [134, 5, 4] }, { row: [148, 3, 5] },
+      { row: [176, 4, 5] }, { row: [191, 6, 4] },
+      { point: [4, 13] }, { point: [49, 13] }, { point: [87, 13] }, { point: [128, 13] }, { point: [184, 13] },
+    ],
+    enemies: [
+      [16, 14], [29, 7], [54, 14], [67, 6], [93, 14], [120, 8], [148, 4], [176, 5], [191, 14],
+    ],
+    serpentSpawns: [20, 70, 123, 165],
+  },
+  {
+    name: "Stage 8 - Monkey Jungle",
+    widthTiles: 224,
+    theme: "jungle",
+    start: { x: 2, y: 11 },
+    goal: { x: 214, y: 9 },
+    monkey: { x: 211, y: 13 },
+    groundSegments: [
+      [0, 12], [16, 25], [29, 38], [42, 51], [56, 65], [70, 80],
+      [85, 95], [100, 110], [115, 126], [131, 142], [147, 158],
+      [163, 174], [179, 190], [195, 223],
+    ],
+    platforms: [
+      [8, 12, 3], [18, 10, 3], [31, 8, 4], [45, 11, 2], [59, 7, 4],
+      [73, 9, 3], [88, 6, 4], [103, 10, 3], [119, 7, 4], [136, 5, 4],
+      [151, 9, 3], [167, 6, 4], [183, 8, 3], [199, 10, 3], [207, 7, 3],
+    ],
+    hazards: [
+      [12, 4], [25, 4], [38, 4], [51, 5], [65, 5], [80, 5],
+      [95, 5], [110, 5], [126, 5], [142, 5], [158, 5], [174, 5], [190, 5],
+    ],
+    collectibles: [],
+    bananas: [
+      [8, 10], [11, 13], [18, 8], [21, 8], [31, 6], [34, 6],
+      [45, 9], [59, 5], [62, 5], [73, 7], [88, 4], [91, 4],
+      [103, 8], [106, 8], [119, 5], [122, 5], [136, 3], [139, 3],
+      [151, 7], [154, 7], [167, 4], [170, 4], [183, 6], [186, 6],
+      [199, 8], [202, 8], [207, 5], [210, 5], [216, 13], [219, 13],
+    ],
+    enemies: [
+      [18, 14], [45, 14], [73, 8], [103, 14], [136, 4], [167, 5], [199, 14],
+    ],
+    serpentSpawns: [51, 110, 174],
+  },
 ];
 
 const player = createPlayer();
@@ -1054,8 +1286,11 @@ let stageMessageTimer = 0;
 let selectedStageIndex = Number(stageSelect.value);
 let unlockedStageIndex = 0;
 let screenMode = screenModeSelect.value;
+let controlMode = controlModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
+let lastStageClearReward = null;
+let screenShakeTimer = 0;
 let lastSavedStateJson = "";
 const accountState = {
   currentNickname: null,
@@ -1112,6 +1347,26 @@ const changerState = {
   effectFrom: null,
   effectTo: null,
 };
+const lightnerState = {
+  anchor: null,
+  stacks: LIGHTNER_RULES.maxStacks,
+  stackRechargeTimer: 0,
+  fieldCooldown: 0,
+  awakenKills: 0,
+  awakenTimer: 0,
+  effects: [],
+};
+const wildHunterState = {
+  instinctTimer: 0,
+  blastUsed: false,
+  blastDelayTimer: 0,
+  slamActive: false,
+  slamHit: false,
+  slamCooldown: 0,
+  awakenKills: 0,
+  awakenTimer: 0,
+  effects: [],
+};
 const nightmareEvent = {
   active: false,
   countdown: false,
@@ -1138,6 +1393,30 @@ const danceEvent = {
   flash: 0,
 };
 
+const JUNGLE_BANANA_TARGET = 15;
+const JUNGLE_BANANA_CAPACITY = 3;
+const JUNGLE_MONKEY_ANGER_CHANCE = 0.1;
+const JUNGLE_MONKEY_ANGER_WARN = 0.8;
+const JUNGLE_MONKEY_COOLDOWN = 5;
+const JUNGLE_MONKEY_ATTACK_TIME = 0.34;
+
+const jungleState = {
+  carried: 0,
+  delivered: 0,
+  monkey: {
+    x: 0,
+    y: 0,
+    w: 46,
+    h: 54,
+    facing: -1,
+    angerTimer: 0,
+    attackTimer: 0,
+    cooldown: 0,
+    attackHit: false,
+    flash: 0,
+  },
+};
+
 const clawEscapeEvent = {
   active: false,
   meter: 0,
@@ -1154,6 +1433,7 @@ const assassinationEvent = {
   gauge: 0,
   flash: 0,
   successText: "",
+  advantaged: false,
 };
 
 function currentShardTarget() {
@@ -1161,7 +1441,10 @@ function currentShardTarget() {
     return 12;
   }
   if (level.theme === "frozen") {
-    return 3;
+    return 0;
+  }
+  if (level.theme === "jungle") {
+    return JUNGLE_BANANA_TARGET;
   }
   return difficulty.shardGoal;
 }
@@ -1175,6 +1458,16 @@ function t(key, vars = {}) {
 
 function getDifficultyLabel(key = activeDifficultyKey) {
   return t(`difficulty_${key}`);
+}
+
+function difficultyCoinMultiplier(key = activeDifficultyKey) {
+  if (key === "hard") {
+    return 1.6;
+  }
+  if (key === "normal") {
+    return 1.3;
+  }
+  return 1;
 }
 
 function getScreenModeLabel(mode) {
@@ -1206,7 +1499,10 @@ function currentCollectibleLabel() {
     return t("collectible_buttons");
   }
   if (level.theme === "frozen") {
-    return t("collectible_cores");
+    return t("collectible_coins");
+  }
+  if (level.theme === "jungle") {
+    return t("collectible_bananas");
   }
   return t("collectible_shards");
 }
@@ -1509,6 +1805,43 @@ function awardCoins(amount) {
   shopState.coins += Math.floor(amount);
 }
 
+function awardStageClearCoins() {
+  const baseCoins = 25 + currentStageIndex * 5;
+  const multiplier = difficultyCoinMultiplier(activeDifficultyKey);
+  const finalCoins = Math.round(baseCoins * multiplier);
+  lastStageClearReward = {
+    baseCoins,
+    finalCoins,
+    multiplier,
+  };
+  awardCoins(finalCoins);
+}
+
+function stageClearRewardText() {
+  if (!lastStageClearReward) {
+    return "";
+  }
+  return `${t("stage_clear_coins", { coins: lastStageClearReward.finalCoins })} | ${t("difficulty_bonus", { value: lastStageClearReward.multiplier.toFixed(1) })}`;
+}
+
+function isFrostWardenDefeated() {
+  if (level.theme !== "frozen") {
+    return true;
+  }
+  return level.enemies.some((enemy) => enemy.type === "frostWarden" && enemy.defeated);
+}
+
+function finishFrozenStageByWarden() {
+  lastStageClearReward = {
+    baseCoins: FROST_WARDEN_QTE.clearCoins,
+    multiplier: 1,
+    finalCoins: FROST_WARDEN_QTE.clearCoins,
+  };
+  awardCoins(FROST_WARDEN_QTE.clearCoins);
+  playSound("clear");
+  gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
+}
+
 function getShopActionLabel({ owned, purchasable, available, canAfford, price }) {
   if (owned) {
     return t("shop_owned");
@@ -1565,6 +1898,8 @@ function applyLanguage(nextLanguage) {
   difficultySelect.querySelector('option[value="hard"]').textContent = getDifficultyLabel("hard");
   screenModeSelect.querySelector('option[value="fullscreen"]').textContent = getScreenModeLabel("fullscreen");
   screenModeSelect.querySelector('option[value="classic"]').textContent = getScreenModeLabel("classic");
+  controlModeSelect.querySelector('option[value="desktop"]').textContent = t("control_desktop");
+  controlModeSelect.querySelector('option[value="mobile"]').textContent = t("control_mobile");
   updateMuteButtonLabel();
 
   for (const option of stageSelect.options) {
@@ -1603,6 +1938,14 @@ function isChangerEquipped() {
 
 function isGuardianEquipped() {
   return shopState.equippedCharacter === "guardian";
+}
+
+function isLightnerEquipped() {
+  return shopState.equippedCharacter === "lightner";
+}
+
+function isWildHunterEquipped() {
+  return shopState.equippedCharacter === "wildHunter";
 }
 
 function isChangerAngelDemonSkinEquipped() {
@@ -1648,9 +1991,109 @@ function getSimpleSkinPalette() {
   return null;
 }
 
+function getLightnerSkinPalette() {
+  const simpleSkin = getSimpleSkinPalette();
+  if (simpleSkin) {
+    return {
+      hood: simpleSkin.dark,
+      coat: simpleSkin.primary,
+      coatDark: simpleSkin.secondary,
+      mask: simpleSkin.dark,
+      pants: simpleSkin.dark,
+      arm: simpleSkin.secondary,
+      trim: simpleSkin.accent,
+      eye: simpleSkin.glow,
+      lightningRgb: "255, 215, 0",
+      lightningSolid: simpleSkin.glow,
+      awakenRgb: "255, 223, 45",
+    };
+  }
+
+  if (shopState.equippedSkin === "cyber") {
+    return {
+      hood: "#05070e",
+      coat: "#10172a",
+      coatDark: "#1e2750",
+      mask: "#05070e",
+      pants: "#070a14",
+      arm: "#18204a",
+      trim: "#9d67ff",
+      eye: "#77eaff",
+      lightningRgb: "119, 234, 255",
+      lightningSolid: "#77eaff",
+      awakenRgb: "157, 103, 255",
+    };
+  }
+
+  if (shopState.equippedSkin === "voidKing") {
+    return {
+      hood: "#050507",
+      coat: "#111116",
+      coatDark: "#1c1b23",
+      mask: "#050507",
+      pants: "#08080a",
+      arm: "#2e0a0d",
+      trim: "#611318",
+      eye: "#ff9b9b",
+      lightningRgb: "210, 30, 40",
+      lightningSolid: "#ff9b9b",
+      awakenRgb: "255, 76, 76",
+    };
+  }
+
+  if (shopState.equippedSkin === "admin") {
+    return {
+      hood: "#090806",
+      coat: "#1d1720",
+      coatDark: "#352315",
+      mask: "#050506",
+      pants: "#08080a",
+      arm: "#2c2012",
+      trim: "#d3901d",
+      eye: "#fff7b3",
+      lightningRgb: "255, 217, 94",
+      lightningSolid: "#fff7b3",
+      awakenRgb: "255, 247, 179",
+    };
+  }
+
+  if (shopState.equippedSkin === "angelDemon") {
+    return {
+      hood: "#121018",
+      coat: "#f0e7da",
+      coatDark: "#3b235c",
+      mask: "#090711",
+      pants: "#110c1a",
+      arm: "#33204f",
+      trim: "#f3c66b",
+      eye: "#ffe69a",
+      lightningRgb: "169, 78, 255",
+      lightningSolid: "#f3c66b",
+      awakenRgb: "243, 198, 107",
+    };
+  }
+
+  return {
+    hood: "#020304",
+    coat: "#0a0c0f",
+    coatDark: "#121315",
+    mask: "#050506",
+    pants: "#050506",
+    arm: "#0d0d0f",
+    trim: "#ffd700",
+    eye: "#ffd700",
+    lightningRgb: "255, 215, 0",
+    lightningSolid: "#ffd700",
+    awakenRgb: "255, 223, 45",
+  };
+}
+
 function getStartingLives() {
   if (isAssassinEquipped() && difficulty.label !== "Hard") {
     return Math.max(1, difficulty.lives - 1);
+  }
+  if (isWildHunterEquipped()) {
+    return Math.max(1, difficulty.lives - WILD_HUNTER_RULES.lifePenalty);
   }
   return difficulty.lives;
 }
@@ -1715,7 +2158,7 @@ function readAccounts() {
     if (changed) {
       localStorage.setItem(ACCOUNT_KEY, JSON.stringify(data));
     }
-    return syncBetaAccountCoins(data);
+    return syncAdminAccountPassword(syncBetaAccountCoins(data));
   } catch (_) {
     return {};
   }
@@ -1726,11 +2169,58 @@ function writeAccounts(accounts) {
 }
 
 function syncAdminAccountPassword(accounts) {
-  const adminAccount = accounts[ADMIN_NICKNAME];
-  if (!adminAccount || adminAccount.password === ADMIN_PASSWORD_RESET) {
+  if (!accounts || typeof accounts !== "object") {
     return accounts;
   }
-  adminAccount.password = ADMIN_PASSWORD_RESET;
+  const legacyAdminAccount = accounts[LEGACY_ADMIN_NICKNAME];
+  if (!accounts[ADMIN_NICKNAME] || typeof accounts[ADMIN_NICKNAME] !== "object") {
+    accounts[ADMIN_NICKNAME] = {
+      password: ADMIN_PASSWORD_RESET,
+      isAdmin: true,
+      hasBetaReward: Boolean(legacyAdminAccount?.hasBetaReward),
+      lastSeenPatchNoteVersion: legacyAdminAccount?.lastSeenPatchNoteVersion || "",
+      progress: legacyAdminAccount?.progress && typeof legacyAdminAccount.progress === "object"
+        ? legacyAdminAccount.progress
+        : createDefaultProgress(),
+    };
+    writeAccounts(accounts);
+    return accounts;
+  }
+
+  const adminAccount = accounts[ADMIN_NICKNAME];
+  let changed = false;
+  if (legacyAdminAccount && typeof legacyAdminAccount === "object") {
+    if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
+      adminAccount.progress = legacyAdminAccount.progress && typeof legacyAdminAccount.progress === "object"
+        ? legacyAdminAccount.progress
+        : createDefaultProgress();
+      changed = true;
+    }
+    if (!adminAccount.hasBetaReward && legacyAdminAccount.hasBetaReward) {
+      adminAccount.hasBetaReward = true;
+      changed = true;
+    }
+    if (!adminAccount.lastSeenPatchNoteVersion && legacyAdminAccount.lastSeenPatchNoteVersion) {
+      adminAccount.lastSeenPatchNoteVersion = legacyAdminAccount.lastSeenPatchNoteVersion;
+      changed = true;
+    }
+  }
+  if (adminAccount.password !== ADMIN_PASSWORD_RESET) {
+    adminAccount.password = ADMIN_PASSWORD_RESET;
+    changed = true;
+  }
+  if (!adminAccount.isAdmin) {
+    adminAccount.isAdmin = true;
+    changed = true;
+  }
+  changed = ensureAccountMeta(adminAccount) || changed;
+  if (!adminAccount.progress || typeof adminAccount.progress !== "object") {
+    adminAccount.progress = createDefaultProgress();
+    changed = true;
+  }
+  if (!changed) {
+    return accounts;
+  }
   writeAccounts(accounts);
   return accounts;
 }
@@ -1776,6 +2266,7 @@ function createDefaultProgress() {
     selectedStageIndex: 0,
     activeDifficultyKey: difficultySelect.value,
     screenMode: screenModeSelect.value,
+    controlMode: controlModeSelect.value,
     shopState: {
       ownedCharacters: getDefaultOwnedCharacters(),
       ownedSkins: getDefaultOwnedSkins(),
@@ -2406,6 +2897,7 @@ function createSaveData() {
     selectedStageIndex,
     activeDifficultyKey,
     screenMode,
+    controlMode,
     shopState: {
       ownedCharacters: [...shopState.ownedCharacters],
       ownedSkins: [...shopState.ownedSkins],
@@ -2447,8 +2939,12 @@ function savePersistentProgress(force = false) {
 
 function loadPersistentProgress() {
   try {
-    const currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+    let currentNickname = localStorage.getItem(CURRENT_ACCOUNT_KEY);
     const accounts = syncAdminAccountPassword(readAccounts());
+    if (currentNickname === LEGACY_ADMIN_NICKNAME && accounts[ADMIN_NICKNAME]) {
+      currentNickname = ADMIN_NICKNAME;
+      localStorage.setItem(CURRENT_ACCOUNT_KEY, ADMIN_NICKNAME);
+    }
     if (!currentNickname || !accounts[currentNickname]) {
       accountState.currentNickname = null;
       accountState.isAdmin = false;
@@ -2480,6 +2976,9 @@ function loadPersistentProgress() {
     }
     if (typeof data.screenMode === "string" && ["fullscreen", "classic"].includes(data.screenMode)) {
       screenMode = data.screenMode;
+    }
+    if (typeof data.controlMode === "string" && ["desktop", "mobile"].includes(data.controlMode)) {
+      controlMode = data.controlMode;
     }
 
     if (data.shopState && typeof data.shopState === "object") {
@@ -2522,6 +3021,7 @@ function loadPersistentProgress() {
 
     difficultySelect.value = activeDifficultyKey;
     screenModeSelect.value = screenMode;
+    controlModeSelect.value = controlMode;
     stageSelect.value = String(selectedStageIndex);
     showAuthPanel(false);
     syncLobbyAccountUI();
@@ -2545,6 +3045,7 @@ function resetProgressState() {
   selectedStageIndex = 0;
   unlockedStageIndex = 0;
   screenMode = screenModeSelect.value;
+  controlMode = controlModeSelect.value;
   factoryTimeRemaining = 0;
   shopState.ownedCharacters = getDefaultOwnedCharacters();
   shopState.ownedSkins = getDefaultOwnedSkins();
@@ -2563,6 +3064,8 @@ function resetProgressState() {
   betaRewardState.selectedSkin = null;
   clearGuardianState(true);
   clearChangerState(true);
+  clearLightnerState(true);
+  clearWildHunterState(true);
   resetNightmareEvent();
   resetAssassinationEvent();
 }
@@ -2578,6 +3081,9 @@ function applyAccountProgress(progress) {
   screenMode = typeof progress.screenMode === "string" && ["fullscreen", "classic"].includes(progress.screenMode)
     ? progress.screenMode
     : screenModeSelect.value;
+  controlMode = typeof progress.controlMode === "string" && ["desktop", "mobile"].includes(progress.controlMode)
+    ? progress.controlMode
+    : controlModeSelect.value;
 
   const savedShopState = progress.shopState || {};
   shopState.ownedCharacters = Array.isArray(savedShopState.ownedCharacters) ? [...new Set(savedShopState.ownedCharacters)] : getDefaultOwnedCharacters();
@@ -2595,9 +3101,11 @@ function applyAccountProgress(progress) {
 
   difficultySelect.value = activeDifficultyKey;
   screenModeSelect.value = screenMode;
+  controlModeSelect.value = controlMode;
   stageSelect.value = String(selectedStageIndex);
   updateStageSelectLocks();
   applyScreenMode();
+  applyControlMode();
   syncLobbyAccountUI();
   lastSavedStateJson = JSON.stringify(createSaveData());
 }
@@ -2648,7 +3156,7 @@ function registerAccount() {
   }
 
   accounts[nickname] = {
-    password,
+    password: nickname === ADMIN_NICKNAME ? ADMIN_PASSWORD_RESET : password,
     isAdmin: nickname === ADMIN_NICKNAME,
     hasBetaReward: false,
     lastSeenPatchNoteVersion: "",
@@ -2959,6 +3467,13 @@ function applyScreenMode() {
   document.body.classList.toggle("classic-mode", screenMode === "classic");
 }
 
+function applyControlMode() {
+  document.body.classList.toggle("touch-controls-enabled", controlMode === "mobile");
+  if (controlMode !== "mobile") {
+    resetMobileJoystick();
+  }
+}
+
 function resetNightmareEvent() {
   nightmareEvent.active = false;
   nightmareEvent.countdown = false;
@@ -2973,6 +3488,10 @@ function resetNightmareEvent() {
   nightmareEvent.flash = 0;
 
   resetDanceEvent();
+}
+
+function isArcadeHardDanceStage() {
+  return false;
 }
 
 function triggerNightmareEvent() {
@@ -2998,7 +3517,9 @@ function resolveNightmareEvent(success) {
   nightmareEvent.countdown = false;
   if (success) {
     score += 600 + currentStageIndex * 100;
-    awardCoins(18 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(18 + currentStageIndex * 2);
+    }
     player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
     resetNightmareEvent();
     return;
@@ -3016,11 +3537,23 @@ function resolveNightmareEvent(success) {
   resetNightmareEvent();
 }
 
+function attemptNightmareInput() {
+  if (!nightmareEvent.active) {
+    return false;
+  }
+  const marker = nightmareEvent.marker;
+  const success =
+    marker >= nightmareEvent.targetStart &&
+    marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
+  resolveNightmareEvent(success);
+  return true;
+}
+
 function resetDanceEvent() {
   danceEvent.active = false;
   danceEvent.countdown = false;
   danceEvent.countdownTimer = 0;
-  danceEvent.triggerTimer = 7 + Math.random() * 8;
+  danceEvent.triggerTimer = 0;
   danceEvent.sequence.length = 0;
   danceEvent.index = 0;
   danceEvent.stepTimer = 0;
@@ -3029,6 +3562,9 @@ function resetDanceEvent() {
 }
 
 function triggerDanceEvent() {
+  if (!isArcadeHardDanceStage() || danceEvent.active || danceEvent.countdown || gameState !== "playing") {
+    return;
+  }
   danceEvent.countdown = true;
   danceEvent.countdownTimer = 3;
   danceEvent.active = false;
@@ -3043,11 +3579,49 @@ function triggerDanceEvent() {
   keys.crouch = false;
 
   const steps = ["left", "up", "down", "right"];
+  let previousStep = null;
   for (let i = 0; i < 6; i += 1) {
-    const next = steps[Math.floor(Math.random() * steps.length)];
+    const candidates = steps.filter((step) => step !== previousStep);
+    const next = candidates[Math.floor(Math.random() * candidates.length)];
     danceEvent.sequence.push(next);
+    previousStep = next;
   }
   playSound("coin");
+}
+
+function directionFromDanceKey(key, code) {
+  if (["a", "A", "ArrowLeft"].includes(key) || code === "KeyA") {
+    return "left";
+  }
+  if (["d", "D", "ArrowRight"].includes(key) || code === "KeyD") {
+    return "right";
+  }
+  if (["w", "W", "ArrowUp", " ", "Spacebar"].includes(key) || code === "KeyW" || code === "Space") {
+    return "up";
+  }
+  if (["s", "S", "ArrowDown"].includes(key) || code === "KeyS") {
+    return "down";
+  }
+  return null;
+}
+
+function submitDanceInput(dir) {
+  if (!danceEvent.active || !dir) {
+    return false;
+  }
+
+  if (dir === danceEvent.sequence[danceEvent.index]) {
+    danceEvent.index += 1;
+    danceEvent.stepTimer = danceEvent.stepTimeLimit;
+    danceEvent.flash = 1;
+    playSound("stomp");
+    if (danceEvent.index >= danceEvent.sequence.length) {
+      resolveDanceEvent(true);
+    }
+  } else {
+    resolveDanceEvent(false);
+  }
+  return true;
 }
 
 function resolveDanceEvent(success) {
@@ -3064,6 +3638,7 @@ function resolveDanceEvent(success) {
     awardCoins(20 + currentStageIndex * 2);
     player.invulnerableTime = Math.max(player.invulnerableTime, 1.4);
     resetDanceEvent();
+    danceEvent.triggerTimer = 9;
     return;
   }
 
@@ -3077,6 +3652,179 @@ function resolveDanceEvent(success) {
   player.vx = 0;
   player.vy = 0;
   resetDanceEvent();
+}
+
+function resetJungleState() {
+  jungleState.carried = 0;
+  jungleState.delivered = 0;
+  jungleState.monkey.x = 0;
+  jungleState.monkey.y = 0;
+  jungleState.monkey.w = 46;
+  jungleState.monkey.h = 54;
+  jungleState.monkey.facing = -1;
+  jungleState.monkey.angerTimer = 0;
+  jungleState.monkey.attackTimer = 0;
+  jungleState.monkey.cooldown = 0;
+  jungleState.monkey.attackHit = false;
+  jungleState.monkey.flash = 0;
+}
+
+function setupJungleState(stageDef) {
+  resetJungleState();
+  if (level.theme !== "jungle") {
+    return;
+  }
+  const monkey = stageDef.monkey || stageDef.goal;
+  jungleState.monkey.x = monkey.x * TILE + 2;
+  jungleState.monkey.y = monkey.y * TILE;
+  jungleState.monkey.facing = -1;
+}
+
+function addBanana(tileX, tileY) {
+  level.collectibles.push({
+    x: tileX * TILE + 8,
+    y: tileY * TILE + 8,
+    w: 18,
+    h: 28,
+    bob: Math.random() * Math.PI * 2,
+    collected: false,
+    style: "banana",
+  });
+}
+
+function addDroppedBanana(x, y, bobOffset = 0) {
+  level.collectibles.push({
+    x: Math.max(0, Math.min(worldWidth - 20, x)),
+    y: Math.max(40, Math.min(FLOOR_Y - 24, y)),
+    w: 18,
+    h: 28,
+    bob: Math.random() * Math.PI * 2 + bobOffset,
+    collected: false,
+    style: "banana",
+    dropped: true,
+  });
+}
+
+function getJungleMonkeyDeliveryRect() {
+  const monkey = jungleState.monkey;
+  return {
+    x: monkey.x - 58,
+    y: monkey.y - 18,
+    w: monkey.w + 86,
+    h: monkey.h + 40,
+  };
+}
+
+function getJungleMonkeyAttackRect() {
+  const monkey = jungleState.monkey;
+  return {
+    x: monkey.x - 94,
+    y: monkey.y + 12,
+    w: 92,
+    h: 34,
+  };
+}
+
+function collectJungleBananas() {
+  if (level.theme !== "jungle" || jungleState.carried >= JUNGLE_BANANA_CAPACITY) {
+    return;
+  }
+
+  for (const collectible of level.collectibles) {
+    if (collectible.collected || collectible.style !== "banana") {
+      continue;
+    }
+    if (!overlaps(player, collectible)) {
+      continue;
+    }
+    collectible.collected = true;
+    jungleState.carried = Math.min(JUNGLE_BANANA_CAPACITY, jungleState.carried + 1);
+    score += 40;
+    playSound("coin");
+    if (jungleState.carried >= JUNGLE_BANANA_CAPACITY) {
+      break;
+    }
+  }
+}
+
+function dropJungleBananas() {
+  if (level.theme !== "jungle" || jungleState.carried <= 0) {
+    return;
+  }
+  const dropCount = jungleState.carried;
+  jungleState.carried = 0;
+  for (let i = 0; i < dropCount; i += 1) {
+    const offset = (i - (dropCount - 1) / 2) * 18;
+    addDroppedBanana(player.x + player.w * 0.5 + offset, player.y + player.h - 24 - i * 4, i);
+  }
+}
+
+function submitJungleBananas() {
+  if (level.theme !== "jungle" || jungleState.carried <= 0 || jungleState.delivered >= JUNGLE_BANANA_TARGET) {
+    return;
+  }
+  if (!overlaps(player, getJungleMonkeyDeliveryRect())) {
+    return;
+  }
+
+  const amount = Math.min(jungleState.carried, JUNGLE_BANANA_TARGET - jungleState.delivered);
+  jungleState.carried -= amount;
+  jungleState.delivered += amount;
+  collectedCount = jungleState.delivered;
+  score += amount * 90;
+  playSound("button");
+
+  if (jungleState.delivered >= JUNGLE_BANANA_TARGET) {
+    awardStageClearCoins();
+    rollStageClearBoxReward();
+    playSound("clear");
+    gameState = currentStageIndex < STAGE_DEFS.length - 1 ? "stageclear" : "finished";
+    return;
+  }
+
+  const monkey = jungleState.monkey;
+  const canAnger = monkey.cooldown <= 0 && monkey.angerTimer <= 0 && monkey.attackTimer <= 0;
+  if (canAnger && Math.random() < JUNGLE_MONKEY_ANGER_CHANCE) {
+    monkey.angerTimer = JUNGLE_MONKEY_ANGER_WARN;
+    monkey.cooldown = JUNGLE_MONKEY_COOLDOWN + JUNGLE_MONKEY_ANGER_WARN;
+    monkey.flash = 1;
+    playSound("nightmare");
+  }
+}
+
+function updateJungleStage(dt) {
+  if (level.theme !== "jungle") {
+    return;
+  }
+
+  collectJungleBananas();
+  submitJungleBananas();
+
+  const monkey = jungleState.monkey;
+  monkey.cooldown = Math.max(0, monkey.cooldown - dt);
+  monkey.flash = Math.max(0, monkey.flash - dt * 1.8);
+
+  if (monkey.angerTimer > 0) {
+    monkey.angerTimer -= dt;
+    monkey.flash = Math.max(monkey.flash, 0.45);
+    if (monkey.angerTimer <= 0) {
+      monkey.attackTimer = JUNGLE_MONKEY_ATTACK_TIME;
+      monkey.attackHit = false;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.22);
+      playSound("stomp");
+    }
+  }
+
+  if (monkey.attackTimer > 0) {
+    monkey.attackTimer -= dt;
+    if (!monkey.attackHit && overlaps(player, getJungleMonkeyAttackRect())) {
+      monkey.attackHit = true;
+      loseLife();
+    }
+    if (monkey.attackTimer <= 0) {
+      monkey.attackHit = false;
+    }
+  }
 }
 
 function resetClawEscapeEvent() {
@@ -3160,15 +3908,50 @@ function clearGuardianState(resetPassive = false) {
   player.guardianFlash = 0;
 }
 
+function clearLightnerState(resetCombat = false) {
+  lightnerState.anchor = null;
+  lightnerState.stacks = LIGHTNER_RULES.maxStacks;
+  lightnerState.stackRechargeTimer = 0;
+  lightnerState.fieldCooldown = 0;
+  lightnerState.awakenTimer = 0;
+  lightnerState.effects.length = 0;
+  if (resetCombat) {
+    lightnerState.awakenKills = 0;
+  }
+}
+
+function clearWildHunterState(resetCombat = false) {
+  wildHunterState.instinctTimer = 0;
+  wildHunterState.blastDelayTimer = 0;
+  wildHunterState.slamActive = false;
+  wildHunterState.slamHit = false;
+  wildHunterState.slamCooldown = 0;
+  wildHunterState.awakenTimer = 0;
+  wildHunterState.effects.length = 0;
+  if (resetCombat) {
+    wildHunterState.blastUsed = false;
+    wildHunterState.awakenKills = 0;
+  }
+}
+
 function resetPlayerPosition() {
   player.speed = isGuardianEquipped()
     ? 250 * GUARDIAN_RULES.speedMultiplier
     : isAssassinEquipped()
       ? 250 * ASSASSIN_RULES.speedMultiplier
-      : 250;
+      : isLightnerEquipped()
+        ? 250 * LIGHTNER_RULES.speedMultiplier
+        : isWildHunterEquipped()
+          ? 250 * WILD_HUNTER_RULES.speedMultiplier
+          : 250;
+  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
+    player.speed *= LIGHTNER_RULES.awakenSpeedMultiplier;
+  }
   player.maxJumps = difficulty.maxJumps;
   if (level.theme === "frozen") {
     player.maxJumps = 3;
+  } else if (level.theme === "jungle") {
+    player.maxJumps = 5;
   }
   player.jumpVelocity = difficulty.jumpVelocity;
   player.airJumpVelocity = difficulty.airJumpVelocity;
@@ -3195,6 +3978,12 @@ function resetPlayerPosition() {
   clearGuardianState();
   player.cloneTransferFlash = 0;
   clearChangerState();
+  if (!isLightnerEquipped()) {
+    clearLightnerState(true);
+  }
+  if (!isWildHunterEquipped()) {
+    clearWildHunterState(true);
+  }
 }
 
 function loadStage(stageIndex, preserveScore = true) {
@@ -3222,7 +4011,8 @@ function loadStage(stageIndex, preserveScore = true) {
   }
   collectedCount = 0;
   factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
-  frozenTimeRemaining = level.theme === "frozen" ? 70 : 0;
+  frozenTimeRemaining = level.theme === "frozen" ? 25 : 0;
+  setupJungleState(stageDef);
 
   // Each stage is defined as data so we can scale the route count cleanly.
   for (const [start, end] of stageDef.groundSegments) {
@@ -3236,6 +4026,9 @@ function loadStage(stageIndex, preserveScore = true) {
     addHazard(x, width);
   }
   for (const item of stageDef.collectibles) {
+    if (level.theme === "frozen") {
+      break;
+    }
     if (level.theme === "factory" && level.collectibles.length >= currentShardTarget()) {
       break;
     }
@@ -3245,6 +4038,9 @@ function loadStage(stageIndex, preserveScore = true) {
     } else {
       addCollectible(item.point[0], item.point[1]);
     }
+  }
+  for (const banana of stageDef.bananas || []) {
+    addBanana(banana[0], banana[1]);
   }
 
   for (const enemy of stageDef.enemies) {
@@ -3267,8 +4063,12 @@ function loadStage(stageIndex, preserveScore = true) {
     addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]));
   }
 
+  clearLightnerState(true);
+  clearWildHunterState(true);
+  resetNightmareEvent();
   resetPlayerPosition();
   camera.x = 0;
+  screenShakeTimer = 0;
   stageMessageTimer = 2.2;
 }
 
@@ -3338,18 +4138,18 @@ function addCollectible(tileX, tileY) {
     return;
   }
 
-  if (level.theme === "frozen") {
-    level.collectibles.push({
-      x: tileX * TILE + 2,
-      y: tileY * TILE + 2,
-      w: 28,
-      h: 28,
-      bob: Math.random() * Math.PI * 2,
-      collected: false,
-      style: "core",
-    });
-    return;
-  }
+    if (level.theme === "frozen") {
+      level.collectibles.push({
+        x: tileX * TILE + 2,
+        y: tileY * TILE + 2,
+        w: 24,
+        h: 24,
+        bob: Math.random() * Math.PI * 2,
+        collected: false,
+        style: "coin",
+      });
+      return;
+    }
 
   level.collectibles.push({
     x: tileX * TILE + 6,
@@ -3461,13 +4261,16 @@ function addFrostWarden(tileX, tileY) {
     facing: -1,
     alive: true,
     defeated: false,
+    hp: 400,
+    maxHp: 400,
     squishTimer: 0,
     animationTime: Math.random() * 2,
     state: "idle",
     cooldown: 1.4,
     telegraphTimer: 0,
     attackType: "",
-    auraPulse: 0,
+  auraPulse: 0,
+  qteMeltTimer: 0,
   });
 }
 
@@ -3514,6 +4317,7 @@ function hazardHasSerpent(hazard) {
 }
 
 function restartGame() {
+  activeDifficultyKey = DIFFICULTIES[difficultySelect.value] ? difficultySelect.value : activeDifficultyKey;
   difficulty = DIFFICULTIES[activeDifficultyKey];
   score = 0;
   collectedCount = 0;
@@ -3521,6 +4325,7 @@ function restartGame() {
   gameState = "playing";
   clearGuardianState(true);
   clearChangerState(true);
+  clearWildHunterState(true);
   resetNightmareEvent();
   resetAssassinationEvent();
   loadStage(Math.min(selectedStageIndex, currentSelectableStageMax()), true);
@@ -3533,6 +4338,7 @@ function nextStage() {
     gameState = "playing";
     clearGuardianState(true);
     clearChangerState(true);
+    clearWildHunterState(true);
     resetNightmareEvent();
     loadStage(currentStageIndex + 1, true);
   } else {
@@ -3848,6 +4654,29 @@ function playSound(type) {
     return;
   }
 
+  if (type === "lightning") {
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    oscillator.type = "sawtooth";
+    osc2.type = "square";
+    oscillator.frequency.setValueAtTime(1180, now);
+    oscillator.frequency.exponentialRampToValueAtTime(180, now + 0.18);
+    osc2.frequency.setValueAtTime(72, now);
+    osc2.frequency.exponentialRampToValueAtTime(46, now + 0.22);
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+    gain2.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.008);
+    gain2.gain.exponentialRampToValueAtTime(0.055, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    oscillator.start(now);
+    osc2.start(now);
+    oscillator.stop(now + 0.22);
+    osc2.stop(now + 0.3);
+    return;
+  }
+
   if (type === "stomp") {
     oscillator.type = "square";
     oscillator.frequency.setValueAtTime(180, now);
@@ -4039,6 +4868,7 @@ function resetAssassinationEvent() {
   assassinationEvent.gauge = 0;
   assassinationEvent.flash = 0;
   assassinationEvent.successText = "";
+  assassinationEvent.advantaged = false;
 }
 
 function breakAssassinStealth() {
@@ -4112,6 +4942,296 @@ function activateGuardianShield() {
   player.guardianShieldTimer = GUARDIAN_RULES.shieldDuration;
   player.guardianShieldCooldown = GUARDIAN_RULES.shieldCooldown;
   player.guardianFlash = GUARDIAN_RULES.shieldDuration;
+  playSound("clear");
+}
+
+function currentLightnerStackCooldown() {
+  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedStackCooldown : LIGHTNER_RULES.stackCooldown;
+}
+
+function currentLightnerFieldCooldown() {
+  return lightnerState.awakenTimer > 0 ? LIGHTNER_RULES.awakenedFieldCooldown : LIGHTNER_RULES.fieldCooldown;
+}
+
+function registerLightnerKill() {
+  if (!isLightnerEquipped() || lightnerState.awakenTimer > 0) {
+    return;
+  }
+  lightnerState.awakenKills = Math.min(LIGHTNER_RULES.awakenKillsRequired, lightnerState.awakenKills + 1);
+}
+
+function registerWildHunterKill(source = "skill") {
+  if (!isWildHunterEquipped()) {
+    return;
+  }
+  if (wildHunterState.awakenTimer <= 0) {
+    wildHunterState.awakenKills = Math.min(WILD_HUNTER_RULES.awakenKillsRequired, wildHunterState.awakenKills + 1);
+  }
+  if (source === "stomp" || source === "slam") {
+    wildHunterState.instinctTimer = WILD_HUNTER_RULES.instinctDuration;
+  }
+}
+
+function registerCombatKill(source = "skill") {
+  registerLightnerKill();
+  registerWildHunterKill(source);
+}
+
+function addLightnerEffect(type, x, y, duration = 0.45, extra = {}) {
+  lightnerState.effects.push({ type, x, y, duration, timer: duration, ...extra });
+}
+
+function addWildHunterEffect(type, x, y, duration = 0.45, extra = {}) {
+  wildHunterState.effects.push({ type, x, y, duration, timer: duration, ...extra });
+}
+
+function activateLightnerAnchor() {
+  if (!isLightnerEquipped() || gameState !== "playing" || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+
+  if (lightnerState.anchor) {
+    const anchor = lightnerState.anchor;
+    if (anchor.x >= camera.x && anchor.x <= camera.x + GAME_WIDTH && anchor.y >= -40 && anchor.y <= GAME_HEIGHT + 40) {
+      addLightnerEffect("teleport", player.x + player.w * 0.5, player.y + player.h * 0.5, 0.52, { toX: anchor.x, toY: anchor.y });
+      player.x = Math.max(0, Math.min(worldWidth - player.w, anchor.x - player.w * 0.5));
+      player.y = Math.max(0, Math.min(GAME_HEIGHT - player.h, anchor.y - player.h * 0.5));
+      player.vx = 0;
+      player.vy = 0;
+      player.invulnerableTime = Math.max(player.invulnerableTime, 0.25);
+      lightnerState.anchor = null;
+      screenShakeTimer = Math.max(screenShakeTimer, 0.12);
+      playSound("lightning");
+    }
+    return;
+  }
+
+  if (lightnerState.stacks <= 0) {
+    return;
+  }
+  lightnerState.stacks -= 1;
+  if (lightnerState.stackRechargeTimer <= 0) {
+    lightnerState.stackRechargeTimer = currentLightnerStackCooldown();
+  }
+  lightnerState.anchor = {
+    x: player.x + player.w * 0.5,
+    y: player.y + player.h * 0.5,
+    timer: LIGHTNER_RULES.anchorLife,
+  };
+  addLightnerEffect("anchor", lightnerState.anchor.x, lightnerState.anchor.y, LIGHTNER_RULES.anchorLife);
+  playSound("button");
+}
+
+function stunEnemyWithLightner(enemy, duration, slow = false) {
+  enemy.lightnerStunTimer = Math.max(enemy.lightnerStunTimer || 0, duration);
+  if (slow) {
+    enemy.lightnerSlowTimer = Math.max(enemy.lightnerSlowTimer || 0, duration + 2);
+  }
+  enemy.vx = 0;
+  if (enemy.type === "frostWarden") {
+    enemy.state = "idle";
+    enemy.cooldown = Math.max(enemy.cooldown || 0, 0.65);
+  }
+}
+
+function activateLightnerField() {
+  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.fieldCooldown > 0 || assassinationEvent.active || nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return;
+  }
+  const cx = player.x + player.w * 0.5;
+  const cy = player.y + player.h * 0.5;
+  const radius = LIGHTNER_RULES.fieldRadius;
+  for (const enemy of level.enemies) {
+    if (!enemy.alive || enemy.defeated) {
+      continue;
+    }
+    const ex = enemy.x + enemy.w * 0.5;
+    if (Math.abs(ex - cx) > radius) {
+      continue;
+    }
+    const boss = isBossEntity(enemy, enemy.type);
+    stunEnemyWithLightner(enemy, boss ? LIGHTNER_RULES.bossStun : LIGHTNER_RULES.normalStun, boss);
+  }
+  for (const serpent of level.serpentEnemies) {
+    if (serpent.defeated || !serpent.alive) {
+      continue;
+    }
+    const hitbox = getSerpentHitbox(serpent);
+    const sx = hitbox.x + hitbox.w * 0.5;
+    if (Math.abs(sx - cx) <= radius) {
+      serpent.alive = false;
+      serpent.stunTimer = Math.max(serpent.stunTimer || 0, LIGHTNER_RULES.normalStun);
+      serpent.state = "stunned";
+    }
+  }
+  lightnerState.fieldCooldown = currentLightnerFieldCooldown();
+  addLightnerEffect("field", cx, cy, 0.72, { radius });
+  screenShakeTimer = Math.max(screenShakeTimer, 0.28);
+  playSound("lightning");
+}
+
+function activateLightnerAwaken() {
+  if (!isLightnerEquipped() || gameState !== "playing" || lightnerState.awakenTimer > 0 || lightnerState.awakenKills < LIGHTNER_RULES.awakenKillsRequired || assassinationEvent.active) {
+    return;
+  }
+  lightnerState.awakenTimer = LIGHTNER_RULES.awakenDuration;
+  lightnerState.awakenKills = 0;
+  if (lightnerState.stackRechargeTimer > LIGHTNER_RULES.awakenedStackCooldown) {
+    lightnerState.stackRechargeTimer = LIGHTNER_RULES.awakenedStackCooldown;
+  }
+  if (lightnerState.fieldCooldown > LIGHTNER_RULES.awakenedFieldCooldown) {
+    lightnerState.fieldCooldown = LIGHTNER_RULES.awakenedFieldCooldown;
+  }
+  if (lightnerState.stacks > 0) {
+    lightnerState.stacks = Math.min(LIGHTNER_RULES.maxStacks, lightnerState.stacks + 1);
+  }
+  addLightnerEffect("awaken", player.x + player.w * 0.5, player.y + player.h * 0.5, LIGHTNER_RULES.awakenDuration);
+  playSound("clear");
+}
+
+function getWildHunterJumpMultiplier() {
+  return isWildHunterEquipped() && wildHunterState.instinctTimer > 0 ? WILD_HUNTER_RULES.instinctJumpMultiplier : 1;
+}
+
+function isWildHunterSkillLocked() {
+  return gameState !== "playing" ||
+    assassinationEvent.active ||
+    nightmareEvent.active ||
+    nightmareEvent.countdown ||
+    danceEvent.active ||
+    danceEvent.countdown ||
+    clawEscapeEvent.active ||
+    player.stunTimer > 0 ||
+    wildHunterState.blastDelayTimer > 0 ||
+    wildHunterState.slamActive;
+}
+
+function getEnemyCenter(entity) {
+  return {
+    x: entity.x + entity.w * 0.5,
+    y: entity.y + entity.h * 0.5,
+  };
+}
+
+function damageBossByWildHunter(enemy, damage) {
+  if (!enemy || enemy.defeated || enemy.alive === false) {
+    return false;
+  }
+  enemy.maxHp = enemy.maxHp || (enemy.type === "frostWarden" ? 400 : 200);
+  enemy.hp = Math.max(0, (enemy.hp ?? enemy.maxHp) - damage);
+  enemy.lightnerStunTimer = Math.max(enemy.lightnerStunTimer || 0, 0.18);
+  enemy.vx = (enemy.x + enemy.w * 0.5 < player.x + player.w * 0.5 ? -1 : 1) * 130;
+  if (enemy.hp > 0) {
+    return false;
+  }
+  enemy.alive = false;
+  enemy.defeated = true;
+  enemy.qteMeltTimer = Math.max(enemy.qteMeltTimer || 0, 1.2);
+  registerWildHunterKill("skill");
+  if (enemy.type === "frostWarden" && level.theme === "frozen") {
+    finishFrozenStageByWarden();
+  }
+  return true;
+}
+
+function defeatNormalEnemyByWildHunter(enemy, source = "skill") {
+  if (!enemy || !enemy.alive || enemy.defeated || isBossEntity(enemy, enemy.type)) {
+    return false;
+  }
+  enemy.alive = false;
+  enemy.squishTimer = 0.35;
+  enemy.vx = (enemy.x + enemy.w * 0.5 < player.x + player.w * 0.5 ? -1 : 1) * 220;
+  enemy.vy = -240;
+  score += 280 + currentStageIndex * 55;
+  if (level.theme !== "frozen") {
+    awardCoins(8 + currentStageIndex);
+  }
+  registerCombatKill(source);
+  return true;
+}
+
+function defeatSerpentByWildHunter(serpent, source = "skill") {
+  if (!serpent || serpent.defeated || !serpent.alive || serpent.type === "seaMonster") {
+    return false;
+  }
+  serpent.alive = false;
+  serpent.stunTimer = 1.2;
+  serpent.state = "stunned";
+  serpent.strikeProgress = 0;
+  score += 420 + currentStageIndex * 80;
+  if (level.theme !== "frozen") {
+    awardCoins(10 + currentStageIndex);
+  }
+  registerCombatKill(source);
+  return true;
+}
+
+function activateWildHunterBlast() {
+  if (!isWildHunterEquipped() || wildHunterState.blastUsed || isWildHunterSkillLocked()) {
+    return;
+  }
+  wildHunterState.blastUsed = true;
+  wildHunterState.blastDelayTimer = WILD_HUNTER_RULES.blastDelay;
+  const cx = player.x + player.w * 0.5;
+  const cy = player.y + player.h * 0.5;
+  const radius = WILD_HUNTER_RULES.blastRadius;
+  let normalKills = 0;
+
+  for (const enemy of level.enemies) {
+    if (!enemy.alive || enemy.defeated) {
+      continue;
+    }
+    const center = getEnemyCenter(enemy);
+    if (Math.hypot(center.x - cx, center.y - cy) > radius) {
+      continue;
+    }
+    if (isBossEntity(enemy, enemy.type)) {
+      const maxHp = enemy.maxHp || (enemy.type === "frostWarden" ? 400 : 200);
+      damageBossByWildHunter(enemy, maxHp * WILD_HUNTER_RULES.bossBlastDamageRatio);
+    } else if (normalKills < WILD_HUNTER_RULES.blastMaxNormalKills && defeatNormalEnemyByWildHunter(enemy, "skill")) {
+      normalKills += 1;
+    }
+  }
+
+  for (const serpent of level.serpentEnemies) {
+    if (normalKills >= WILD_HUNTER_RULES.blastMaxNormalKills || serpent.defeated || !serpent.alive) {
+      continue;
+    }
+    const hitbox = getSerpentHitbox(serpent);
+    const sx = hitbox.x + hitbox.w * 0.5;
+    const sy = hitbox.y + hitbox.h * 0.5;
+    if (Math.hypot(sx - cx, sy - cy) <= radius && defeatSerpentByWildHunter(serpent, "skill")) {
+      normalKills += 1;
+    }
+  }
+
+  addWildHunterEffect("blast", cx, cy, 0.42, { radius });
+  screenShakeTimer = Math.max(screenShakeTimer, 0.24);
+  playSound("stomp");
+}
+
+function activateWildHunterSlam() {
+  if (!isWildHunterEquipped() || isWildHunterSkillLocked() || player.onGround || wildHunterState.slamCooldown > 0) {
+    return;
+  }
+  wildHunterState.slamActive = true;
+  wildHunterState.slamHit = false;
+  wildHunterState.slamCooldown = WILD_HUNTER_RULES.slamCooldown;
+  player.vy = WILD_HUNTER_RULES.slamSpeed;
+  player.vx *= 0.55;
+  addWildHunterEffect("slamStart", player.x + player.w * 0.5, player.y + player.h * 0.5, 0.22);
+  playSound("button");
+}
+
+function activateWildHunterAwaken() {
+  if (!isWildHunterEquipped() || isWildHunterSkillLocked() || wildHunterState.awakenTimer > 0 || wildHunterState.awakenKills < WILD_HUNTER_RULES.awakenKillsRequired) {
+    return;
+  }
+  wildHunterState.awakenTimer = WILD_HUNTER_RULES.awakenDuration;
+  wildHunterState.awakenKills = 0;
+  wildHunterState.instinctTimer = Math.max(wildHunterState.instinctTimer, WILD_HUNTER_RULES.instinctDuration);
+  addWildHunterEffect("awaken", player.x + player.w * 0.5, player.y + player.h * 0.5, WILD_HUNTER_RULES.awakenDuration);
+  screenShakeTimer = Math.max(screenShakeTimer, 0.35);
   playSound("clear");
 }
 
@@ -4279,7 +5399,8 @@ function findAssassinationTarget() {
 function finishAssassination(success) {
   const target = assassinationEvent.target;
   const targetType = assassinationEvent.targetType;
-  const failedFrontAttack = assassinationEvent.mode === "qte";
+  const eventMode = assassinationEvent.mode;
+  const failedFrontAttack = eventMode === "qte" || eventMode === "wardenQte";
   resetAssassinationEvent();
 
   if (!target) {
@@ -4287,6 +5408,14 @@ function finishAssassination(success) {
   }
 
   if (!success) {
+    if (eventMode === "wardenQte") {
+      lives = 0;
+      gameState = "gameover";
+      player.vx = 0;
+      player.vy = 0;
+      playSound("nightmare");
+      return;
+    }
     player.stunTimer = Math.max(player.stunTimer, failedFrontAttack ? ASSASSIN_RULES.frontalFailStun : 0.2);
     player.invulnerableTime = Math.max(player.invulnerableTime, 0.3);
     player.vx = 0;
@@ -4295,27 +5424,45 @@ function finishAssassination(success) {
   }
 
   if (targetType === "boss") {
-    target.hp = Math.max(0, (target.hp ?? 100) - ASSASSIN_RULES.bossDamage);
+    const damage = target.type === "frostWarden" ? 999 : ASSASSIN_RULES.bossDamage;
+    target.hp = Math.max(0, (target.hp ?? 100) - damage);
     if (target.hp <= 0) {
       target.alive = false;
       target.defeated = true;
+      registerLightnerKill();
+      if (target.type === "frostWarden") {
+        target.qteMeltTimer = 1.2;
+        target.vx = 0;
+        target.vy = 0;
+        screenShakeTimer = 0.55;
+        playSound("ice");
+        playSound("coin");
+        finishFrozenStageByWarden();
+        return;
+      }
     }
     score += 900 + currentStageIndex * 120;
     awardCoins(28 + currentStageIndex * 3);
   } else if (targetType === "serpent") {
     target.alive = false;
     target.defeated = true;
+    registerLightnerKill();
     target.stunTimer = 0;
     target.rise = 0;
     target.state = "stunned";
     score += 550 + currentStageIndex * 90;
-    awardCoins(16 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(16 + currentStageIndex * 2);
+    }
   } else {
     target.alive = false;
     target.defeated = true;
+    registerLightnerKill();
     target.squishTimer = 0.3;
     score += target.type === "excavator" ? 650 + currentStageIndex * 100 : 450 + currentStageIndex * 70;
-    awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
+    if (level.theme !== "frozen") {
+      awardCoins(target.type === "excavator" ? 18 + currentStageIndex * 2 : 12 + currentStageIndex * 2);
+    }
   }
 
   player.invulnerableTime = Math.max(player.invulnerableTime, 0.7);
@@ -4345,9 +5492,14 @@ function beginAssassination() {
   assassinationEvent.targetType = target.type;
   assassinationEvent.targetBounds = target.bounds;
   assassinationEvent.flash = 1;
-  assassinationEvent.gauge = 0;
+  assassinationEvent.gauge = target.entity?.type === "frostWarden" ? FROST_WARDEN_QTE.startGauge : 0;
 
-  if (target.behind && target.type !== "boss") {
+  if (target.entity?.type === "frostWarden") {
+    assassinationEvent.mode = "wardenQte";
+    assassinationEvent.timer = FROST_WARDEN_QTE.duration;
+    assassinationEvent.successText = "Frost Clash";
+    assassinationEvent.advantaged = true;
+  } else if (target.behind && target.type !== "boss") {
     assassinationEvent.mode = "backstab";
     assassinationEvent.timer = ASSASSIN_RULES.strikeWindup;
     assassinationEvent.successText = "Backstab";
@@ -4361,18 +5513,86 @@ function beginAssassination() {
   playSound("stomp");
 }
 
+function findNearbyFrostWarden() {
+  if (level.theme !== "frozen") {
+    return null;
+  }
+  const playerCenterX = player.x + player.w * 0.5;
+  const playerCenterY = player.y + player.h * 0.5;
+  let best = null;
+  let bestDistance = Infinity;
+  for (const enemy of level.enemies) {
+    if (enemy.type !== "frostWarden" || enemy.defeated || enemy.alive === false) {
+      continue;
+    }
+    const bounds = getEnemyBounds(enemy, enemy.type);
+    const enemyCenterX = bounds.x + bounds.w * 0.5;
+    const enemyCenterY = bounds.y + bounds.h * 0.5;
+    const dx = Math.abs(playerCenterX - enemyCenterX);
+    const dy = Math.abs(playerCenterY - enemyCenterY);
+    if (dx <= 120 && dy <= 96) {
+      const distance = dx + dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = enemy;
+      }
+    }
+  }
+  return best;
+}
+
+function tryBeginFrostWardenSkillClash() {
+  return beginFrostWardenClash(findNearbyFrostWarden());
+}
+
+function beginFrostWardenClash(enemy) {
+  if (assassinationEvent.active || !enemy || enemy.defeated || enemy.alive === false || gameState !== "playing") {
+    return false;
+  }
+  if (nightmareEvent.active || nightmareEvent.countdown || danceEvent.active || danceEvent.countdown || clawEscapeEvent.active) {
+    return false;
+  }
+  if (isAssassinEquipped()) {
+    breakAssassinStealth();
+    player.assassinationCooldown = ASSASSIN_RULES.assassinationCooldown;
+  }
+  player.vx = 0;
+  player.vy = Math.min(player.vy, 0);
+  player.invulnerableTime = Math.max(player.invulnerableTime, 0.35);
+
+  assassinationEvent.active = true;
+  assassinationEvent.mode = "wardenQte";
+  assassinationEvent.target = enemy;
+  assassinationEvent.targetType = "boss";
+  assassinationEvent.targetBounds = getEnemyBounds(enemy, enemy.type);
+  assassinationEvent.timer = FROST_WARDEN_QTE.duration;
+  assassinationEvent.gauge = FROST_WARDEN_QTE.startGauge;
+  assassinationEvent.flash = 1;
+  assassinationEvent.successText = "Frost Clash";
+  assassinationEvent.advantaged = isAssassinEquipped();
+  playSound("stomp");
+  return true;
+}
+
 function tapAssassinationQte() {
-  if (!assassinationEvent.active || assassinationEvent.mode !== "qte") {
+  if (!assassinationEvent.active || !["qte", "wardenQte"].includes(assassinationEvent.mode)) {
     return;
   }
   const bossFight = assassinationEvent.targetType === "boss";
+  const tapGain = assassinationEvent.mode === "wardenQte"
+    ? assassinationEvent.advantaged
+      ? FROST_WARDEN_QTE.assassinTapGain
+      : FROST_WARDEN_QTE.defaultTapGain
+    : bossFight
+      ? ASSASSIN_RULES.qteBossTapGain
+      : ASSASSIN_RULES.qteTapGain;
   assassinationEvent.gauge = Math.min(
     1,
-    assassinationEvent.gauge + (bossFight ? ASSASSIN_RULES.qteBossTapGain : ASSASSIN_RULES.qteTapGain)
+    assassinationEvent.gauge + tapGain
   );
   assassinationEvent.flash = 1;
   playSound("button");
-  if (assassinationEvent.gauge >= 1) {
+  if (assassinationEvent.mode !== "wardenQte" && assassinationEvent.gauge >= 1) {
     finishAssassination(true);
   }
 }
@@ -4388,6 +5608,26 @@ function updateAssassinationEvent(dt) {
   if (assassinationEvent.mode === "backstab") {
     if (assassinationEvent.timer <= 0) {
       finishAssassination(true);
+    }
+    return;
+  }
+
+  if (assassinationEvent.mode === "wardenQte") {
+    const elapsed = FROST_WARDEN_QTE.duration - assassinationEvent.timer;
+    const inEntry = elapsed < FROST_WARDEN_QTE.entryDuration;
+    const inFinish = assassinationEvent.timer <= FROST_WARDEN_QTE.finishDuration;
+    if (!inEntry) {
+      const drainRate = assassinationEvent.advantaged
+        ? inFinish
+          ? FROST_WARDEN_QTE.assassinFinishDrainRate
+          : FROST_WARDEN_QTE.assassinDrainRate
+        : inFinish
+          ? FROST_WARDEN_QTE.defaultFinishDrainRate
+          : FROST_WARDEN_QTE.defaultDrainRate;
+      assassinationEvent.gauge = Math.max(0, assassinationEvent.gauge - drainRate * dt);
+    }
+    if (assassinationEvent.timer <= 0) {
+      finishAssassination(assassinationEvent.gauge >= FROST_WARDEN_QTE.successThreshold);
     }
     return;
   }
@@ -4416,32 +5656,13 @@ function handleInput(event, pressed) {
   }
 
   const arcadeHardDanceLive =
-    level.theme === "arcade" &&
-    difficulty.label === "Hard" &&
+    isArcadeHardDanceStage() &&
     (danceEvent.active || danceEvent.countdown);
 
   if (arcadeHardDanceLive) {
     if (pressed && danceEvent.active) {
-      const key = event.key;
-      const dir =
-        ["a", "A"].includes(key) ? "left" :
-        ["d", "D"].includes(key) ? "right" :
-        ["w", "W"].includes(key) ? "up" :
-        ["s", "S"].includes(key) ? "down" :
-        null;
-
-      if (dir) {
-        if (dir === danceEvent.sequence[danceEvent.index]) {
-          danceEvent.index += 1;
-          danceEvent.stepTimer = danceEvent.stepTimeLimit;
-          danceEvent.flash = 1;
-          playSound("stomp");
-          if (danceEvent.index >= danceEvent.sequence.length) {
-            resolveDanceEvent(true);
-          }
-        } else {
-          resolveDanceEvent(false);
-        }
+      const dir = directionFromDanceKey(event.key, event.code);
+      if (submitDanceInput(dir)) {
         return;
       }
     }
@@ -4456,11 +5677,7 @@ function handleInput(event, pressed) {
   }
 
   if (pressed && nightmareEvent.active && [" ", "Spacebar", "Enter"].includes(event.key)) {
-    const marker = nightmareEvent.marker;
-    const success =
-      marker >= nightmareEvent.targetStart &&
-      marker <= nightmareEvent.targetStart + nightmareEvent.targetWidth;
-    resolveNightmareEvent(success);
+    attemptNightmareInput();
     return;
   }
 
@@ -4504,19 +5721,40 @@ function handleInput(event, pressed) {
     nextStage();
   }
   if (pressed && ["e", "E"].includes(event.key)) {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isChangerEquipped()) {
       createChangerClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerField();
+    } else if (isWildHunterEquipped()) {
+      activateWildHunterSlam();
     } else {
       activateAssassinStealth();
     }
   }
   if (pressed && ["q", "Q"].includes(event.key)) {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
     if (isGuardianEquipped()) {
       activateGuardianShield();
     } else if (isChangerEquipped()) {
       swapChangerWithClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerAnchor();
+    } else if (isWildHunterEquipped()) {
+      activateWildHunterBlast();
     } else {
       beginAssassination();
+    }
+  }
+  if (pressed && ["x", "X"].includes(event.key)) {
+    if (isWildHunterEquipped()) {
+      activateWildHunterAwaken();
+    } else {
+      activateLightnerAwaken();
     }
   }
   if (pressed && ["Escape"].includes(event.key)) {
@@ -4525,7 +5763,7 @@ function handleInput(event, pressed) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
     event.preventDefault();
   }
   handleInput(event, true);
@@ -4565,6 +5803,384 @@ canvas.addEventListener("pointerdown", (event) => {
     resolveClawEscapeEvent();
   }
 });
+
+function setMobileButtonActive(button, active) {
+  button.classList.toggle("active", active);
+}
+
+const mobileJoystick = document.getElementById("mobileJoystick");
+const mobileJoystickKnob = document.getElementById("mobileJoystickKnob");
+const mobileJoystickState = {
+  active: false,
+  pointerId: null,
+  touchId: null,
+  originX: 0,
+  originY: 0,
+  jumped: false,
+  danceDir: null,
+};
+
+function resetMobileJoystick() {
+  keys.left = false;
+  keys.right = false;
+  keys.crouch = false;
+  keys.jump = false;
+  mobileJoystickState.active = false;
+  mobileJoystickState.pointerId = null;
+  mobileJoystickState.touchId = null;
+  mobileJoystickState.originX = 0;
+  mobileJoystickState.originY = 0;
+  mobileJoystickState.jumped = false;
+  mobileJoystickState.danceDir = null;
+  if (mobileJoystickKnob) {
+    mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
+  }
+}
+
+function updateMobileJoystick(event) {
+  if (!mobileJoystick) {
+    return;
+  }
+  ensureAudioContext();
+  const rect = mobileJoystick.getBoundingClientRect();
+  const centerX = mobileJoystickState.originX || rect.left + rect.width * 0.5;
+  const centerY = mobileJoystickState.originY || rect.top + rect.height * 0.5;
+  const maxDistance = Math.max(34, rect.width * 0.34);
+  const dx = event.clientX - centerX;
+  const dy = event.clientY - centerY;
+  const distance = Math.min(maxDistance, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx);
+  const knobX = Math.cos(angle) * distance;
+  const knobY = Math.sin(angle) * distance;
+  const normalizedX = maxDistance > 0 ? knobX / maxDistance : 0;
+  const normalizedY = maxDistance > 0 ? knobY / maxDistance : 0;
+
+  if (mobileJoystickKnob) {
+    mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
+  }
+
+  const arcadeHardDanceLive =
+    isArcadeHardDanceStage() &&
+    (danceEvent.active || danceEvent.countdown);
+
+  if (arcadeHardDanceLive) {
+    keys.left = false;
+    keys.right = false;
+    keys.crouch = false;
+    keys.jump = false;
+    keys.jumpQueued = false;
+
+    let dir = null;
+    if (danceEvent.active && Math.hypot(normalizedX, normalizedY) > 0.42) {
+      if (Math.abs(normalizedX) > Math.abs(normalizedY)) {
+        dir = normalizedX < 0 ? "left" : "right";
+      } else {
+        dir = normalizedY < 0 ? "up" : "down";
+      }
+    }
+
+    if (dir && dir !== mobileJoystickState.danceDir) {
+      submitDanceInput(dir);
+    }
+    mobileJoystickState.danceDir = dir;
+    return;
+  }
+
+  keys.left = normalizedX < -0.32;
+  keys.right = normalizedX > 0.32;
+  keys.crouch = normalizedY > 0.45 && level.theme === "arcade" && gameState !== "lobby";
+  const wantsJump = normalizedY < -0.48;
+  if (wantsJump && !mobileJoystickState.jumped && !keys.jump) {
+    if (attemptNightmareInput()) {
+      keys.jump = false;
+      mobileJoystickState.jumped = true;
+      return;
+    }
+    keys.jumpQueued = true;
+    if (gameState === "stageclear") {
+      nextStage();
+    }
+  }
+  keys.jump = wantsJump;
+  mobileJoystickState.jumped = wantsJump;
+}
+
+function startMobileDrag(clientX, clientY, pointerId = null, touchId = null) {
+  if (controlMode !== "mobile" || gameState === "lobby" || clawEscapeEvent.active || lootBoxState.active) {
+    return false;
+  }
+  ensureAudioContext();
+  mobileJoystickState.active = true;
+  mobileJoystickState.pointerId = pointerId;
+  mobileJoystickState.touchId = touchId;
+  mobileJoystickState.originX = clientX;
+  mobileJoystickState.originY = clientY;
+  mobileJoystickState.jumped = false;
+  mobileJoystickState.danceDir = null;
+  updateMobileJoystick({ clientX, clientY });
+  return true;
+}
+
+mobileJoystick?.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  mobileJoystick.setPointerCapture?.(event.pointerId);
+  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
+});
+
+mobileJoystick?.addEventListener("pointermove", (event) => {
+  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(event);
+});
+
+mobileJoystick?.addEventListener("pointerup", (event) => {
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+mobileJoystick?.addEventListener("pointercancel", (event) => {
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+mobileJoystick?.addEventListener("lostpointercapture", resetMobileJoystick);
+
+function findActiveJoystickTouch(touches) {
+  for (const touch of touches) {
+    if (touch.identifier === mobileJoystickState.touchId) {
+      return touch;
+    }
+  }
+  return null;
+}
+
+mobileJoystick?.addEventListener("touchstart", (event) => {
+  event.preventDefault();
+  const touch = event.changedTouches[0];
+  if (!touch) {
+    return;
+  }
+  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchmove", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!mobileJoystickState.active || !touch) {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(touch);
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchend", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+mobileJoystick?.addEventListener("touchcancel", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.target?.closest?.("[data-mobile-action]") || controlMode !== "mobile" || gameState === "lobby") {
+    return;
+  }
+  event.preventDefault();
+  canvas.setPointerCapture?.(event.pointerId);
+  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId || controlMode !== "mobile") {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(event);
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+canvas.addEventListener("pointercancel", (event) => {
+  if (event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+canvas.addEventListener("touchstart", (event) => {
+  if (controlMode !== "mobile" || gameState === "lobby") {
+    return;
+  }
+  const touch = event.changedTouches[0];
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!mobileJoystickState.active || !touch || controlMode !== "mobile") {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(touch);
+}, { passive: false });
+
+canvas.addEventListener("touchend", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+canvas.addEventListener("touchcancel", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+function applyMobileAction(action, pressed) {
+  ensureAudioContext();
+  if (!pressed) {
+    return;
+  }
+  if (action === "skill-e") {
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
+    if (isChangerEquipped()) {
+      createChangerClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerField();
+    } else if (isWildHunterEquipped()) {
+      activateWildHunterSlam();
+    } else {
+      activateAssassinStealth();
+    }
+  } else if (action === "skill-q") {
+    if (assassinationEvent.active) {
+      tapAssassinationQte();
+      return;
+    }
+    if (tryBeginFrostWardenSkillClash()) {
+      return;
+    }
+    if (isGuardianEquipped()) {
+      activateGuardianShield();
+    } else if (isChangerEquipped()) {
+      swapChangerWithClone();
+    } else if (isLightnerEquipped()) {
+      activateLightnerAnchor();
+    } else if (isWildHunterEquipped()) {
+      activateWildHunterBlast();
+    } else {
+      beginAssassination();
+    }
+  } else if (action === "skill-x") {
+    if (isWildHunterEquipped()) {
+      activateWildHunterAwaken();
+    } else {
+      activateLightnerAwaken();
+    }
+  } else if (action === "restart") {
+    restartGame();
+  }
+}
+
+document.querySelectorAll("[data-mobile-action]").forEach((button) => {
+  const action = button.dataset.mobileAction;
+  let handledTouch = false;
+  let lastTriggerTime = 0;
+  const trigger = () => {
+    const now = performance.now();
+    if (now - lastTriggerTime < 90) {
+      return;
+    }
+    lastTriggerTime = now;
+    applyMobileAction(action, true);
+  };
+  button.addEventListener("pointerdown", (event) => {
+    if (handledTouch) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    button.setPointerCapture?.(event.pointerId);
+    setMobileButtonActive(button, true);
+    trigger();
+  });
+  const release = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+  };
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", () => {
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+  });
+  button.addEventListener("touchstart", (event) => {
+    handledTouch = true;
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, true);
+    trigger();
+  }, { passive: false });
+  button.addEventListener("touchend", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+    window.setTimeout(() => {
+      handledTouch = false;
+    }, 0);
+  }, { passive: false });
+  button.addEventListener("touchcancel", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+    window.setTimeout(() => {
+      handledTouch = false;
+    }, 0);
+  }, { passive: false });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMobileButtonActive(button, true);
+    trigger();
+    window.setTimeout(() => {
+      setMobileButtonActive(button, false);
+    }, 80);
+  });
+});
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;
   updateMuteButtonLabel();
@@ -4591,6 +6207,11 @@ stageSelect.addEventListener("change", () => {
 screenModeSelect.addEventListener("change", () => {
   screenMode = screenModeSelect.value;
   applyScreenMode();
+});
+
+controlModeSelect.addEventListener("change", () => {
+  controlMode = controlModeSelect.value;
+  applyControlMode();
 });
 
 playButton.addEventListener("click", () => {
@@ -4828,6 +6449,14 @@ function updatePlayer(dt) {
   if (assassinationEvent.active) {
     player.animationTime += dt;
     player.vx = 0;
+    player.vy = 0;
+    return;
+  }
+
+  if (isWildHunterEquipped() && wildHunterState.blastDelayTimer > 0) {
+    player.animationTime += dt;
+    player.vx = 0;
+    player.vy = 0;
     return;
   }
 
@@ -4870,7 +6499,18 @@ function updatePlayer(dt) {
   applyPlayerCrouch(keys.crouch);
 
   const inputX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
+  let moveSpeed = (player.stealthActive ? player.speed * ASSASSIN_RULES.stealthSpeedMultiplier : player.speed) * frozenSpeedMultiplier();
+  if (isLightnerEquipped() && lightnerState.awakenTimer > 0) {
+    moveSpeed *= LIGHTNER_RULES.awakenSpeedMultiplier;
+  }
+  if (isWildHunterEquipped()) {
+    if (wildHunterState.instinctTimer > 0) {
+      moveSpeed *= WILD_HUNTER_RULES.instinctSpeedMultiplier;
+    }
+    if (wildHunterState.awakenTimer > 0) {
+      moveSpeed *= WILD_HUNTER_RULES.awakenSpeedMultiplier;
+    }
+  }
   if (level.theme === "frozen") {
     const targetVx = inputX * moveSpeed;
     const slippery = isPlayerOnIce() || player.iceSlideTimer > 0;
@@ -4886,7 +6526,7 @@ function updatePlayer(dt) {
 
   if (keys.jumpQueued && player.jumpsRemaining > 0) {
     const usedAirJump = !player.onGround && player.jumpsRemaining === 1;
-    player.vy = (usedAirJump ? player.airJumpVelocity : player.jumpVelocity) * frozenJumpMultiplier();
+    player.vy = (usedAirJump ? player.airJumpVelocity : player.jumpVelocity) * frozenJumpMultiplier() * getWildHunterJumpMultiplier();
     player.onGround = false;
     player.jumpsRemaining -= 1;
     playSound(usedAirJump ? "doubleJump" : "jump");
@@ -4917,13 +6557,17 @@ function updatePlayer(dt) {
     }
   }
 
-  for (const collectible of level.collectibles) {
-    if (!collectible.collected && overlaps(player, collectible)) {
-      collectible.collected = true;
-      score += Math.round(100 * difficulty.collectibleBonus);
-      awardCoins(level.theme === "factory" || level.theme === "frozen" ? 8 : 6);
-      collectedCount += 1;
-      playSound(level.theme === "factory" ? "button" : level.theme === "frozen" ? "ice" : "coin");
+  if (level.theme !== "jungle") {
+    for (const collectible of level.collectibles) {
+      if (!collectible.collected && overlaps(player, collectible)) {
+        collectible.collected = true;
+        score += Math.round(100 * difficulty.collectibleBonus);
+        if (level.theme !== "frozen") {
+          awardCoins(level.theme === "factory" ? 8 : 6);
+        }
+        collectedCount += 1;
+        playSound(level.theme === "factory" ? "button" : "coin");
+      }
     }
   }
 
@@ -4933,12 +6577,24 @@ function updatePlayer(dt) {
         continue;
       }
 
+      if (isWildHunterEquipped() && wildHunterState.awakenTimer > 0) {
+        if (isBossEntity(enemy, enemy.type)) {
+          damageBossByWildHunter(enemy, WILD_HUNTER_RULES.awakenBossDps * dt);
+        } else {
+          defeatNormalEnemyByWildHunter(enemy, "skill");
+        }
+        continue;
+      }
+
       if (enemy.type === "excavator") {
         loseLife();
         break;
       }
 
       if (enemy.type === "frostWarden") {
+        if (beginFrostWardenClash(enemy)) {
+          break;
+        }
         loseLife();
         break;
       }
@@ -4957,10 +6613,13 @@ function updatePlayer(dt) {
         } else {
           enemy.alive = false;
           enemy.squishTimer = 0.35;
+          registerCombatKill("stomp");
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 250 + currentStageIndex * 50;
-          awardCoins(7 + currentStageIndex);
+          if (level.theme !== "frozen") {
+            awardCoins(7 + currentStageIndex);
+          }
           playSound("stomp");
         }
       } else {
@@ -4977,6 +6636,11 @@ function updatePlayer(dt) {
       const serpentHitbox = getSerpentHitbox(serpent);
 
       if (!overlaps(player, serpentHitbox)) {
+        continue;
+      }
+
+      if (isWildHunterEquipped() && wildHunterState.awakenTimer > 0) {
+        defeatSerpentByWildHunter(serpent, "skill");
         continue;
       }
 
@@ -4999,11 +6663,14 @@ function updatePlayer(dt) {
           serpent.alive = false;
           serpent.stunTimer = 1.2;
           serpent.state = "stunned";
+          registerCombatKill("stomp");
           serpent.strikeProgress = 0;
           player.vy = player.stompBounce;
           player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
           score += 400 + currentStageIndex * 75;
-          awardCoins(10 + currentStageIndex);
+          if (level.theme !== "frozen") {
+            awardCoins(10 + currentStageIndex);
+          }
           playSound("stomp");
         }
       } else {
@@ -5013,8 +6680,9 @@ function updatePlayer(dt) {
     }
   }
 
-  if (gameState === "playing" && overlaps(player, level.goal) && collectedCount >= currentShardTarget()) {
-    awardCoins(25 + currentStageIndex * 5);
+  const canUseGoal = level.theme === "frozen" || level.theme === "jungle" ? false : collectedCount >= currentShardTarget();
+  if (gameState === "playing" && overlaps(player, level.goal) && canUseGoal) {
+    awardStageClearCoins();
     rollStageClearBoxReward();
     if (level.theme === "arcade") {
       triggerClawEscapeEvent();
@@ -5066,8 +6734,34 @@ function resolveSolidCollisions(axis) {
 function updateEnemies(dt) {
   for (const enemy of level.enemies) {
     enemy.animationTime += dt;
+    enemy.lightnerStunTimer = Math.max(0, (enemy.lightnerStunTimer || 0) - dt);
+    enemy.lightnerSlowTimer = Math.max(0, (enemy.lightnerSlowTimer || 0) - dt);
     if (!enemy.alive || enemy.defeated) {
       enemy.squishTimer = Math.max(0, enemy.squishTimer - dt);
+      if (enemy.type === "frostWarden") {
+        enemy.qteMeltTimer = Math.max(0, (enemy.qteMeltTimer || 0) - dt);
+      }
+      continue;
+    }
+
+    if (enemy.lightnerStunTimer > 0) {
+      enemy.vx = 0;
+      if (enemy.type !== "frostWarden") {
+        enemy.vy += GRAVITY * dt;
+        enemy.y += enemy.vy * dt;
+        for (const solid of level.solids) {
+          if (!overlaps(enemy, solid)) {
+            continue;
+          }
+          if (enemy.vy > 0) {
+            enemy.y = solid.y - enemy.h;
+            enemy.vy = 0;
+          } else if (enemy.vy < 0) {
+            enemy.y = solid.y + solid.h;
+            enemy.vy = 0;
+          }
+        }
+      }
       continue;
     }
 
@@ -5274,7 +6968,8 @@ function updateFrostWardenEnemy(enemy, dt) {
     enemy.cooldown = Math.max(enemy.cooldown, 0.8);
   } else if (enemy.state === "idle") {
     enemy.cooldown -= dt;
-    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed : 0;
+    const speedMultiplier = enemy.lightnerSlowTimer > 0 ? LIGHTNER_RULES.bossSlowMultiplier : 1;
+    enemy.vx = distance < 520 ? Math.sign(dx) * enemy.speed * speedMultiplier : 0;
     if (enemy.cooldown <= 0 && distance < 360) {
       enemy.state = "telegraph";
       enemy.attackType = distance < 88 ? "melee" : "wave";
@@ -5397,6 +7092,9 @@ function loseLife() {
   if (player.invulnerableTime > 0 || player.guardianShieldTimer > 0 || gameState !== "playing") {
     return;
   }
+  if (isWildHunterEquipped() && wildHunterState.awakenTimer > 0) {
+    return;
+  }
 
   if (consumeGuardianPassive()) {
     return;
@@ -5408,6 +7106,7 @@ function loseLife() {
 
   breakAssassinStealth();
   resetAssassinationEvent();
+  dropJungleBananas();
   lives -= difficulty.lifeLoss;
   if (lives <= 0) {
     lives = 0;
@@ -5425,10 +7124,18 @@ function update(dt) {
   updatePlayer(dt);
   changerState.swapCooldown = Math.max(0, changerState.swapCooldown - dt);
   changerState.effectTimer = Math.max(0, changerState.effectTimer - dt);
+  updateLightnerState(dt);
+  updateWildHunterState(dt);
   player.cloneTransferFlash = Math.max(0, player.cloneTransferFlash - dt);
+  screenShakeTimer = Math.max(0, screenShakeTimer - dt);
   if (gameState === "playing") {
     if (assassinationEvent.active) {
       updateAssassinationEvent(dt);
+      if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
+        updateCamera();
+        savePersistentProgress();
+        return;
+      }
     }
     if (level.theme === "factory") {
       factoryTimeRemaining = Math.max(0, factoryTimeRemaining - dt);
@@ -5459,6 +7166,14 @@ function update(dt) {
       }
     }
 
+    if (level.theme === "jungle") {
+      updateJungleStage(dt);
+      if (gameState !== "playing") {
+        updateCamera();
+        return;
+      }
+    }
+
     if (!assassinationEvent.active && !clawEscapeEvent.active && !danceEvent.active && !danceEvent.countdown && !nightmareEvent.active && !nightmareEvent.countdown) {
       updateEnemies(dt);
     }
@@ -5469,19 +7184,122 @@ function update(dt) {
       updateClawEscapeEvent(dt);
     }
   }
-  if (isChangerEquipped()) {
-    ctx.fillText(t("changer_hint"), 470, 124);
-  } else if (isGuardianEquipped()) {
-    ctx.fillText(t("guardian_hint"), 470, 124);
-  } else if (isAssassinEquipped()) {
-    ctx.fillText(t("assassin_hint"), 470, 124);
-  }
-
   if (stageMessageTimer > 0) {
     stageMessageTimer = Math.max(0, stageMessageTimer - dt);
   }
   updateCamera();
   savePersistentProgress();
+}
+
+function updateLightnerState(dt) {
+  if (assassinationEvent.active) {
+    return;
+  }
+  for (const effect of lightnerState.effects) {
+    effect.timer = Math.max(0, effect.timer - dt);
+  }
+  for (let i = lightnerState.effects.length - 1; i >= 0; i -= 1) {
+    if (lightnerState.effects[i].timer <= 0) {
+      lightnerState.effects.splice(i, 1);
+    }
+  }
+  if (!isLightnerEquipped()) {
+    return;
+  }
+  lightnerState.fieldCooldown = Math.max(0, lightnerState.fieldCooldown - dt);
+  lightnerState.awakenTimer = Math.max(0, lightnerState.awakenTimer - dt);
+  if (lightnerState.anchor) {
+    lightnerState.anchor.timer -= dt;
+    if (lightnerState.anchor.timer <= 0) {
+      lightnerState.anchor = null;
+    }
+  }
+  if (lightnerState.stacks < LIGHTNER_RULES.maxStacks) {
+    lightnerState.stackRechargeTimer -= dt;
+    if (lightnerState.stackRechargeTimer <= 0) {
+      lightnerState.stacks += 1;
+      lightnerState.stackRechargeTimer = lightnerState.stacks < LIGHTNER_RULES.maxStacks ? currentLightnerStackCooldown() : 0;
+    }
+  } else {
+    lightnerState.stackRechargeTimer = 0;
+  }
+}
+
+function updateWildHunterState(dt) {
+  for (const effect of wildHunterState.effects) {
+    effect.timer = Math.max(0, effect.timer - dt);
+  }
+  for (let i = wildHunterState.effects.length - 1; i >= 0; i -= 1) {
+    if (wildHunterState.effects[i].timer <= 0) {
+      wildHunterState.effects.splice(i, 1);
+    }
+  }
+
+  if (!isWildHunterEquipped() || assassinationEvent.active) {
+    return;
+  }
+
+  wildHunterState.instinctTimer = Math.max(0, wildHunterState.instinctTimer - dt);
+  wildHunterState.blastDelayTimer = Math.max(0, wildHunterState.blastDelayTimer - dt);
+  wildHunterState.slamCooldown = Math.max(0, wildHunterState.slamCooldown - dt);
+  wildHunterState.awakenTimer = Math.max(0, wildHunterState.awakenTimer - dt);
+
+  if (wildHunterState.slamActive) {
+    let hit = false;
+    for (const enemy of level.enemies) {
+      if (!enemy.alive || enemy.defeated || !overlaps(player, enemy)) {
+        continue;
+      }
+      if (isBossEntity(enemy, enemy.type)) {
+        hit = damageBossByWildHunter(enemy, 90) || true;
+      } else {
+        hit = defeatNormalEnemyByWildHunter(enemy, "slam") || hit;
+      }
+      enemy.vx = player.facing * 260;
+      enemy.vy = -280;
+    }
+    for (const serpent of level.serpentEnemies) {
+      if (serpent.defeated || !serpent.alive || !overlaps(player, getSerpentHitbox(serpent))) {
+        continue;
+      }
+      hit = defeatSerpentByWildHunter(serpent, "slam") || hit;
+    }
+    if (hit) {
+      wildHunterState.slamHit = true;
+      wildHunterState.slamActive = false;
+      player.vy = WILD_HUNTER_RULES.slamHitBounce;
+      player.jumpsRemaining = Math.max(player.jumpsRemaining, 1);
+      addWildHunterEffect("slamHit", player.x + player.w * 0.5, player.y + player.h, 0.36, { radius: 76 });
+      screenShakeTimer = Math.max(screenShakeTimer, 0.28);
+      playSound("stomp");
+    } else if (player.onGround) {
+      wildHunterState.slamActive = false;
+      player.stunTimer = Math.max(player.stunTimer, WILD_HUNTER_RULES.slamMissDelay);
+      addWildHunterEffect("slamMiss", player.x + player.w * 0.5, player.y + player.h, 0.3, { radius: 52 });
+      screenShakeTimer = Math.max(screenShakeTimer, 0.18);
+      playSound("button");
+    }
+  }
+
+  if (wildHunterState.awakenTimer > 0) {
+    const contactDamage = WILD_HUNTER_RULES.awakenBossDps * dt;
+    for (const enemy of level.enemies) {
+      if (!enemy.alive || enemy.defeated || !overlaps(player, enemy)) {
+        continue;
+      }
+      if (isBossEntity(enemy, enemy.type)) {
+        damageBossByWildHunter(enemy, contactDamage);
+      } else {
+        defeatNormalEnemyByWildHunter(enemy, "skill");
+      }
+    }
+    for (const serpent of level.serpentEnemies) {
+      if (serpent.defeated || !serpent.alive || !overlaps(player, getSerpentHitbox(serpent))) {
+        continue;
+      }
+      defeatSerpentByWildHunter(serpent, "skill");
+    }
+  }
 }
 
 function updateClawEscapeEvent(dt) {
@@ -5490,12 +7308,7 @@ function updateClawEscapeEvent(dt) {
 }
 
 function updateNightmareEvent(dt) {
-  if (difficulty.label !== "Hard") {
-    return;
-  }
-
-  if (level.theme === "arcade") {
-    updateDanceEvent(dt);
+  if (activeDifficultyKey !== "hard") {
     return;
   }
 
@@ -5553,10 +7366,6 @@ function updateDanceEvent(dt) {
   }
 
   if (!danceEvent.active) {
-    danceEvent.triggerTimer -= dt;
-    if (danceEvent.triggerTimer <= 0) {
-      triggerDanceEvent();
-    }
     return;
   }
 
@@ -5568,6 +7377,22 @@ function updateDanceEvent(dt) {
 }
 
 function getThemeColors() {
+  if (level.theme === "jungle") {
+    return {
+      skyTop: "#173824",
+      skyMid: "#2f6a3f",
+      skyBottom: "#91d56a",
+      hillBack: "#1d4c2d",
+      hillFront: "#12391f",
+      cloud: "rgba(211, 255, 196, 0.36)",
+      platformTop: "#9bd45a",
+      groundTop: "#5fa332",
+      hazardMain: "#31501d",
+      hazardGlow: "#d7ff84",
+      goal: "#ffd94f",
+    };
+  }
+
   if (level.theme === "forest") {
     return {
       skyTop: "#6ed8d3",
@@ -5664,6 +7489,11 @@ function getThemeColors() {
 }
 
 function drawBackground() {
+  if (level.theme === "jungle") {
+    drawJungleBackground();
+    return;
+  }
+
   if (level.theme === "arcade") {
     drawArcadeBackground();
     return;
@@ -5693,6 +7523,34 @@ function drawBackground() {
   drawCloud(120, 90, 1, palette.cloud);
   drawCloud(420, 120, 0.9, palette.cloud);
   drawCloud(760, 80, 1.1, palette.cloud);
+}
+
+function drawJungleBackground() {
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.58, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  drawParallaxHills(0.12, palette.hillBack, 300, 390, 140);
+  drawParallaxHills(0.26, palette.hillFront, 360, 440, 170);
+
+  const vineScroll = (camera.x * 0.18) % 180;
+  for (let i = -1; i < 8; i += 1) {
+    const x = i * 180 - vineScroll;
+    ctx.fillStyle = "rgba(20, 72, 34, 0.72)";
+    ctx.fillRect(x + 28, 0, 10, 210 + (i % 3) * 35);
+    ctx.fillStyle = "rgba(96, 168, 70, 0.58)";
+    ctx.fillRect(x + 34, 34, 24, 8);
+    ctx.fillRect(x + 12, 92, 28, 8);
+    ctx.fillRect(x + 36, 150, 30, 8);
+  }
+
+  const mist = 0.08 + Math.sin(lastTime * 0.002) * 0.02;
+  ctx.fillStyle = `rgba(223, 255, 196, ${mist})`;
+  ctx.fillRect(0, 150, GAME_WIDTH, 90);
 }
 
 function drawFactoryBackground() {
@@ -5860,9 +7718,185 @@ function drawWorld() {
   drawCollectibles();
   drawEnemies();
   drawChangerClone();
+  drawLightnerEffects();
+  drawWildHunterEffects();
   drawPlayer();
+  drawJungleCarryStack();
   drawFrozenPlayerEffect();
   drawChangerSwapEffect();
+  drawJungleGrassOverlay();
+  ctx.restore();
+}
+
+function drawLightnerEffects() {
+  if (!isLightnerEquipped() && lightnerState.effects.length === 0) {
+    return;
+  }
+  ctx.save();
+  if (lightnerState.anchor) {
+    const anchor = lightnerState.anchor;
+    const pulse = 0.7 + Math.sin(lastTime * 0.025) * 0.18;
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.75 * pulse})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, 18 + pulse * 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255, 215, 0, ${0.18 * pulse})`;
+    ctx.fillRect(anchor.x - 5, anchor.y - 30, 10, 60);
+    ctx.fillStyle = "#ffd700";
+    ctx.fillRect(anchor.x - 2, anchor.y - 18, 4, 36);
+    ctx.fillRect(anchor.x - 12, anchor.y - 2, 24, 4);
+  }
+
+  for (const effect of lightnerState.effects) {
+    const t = Math.max(0, Math.min(1, effect.timer / effect.duration));
+    if (effect.type === "anchor") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.5 * t})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - 18, effect.y + 34);
+      ctx.lineTo(effect.x, effect.y - 30);
+      ctx.lineTo(effect.x + 16, effect.y + 16);
+      ctx.stroke();
+    } else if (effect.type === "teleport") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(effect.x, effect.y);
+      ctx.lineTo(effect.toX, effect.toY);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 246, 158, ${0.9 * t})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(effect.toX - 18, 0);
+      ctx.lineTo(effect.toX + 4, effect.toY - 38);
+      ctx.lineTo(effect.toX - 8, effect.toY - 8);
+      ctx.lineTo(effect.toX + 14, effect.toY + 26);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.55 * t})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(effect.x + 12, effect.y - 36);
+      ctx.lineTo(effect.x - 5, effect.y - 8);
+      ctx.lineTo(effect.x + 9, effect.y + 22);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.22 * t})`;
+      ctx.fillRect(effect.x - 10, effect.y - 34, 20, 68);
+      ctx.fillRect(effect.toX - 10, effect.toY - 34, 20, 68);
+    } else if (effect.type === "field") {
+      const radius = effect.radius;
+      const groundY = Math.min(FLOOR_Y, effect.y + 72);
+      ctx.strokeStyle = `rgba(255, 246, 158, ${0.92 * t})`;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - 22, 0);
+      ctx.lineTo(effect.x + 8, groundY - 108);
+      ctx.lineTo(effect.x - 14, groundY - 42);
+      ctx.lineTo(effect.x + 6, groundY);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.12 * t})`;
+      ctx.fillRect(effect.x - radius, groundY - 8, radius * 2, 16);
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.78 * t})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - radius, groundY);
+      ctx.lineTo(effect.x + radius, groundY);
+      ctx.stroke();
+      for (let i = 0; i < 7; i += 1) {
+        const side = i % 2 === 0 ? -1 : 1;
+        const offset = (i + 1) * radius / 8 * side;
+        ctx.strokeStyle = `rgba(255, 225, 70, ${0.62 * t})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(effect.x, groundY);
+        ctx.lineTo(effect.x + offset, groundY + (i % 3 - 1) * 8);
+        ctx.lineTo(effect.x + offset + side * 18, groundY + 10);
+        ctx.stroke();
+      }
+    } else if (effect.type === "awaken") {
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.34 + Math.sin(lastTime * 0.026) * 0.12})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x + player.w * 0.5, player.y + player.h * 0.5, 34, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawJungleCarryStack() {
+  if (level.theme !== "jungle" || jungleState.carried <= 0) {
+    return;
+  }
+  const baseX = player.x + player.w * 0.5 - jungleState.carried * 5;
+  const baseY = player.y - 16;
+  for (let i = 0; i < jungleState.carried; i += 1) {
+    drawBananaSprite(baseX + i * 12, baseY - i * 2, 0.9);
+  }
+}
+
+function drawJungleGrassOverlay() {
+  if (level.theme !== "jungle") {
+    return;
+  }
+  const start = Math.max(0, Math.floor((camera.x - 80) / 38));
+  const end = Math.ceil((camera.x + GAME_WIDTH + 80) / 38);
+  for (let i = start; i <= end; i += 1) {
+    const x = i * 38 + (i % 2) * 8;
+    const height = 34 + (i % 5) * 7;
+    ctx.fillStyle = i % 3 === 0 ? "rgba(14, 75, 29, 0.52)" : "rgba(28, 105, 38, 0.44)";
+    ctx.beginPath();
+    ctx.moveTo(x, FLOOR_Y + 12);
+    ctx.lineTo(x + 12, FLOOR_Y + 12 - height);
+    ctx.lineTo(x + 24, FLOOR_Y + 12);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawWildHunterEffects() {
+  if (!isWildHunterEquipped() && wildHunterState.effects.length === 0) {
+    return;
+  }
+  ctx.save();
+  for (const effect of wildHunterState.effects) {
+    const p = effect.duration > 0 ? effect.timer / effect.duration : 0;
+    const alpha = Math.max(0, Math.min(1, p));
+    if (effect.type === "blast") {
+      ctx.strokeStyle = `rgba(210, 255, 90, ${0.72 * alpha})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, (effect.radius || 110) * (1 - alpha * 0.32), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(86, 176, 48, ${0.14 * alpha})`;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, effect.radius || 110, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (effect.type === "slamStart") {
+      ctx.strokeStyle = `rgba(255, 238, 115, ${0.7 * alpha})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(effect.x - 18, effect.y - 10);
+      ctx.lineTo(effect.x, effect.y + 18);
+      ctx.lineTo(effect.x + 18, effect.y - 10);
+      ctx.stroke();
+    } else if (effect.type === "slamHit" || effect.type === "slamMiss") {
+      ctx.fillStyle = `rgba(100, 74, 35, ${0.25 * alpha})`;
+      ctx.fillRect(effect.x - (effect.radius || 56), effect.y - 7, (effect.radius || 56) * 2, 14);
+      ctx.strokeStyle = `rgba(230, 255, 120, ${0.6 * alpha})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(effect.x, effect.y, (effect.radius || 56) * (1 - alpha * 0.3), Math.PI, Math.PI * 2);
+      ctx.stroke();
+    } else if (effect.type === "awaken") {
+      const radius = 34 + Math.sin(lastTime * 0.018) * 5;
+      ctx.strokeStyle = `rgba(255, 210, 70, ${0.42 + alpha * 0.2})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(player.x + player.w * 0.5, player.y + player.h * 0.5, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 
@@ -5876,6 +7910,8 @@ function drawSolids() {
       ctx.fillStyle = isGround ? "#565b66" : "#787f8a";
     } else if (level.theme === "frozen") {
       ctx.fillStyle = solid.ice ? "#7dcdeb" : (isGround ? "#31516d" : "#4f7895");
+    } else if (level.theme === "jungle") {
+      ctx.fillStyle = isGround ? "#4f3b25" : "#6a4b24";
     } else {
       ctx.fillStyle = isGround ? "#7f5c43" : "#9a733f";
     }
@@ -5886,6 +7922,8 @@ function drawSolids() {
       ctx.fillStyle = isGround ? "#2d3139" : "#4a515c";
     } else if (level.theme === "frozen") {
       ctx.fillStyle = solid.ice ? "#3a87ad" : "#203b52";
+    } else if (level.theme === "jungle") {
+      ctx.fillStyle = isGround ? "#2f2418" : "#3d2c17";
     } else {
       ctx.fillStyle = isGround ? "#5b3e2a" : "#6d512c";
     }
@@ -5915,6 +7953,12 @@ function drawSolids() {
         ctx.fillStyle = "rgba(255,255,255,0.22)";
         ctx.fillRect(solid.x, solid.y + 2, solid.w, 2);
       }
+    } else if (level.theme === "jungle") {
+      ctx.fillStyle = "rgba(23, 84, 34, 0.34)";
+      ctx.fillRect(solid.x + 2, solid.y + 7, 7, solid.h - 12);
+      ctx.fillStyle = "rgba(208, 245, 112, 0.22)";
+      ctx.fillRect(solid.x + 12, solid.y + 8, 10, 4);
+      ctx.fillRect(solid.x + 20, solid.y + 14, 8, 3);
     } else {
       ctx.fillStyle = "rgba(255,255,255,0.12)";
       ctx.fillRect(solid.x + 4, solid.y + 8, 6, 6);
@@ -6117,7 +8161,9 @@ function drawCollectibles() {
     const x = collectible.x;
     const y = collectible.y + bobY;
 
-    if (level.theme === "factory") {
+    if (collectible.style === "banana") {
+      drawBananaSprite(x, y, 1);
+    } else if (level.theme === "factory") {
       const pulse = 0.82 + Math.sin(lastTime * 0.01 + collectible.bob) * 0.08;
       ctx.fillStyle = "#d8dadd";
       ctx.fillRect(x, y + 8, 20, 6);
@@ -6149,18 +8195,18 @@ function drawCollectibles() {
       ctx.fillRect(x + 10, y + 10, 2, 2);
     } else if (level.theme === "frozen") {
       const pulse = 0.78 + Math.sin(lastTime * 0.009 + collectible.bob) * 0.18;
-      ctx.fillStyle = `rgba(122, 229, 255, ${0.22 * pulse})`;
+      ctx.fillStyle = `rgba(255, 224, 80, ${0.24 * pulse})`;
       ctx.beginPath();
-      ctx.arc(x + 14, y + 14, 20, 0, Math.PI * 2);
+      ctx.arc(x + 12, y + 12, 15, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#113657";
-      ctx.fillRect(x + 7, y + 3, 14, 22);
-      ctx.fillRect(x + 3, y + 7, 22, 14);
-      ctx.fillStyle = `rgba(126, 238, 255, ${0.95 * pulse})`;
-      ctx.fillRect(x + 10, y + 6, 8, 16);
-      ctx.fillRect(x + 6, y + 10, 16, 8);
-      ctx.fillStyle = "rgba(255,255,255,0.72)";
-      ctx.fillRect(x + 12, y + 8, 4, 4);
+      ctx.fillStyle = "#d58b1f";
+      ctx.fillRect(x + 5, y + 2, 14, 20);
+      ctx.fillRect(x + 2, y + 5, 20, 14);
+      ctx.fillStyle = `rgba(255, 239, 125, ${0.98 * pulse})`;
+      ctx.fillRect(x + 7, y + 4, 10, 16);
+      ctx.fillRect(x + 4, y + 7, 16, 10);
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillRect(x + 8, y + 5, 4, 3);
     } else {
       ctx.fillStyle = "#ffe14d";
       ctx.fillRect(x + 4, y, 12, 20);
@@ -6277,7 +8323,46 @@ function drawExcavatorSprite(enemy) {
 }
 
 function drawFrostWardenSprite(enemy) {
-  if (!enemy.alive || enemy.defeated) {
+  if (enemy.defeated) {
+    if ((enemy.qteMeltTimer || 0) <= 0) {
+      return;
+    }
+    const x = enemy.x;
+    const y = enemy.y + 52;
+    const melt = Math.max(0, Math.min(1, enemy.qteMeltTimer / 1.2));
+    const steam = (0.45 + Math.sin(lastTime * 0.01) * 0.16) * melt;
+    ctx.save();
+    ctx.fillStyle = `rgba(124, 224, 255, ${0.22 * melt})`;
+    ctx.fillRect(x + 8, y + 26, 58, 10);
+    ctx.fillStyle = `rgba(213, 250, 255, ${0.62 * melt})`;
+    ctx.fillRect(x + 16, y + 18, 16, 8);
+    ctx.fillRect(x + 38, y + 20, 20, 7);
+    ctx.fillStyle = `rgba(206, 248, 255, ${steam})`;
+    ctx.fillRect(x + 18, y - 6, 5, 12);
+    ctx.fillRect(x + 34, y - 16, 6, 18);
+    ctx.fillRect(x + 52, y - 8, 5, 14);
+    for (let i = 0; i < 5; i += 1) {
+      const coinX = x + 12 + i * 11;
+      const coinY = y + 18 + Math.sin(lastTime * 0.006 + i) * 3;
+      ctx.fillStyle = `rgba(255, 213, 75, ${0.82 * melt})`;
+      ctx.beginPath();
+      ctx.arc(coinX, coinY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 249, 177, ${0.7 * melt})`;
+      ctx.fillRect(coinX - 1, coinY - 3, 2, 6);
+    }
+    ctx.strokeStyle = "rgba(126, 225, 255, 0.68)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - 6, y + 34);
+    ctx.lineTo(x + 16, y + 26);
+    ctx.lineTo(x + 36, y + 36);
+    ctx.lineTo(x + 70, y + 24);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (!enemy.alive) {
     return;
   }
   const x = enemy.x;
@@ -6330,6 +8415,25 @@ function drawEnemies() {
   }
 }
 
+function drawBananaSprite(x, y, scale = 1) {
+  const w = 20 * scale;
+  const h = 16 * scale;
+  ctx.fillStyle = "rgba(36, 47, 16, 0.22)";
+  ctx.fillRect(x + 3 * scale, y + 14 * scale, w - 4 * scale, 3 * scale);
+  ctx.fillStyle = "#6b451b";
+  ctx.fillRect(x + 1 * scale, y + 7 * scale, 4 * scale, 4 * scale);
+  ctx.fillStyle = "#f4c431";
+  ctx.beginPath();
+  ctx.ellipse(x + 10 * scale, y + 8 * scale, 9 * scale, h * 0.42, -0.45, 0.1, Math.PI * 1.12);
+  ctx.strokeStyle = "#f4c431";
+  ctx.lineWidth = Math.max(3, 4 * scale);
+  ctx.stroke();
+  ctx.fillStyle = "#ffe76a";
+  ctx.fillRect(x + 7 * scale, y + 4 * scale, 8 * scale, 3 * scale);
+  ctx.fillStyle = "#9a651f";
+  ctx.fillRect(x + 16 * scale, y + 4 * scale, 3 * scale, 3 * scale);
+}
+
 function drawPlayer() {
   const flicker = player.invulnerableTime > 0 && Math.floor(player.invulnerableTime * 18) % 2 === 0;
   if (flicker) {
@@ -6342,10 +8446,10 @@ function drawPlayer() {
 
   ctx.save();
   if (player.facing < 0) {
-    ctx.translate(x + player.w, y);
+    ctx.translate(x + player.w + 2, y - 5);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(x, y);
+    ctx.translate(x - 2, y - 5);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
 
@@ -6368,6 +8472,18 @@ function drawPlayer() {
 
   if (isAssassinEquipped()) {
     drawAssassinPlayerSprite(legOffset, armOffset, scarfOffset);
+    ctx.restore();
+    return;
+  }
+
+  if (isLightnerEquipped()) {
+    drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset);
+    ctx.restore();
+    return;
+  }
+
+  if (isWildHunterEquipped()) {
+    drawWildHunterPlayerSprite(legOffset, armOffset, scarfOffset);
     ctx.restore();
     return;
   }
@@ -6447,22 +8563,32 @@ function drawPlayer() {
     ctx.fillStyle = "#070a12";
   }
   r(8, 2, 10, 6);
+  r(9, 0, 7, 3);
   r(7, 7, 12, 2);
   ctx.fillStyle = voidSkin ? "#0b0b10" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#111626" : "#ff9445";
   r(6, 5, 14, 10);
   ctx.fillStyle = voidSkin ? "#16161e" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#1b223a" : "#ffc98c";
   r(8, 8, 3, 4);
   r(16, 8, 2, 3);
+  ctx.fillStyle = voidSkin ? "#2b2b33" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2f3b63" : "#ffd0a0";
+  r(10, 7, 6, 3);
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#0d1220" : "#171f35";
   r(9, 9, 8, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#66d2ff";
   r(12, 11, 2, 2);
   r(16, 11, 1, 2);
+  ctx.fillStyle = voidSkin ? "#ffcaca" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ffffff" : "#f7fbff";
+  r(13, 11, 1, 1);
+  r(16, 11, 1, 1);
   ctx.fillStyle = voidSkin ? "#111116" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#171c35" : "#1a447b";
   r(5, 17, 16, 10);
   ctx.fillStyle = voidSkin ? "#1c1b23" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#232c4f" : "#2f74bc";
   r(6, 18, 14, 4);
   r(8, 22, 10, 2);
+  ctx.fillStyle = voidSkin ? "#66151b" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#7fefff" : "#79d9ff";
+  r(8, 18, 1, 6);
+  r(17, 18, 1, 6);
+  r(10, 20, 6, 1);
   ctx.fillStyle = voidSkin ? "#09090d" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#11182b" : "#18345e";
   r(9, 18, 3, 8);
   r(14, 18, 4, 8);
@@ -6485,6 +8611,143 @@ function drawPlayer() {
     r(11, 20, 4, 1);
     r(7, 6, 2, 3);
     r(18, 6, 2, 3);
+  }
+  drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawWildHunterPlayerSprite(legOffset, armOffset, scarfOffset) {
+  const awakened = wildHunterState.awakenTimer > 0;
+  const instinct = wildHunterState.instinctTimer > 0;
+  const simpleSkin = getSimpleSkinPalette();
+  const cyberSkin = isCyberSkinEquipped();
+  const voidSkin = isVoidKingSkinEquipped();
+  const pulse = 0.72 + Math.sin(lastTime * 0.018) * 0.18;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+  ctx.save();
+
+  const hood = voidSkin ? "#08070a" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#070b10" : "#1a2b16";
+  const vest = voidSkin ? "#171018" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#16252d" : "#315b27";
+  const vestDark = voidSkin ? "#2f0d16" : simpleSkin ? simpleSkin.secondary : cyberSkin ? "#203946" : "#223f1d";
+  const fur = voidSkin ? "#d9b0b0" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#9eeaff" : "#d7b46a";
+  const glow = awakened ? "#ffcc45" : instinct ? "#d7ff5a" : voidSkin ? "#ff7474" : cyberSkin ? "#79eaff" : "#f2e36a";
+
+  ctx.fillStyle = hood;
+  r(7, 2, 12, 6);
+  r(6, 6, 14, 4);
+  ctx.fillStyle = fur;
+  r(5, 7, 4, 5);
+  r(17, 7, 4, 5);
+  ctx.fillStyle = "#2a160f";
+  r(8, 8, 10, 7);
+  ctx.fillStyle = "#c58b5a";
+  r(9, 9, 8, 5);
+  ctx.fillStyle = hood;
+  r(9, 12, 8, 4);
+  ctx.fillStyle = glow;
+  r(11, 11, 2, 2);
+  r(16, 11, 2, 2);
+
+  ctx.fillStyle = vest;
+  r(5, 17, 17, 10);
+  ctx.fillStyle = vestDark;
+  r(7, 18, 13, 5);
+  ctx.fillStyle = fur;
+  r(5, 17, 3, 10);
+  r(19, 17, 3, 10);
+  ctx.fillStyle = glow;
+  r(12, 18, 3, 2);
+  r(14, 20, 1, 5);
+
+  ctx.fillStyle = "#1b1712";
+  r(4, 27, 7, 4 + legOffset);
+  r(15, 27, 7, 4 + (2 - legOffset));
+  ctx.fillStyle = vestDark;
+  r(2, 19 + armOffset, 2, 8);
+  r(22, 19 - armOffset, 2, 8);
+  ctx.fillStyle = fur;
+  r(2, 25 + armOffset, 3, 2);
+  r(21, 25 - armOffset, 3, 2);
+
+  ctx.fillStyle = glow;
+  r(18, 18 + scarfOffset, 5, 2);
+  r(20, 20 + scarfOffset, 3, 1);
+  if (awakened || instinct) {
+    ctx.fillStyle = `rgba(255, 225, 70, ${0.26 + pulse * 0.18})`;
+    r(3, 7, 2, 3);
+    r(21, 8, 2, 3);
+    r(10, 2, 1, 3);
+    r(17, 3, 1, 2);
+  }
+  drawPlayerSkinAccent();
+  ctx.restore();
+}
+
+function drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset) {
+  const awakened = lightnerState.awakenTimer > 0;
+  const pulse = awakened ? 0.82 + Math.sin(lastTime * 0.03) * 0.18 : 0.62 + Math.sin(lastTime * 0.014) * 0.12;
+  const palette = getLightnerSkinPalette();
+  const spark = (alpha) => `rgba(${palette.lightningRgb}, ${alpha})`;
+  const awakenSpark = (alpha) => `rgba(${palette.awakenRgb}, ${alpha})`;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+  ctx.save();
+
+  ctx.fillStyle = palette.hood;
+  r(7, 2, 12, 6);
+  r(6, 6, 14, 4);
+  ctx.fillStyle = palette.coat;
+  r(5, 8, 16, 9);
+  ctx.fillStyle = palette.coatDark;
+  r(8, 8, 10, 5);
+  ctx.fillStyle = palette.mask;
+  r(9, 10, 8, 7);
+  ctx.fillStyle = spark(pulse);
+  r(11, 11, 2, 2);
+  r(16, 11, 2, 2);
+  r(13, 15, 4, 1);
+
+  ctx.fillStyle = palette.pants;
+  r(5, 17, 17, 10);
+  ctx.fillStyle = palette.coatDark;
+  r(6, 18, 15, 4);
+  r(8, 22, 11, 2);
+  ctx.fillStyle = spark(0.85 * pulse);
+  r(9, 18, 1, 4);
+  r(13, 18, 1, 7);
+  r(17, 18, 2, 1);
+  r(18, 18 + scarfOffset, 5, 2);
+  r(20, 20 + scarfOffset, 3, 1);
+
+  ctx.fillStyle = palette.pants;
+  r(4, 27, 7, 4 + legOffset);
+  r(15, 27, 7, 4 + (2 - legOffset));
+  ctx.fillStyle = spark(0.72 * pulse);
+  r(6, 28, 2, 1);
+  r(17, 28, 2, 1);
+
+  ctx.fillStyle = palette.arm;
+  r(2, 19 + armOffset, 2, 8);
+  r(22, 19 - armOffset, 2, 8);
+  ctx.fillStyle = spark(0.78 * pulse);
+  r(3, 20 + armOffset, 1, 4);
+  r(22, 20 - armOffset, 1, 4);
+
+  if (shopState.equippedSkin === "angelDemon") {
+    ctx.fillStyle = "#f0e7da";
+    r(6, 18, 5, 5);
+    ctx.fillStyle = "#3b235c";
+    r(16, 18, 5, 5);
+    ctx.fillStyle = spark(0.74 * pulse);
+    r(13, 18, 1, 7);
+    r(17, 18, 2, 1);
+  }
+
+  if (awakened) {
+    ctx.fillStyle = awakenSpark(0.28 + pulse * 0.2);
+    r(3, 5, 2, 2);
+    r(20, 6, 2, 2);
+    r(11, 2, 1, 3);
+    r(18, 15, 3, 1);
   }
   drawPlayerSkinAccent();
   ctx.restore();
@@ -6525,10 +8788,10 @@ function drawChangerClone() {
 
   ctx.save();
   if ((clone.facing || 1) < 0) {
-    ctx.translate(clone.x + clone.w, clone.y);
+    ctx.translate(clone.x + clone.w + 2, clone.y - 5);
     ctx.scale(-1, 1);
   } else {
-    ctx.translate(clone.x, clone.y);
+    ctx.translate(clone.x - 2, clone.y - 5);
   }
   ctx.scale(PLAYER_SPRITE_RENDER_SCALE, PLAYER_SPRITE_RENDER_SCALE);
   drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, true);
@@ -6639,6 +8902,7 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
 
   ctx.fillStyle = borderColor;
   r(4, 2, 18, 28);
+  r(6, 0, 14, 4);
   ctx.fillStyle = hoodColor;
   r(8, 4, 10, 8);
   r(7, 8, 12, 5);
@@ -6674,8 +8938,15 @@ function drawChangerPlayerSprite(legOffset, armOffset, scarfOffset, isClone) {
   ctx.fillStyle = eyeColor;
   r(11, 11, 2, 2);
   r(16, 11, 2, 2);
+  ctx.fillStyle = "#ffffff";
+  r(12, 11, 1, 1);
+  r(17, 11, 1, 1);
   ctx.fillStyle = isClone ? "#081b4b" : "#070d1a";
   r(12, 12, 5, 1);
+  ctx.fillStyle = glowColor;
+  r(9, 16, 1, 10);
+  r(17, 16, 1, 9);
+  r(10, 19, 7, 1);
   if (cyberSkin) {
     ctx.fillStyle = glowColor;
     r(10, 17, 1, 8);
@@ -6878,6 +9149,7 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(6, 2, 14, 28);
+  r(5, 7, 16, 4);
   ctx.fillStyle = palette.hood;
   r(8, 4, 10, 8);
   r(7, 8, 12, 4);
@@ -6886,8 +9158,13 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
   ctx.fillStyle = voidSkin ? `rgba(255, 76, 76, ${voidPulse})` : "#efe7d8";
   r(11, 11, 2, 2);
   r(15, 11, 2, 2);
+  ctx.fillStyle = palette.glow;
+  r(12, 11, 1, 1);
+  r(16, 11, 1, 1);
   ctx.fillStyle = palette.metal;
   r(7, 16, 12, 10);
+  r(5, 17, 3, 8);
+  r(18, 17, 3, 8);
   ctx.fillStyle = palette.cloth;
   r(10, 17, 6, 8);
   ctx.fillStyle = palette.trim;
@@ -6904,6 +9181,7 @@ function drawGuardianPlayerSprite(legOffset, armOffset) {
 
   ctx.fillStyle = palette.border;
   r(16, 15, 8, 15);
+  r(15, 14, 10, 3);
   ctx.fillStyle = palette.trim;
   r(17, 16, 6, 13);
   ctx.fillStyle = voidSkin ? "#16161c" : "#254d9e";
@@ -7003,6 +9281,7 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
 
   ctx.fillStyle = voidSkin ? "#050507" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#05070e" : "#060910";
   r(7, 2, 12, 7);
+  r(8, 0, 9, 3);
   r(6, 7, 14, 4);
   ctx.fillStyle = voidSkin ? "#0d0d12" : simpleSkin ? simpleSkin.primary : cyberSkin ? "#0d1220" : "#111724";
   r(7, 10, 12, 6);
@@ -7012,7 +9291,14 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
   r(7, 20, 12, 4);
   ctx.fillStyle = voidSkin ? "#5b0f17" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#2d3470" : "#34415f";
   r(8, 16, 10, 3);
+  ctx.fillStyle = voidSkin ? "#0b0b0e" : simpleSkin ? simpleSkin.dark : cyberSkin ? "#080b14" : "#09101d";
+  r(9, 11, 8, 3);
+  ctx.fillStyle = voidSkin ? "#7a141c" : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
+  r(11, 17, 1, 9);
+  r(16, 17, 1, 8);
   ctx.fillStyle = voidSkin ? `rgba(255, 66, 66, ${voidPulse})` : simpleSkin ? simpleSkin.glow : cyberSkin ? "#77efff" : "#62d9ff";
+  r(10, 8, 4, 1);
+  r(15, 8, 4, 1);
   r(12, 9, 2, 2);
   r(16, 9, 2, 2);
   ctx.fillStyle = voidSkin ? "#ffc0c0" : simpleSkin ? simpleSkin.accent : cyberSkin ? "#ddb5ff" : "#baf4ff";
@@ -7132,6 +9418,29 @@ function drawGoal() {
     return;
   }
 
+  if (level.theme === "frozen") {
+    const doorOpen = isFrostWardenDefeated();
+    const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
+    ctx.fillStyle = "#10243a";
+    ctx.fillRect(x + 6, y, 52, h);
+    ctx.fillStyle = doorOpen ? "rgba(108, 235, 255, 0.26)" : "rgba(22, 60, 92, 0.88)";
+    ctx.fillRect(x + 14, y + 10, 36, h - 20);
+    ctx.fillStyle = doorOpen ? `rgba(154, 244, 255, ${0.5 * pulse})` : "rgba(190, 238, 255, 0.32)";
+    for (let i = 0; i < 5; i += 1) {
+      ctx.fillRect(x + 18, y + 18 + i * 24, 28, 4);
+    }
+    ctx.fillStyle = doorOpen ? `rgba(126, 238, 255, ${0.65 * pulse})` : "rgba(75, 149, 190, 0.72)";
+    ctx.beginPath();
+    ctx.arc(x + 56, y + 18, 9, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  if (level.theme === "jungle") {
+    drawJungleMonkey();
+    return;
+  }
+
   if (level.theme === "arcade") {
     const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
 
@@ -7190,7 +9499,17 @@ function drawHud() {
 
   ctx.fillStyle = "#d8fbff";
   ctx.font = "16px Verdana";
-  ctx.fillText(`${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`, 190, 46);
+  const collectibleText = level.theme === "jungle"
+    ? t("hud_jungle_bananas", {
+      delivered: jungleState.delivered,
+      target: JUNGLE_BANANA_TARGET,
+      carried: jungleState.carried,
+      capacity: JUNGLE_BANANA_CAPACITY,
+    })
+    : level.theme === "frozen"
+      ? `${currentCollectibleLabel()} ${collectedCount}`
+      : `${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`;
+  ctx.fillText(collectibleText, 190, 46);
   ctx.fillText(t("hud_difficulty", { difficulty: getDifficultyLabel(activeDifficultyKey) }), 190, 76);
   ctx.fillText(t("hud_jumps", { current: player.jumpsRemaining, total: player.maxJumps }), 190, 106);
   const stealthStatus = isChangerEquipped()
@@ -7215,6 +9534,35 @@ function drawHud() {
           : t("guardian_status_ready", {
             state: t(player.guardianPassiveReady ? "passive_ready" : "passive_spent"),
           })
+    : isLightnerEquipped()
+      ? t("lightner_status", {
+        stacks: lightnerState.stacks,
+        max: LIGHTNER_RULES.maxStacks,
+        e: lightnerState.fieldCooldown.toFixed(1),
+        awaken: lightnerState.awakenTimer > 0
+          ? t("lightner_awaken_active", { time: lightnerState.awakenTimer.toFixed(1) })
+          : lightnerState.awakenKills >= LIGHTNER_RULES.awakenKillsRequired
+            ? t("lightner_awaken_ready")
+            : t("lightner_awaken_charge", {
+              kills: lightnerState.awakenKills,
+              required: LIGHTNER_RULES.awakenKillsRequired,
+            }),
+      })
+    : isWildHunterEquipped()
+      ? t("wild_hunter_status", {
+        instinct: wildHunterState.instinctTimer > 0
+          ? t("wild_hunter_active", { time: wildHunterState.instinctTimer.toFixed(1) })
+          : "-",
+        blast: wildHunterState.blastUsed ? t("wild_hunter_used") : t("wild_hunter_ready"),
+        awaken: wildHunterState.awakenTimer > 0
+          ? t("wild_hunter_active", { time: wildHunterState.awakenTimer.toFixed(1) })
+          : wildHunterState.awakenKills >= WILD_HUNTER_RULES.awakenKillsRequired
+            ? t("wild_hunter_ready")
+            : t("wild_hunter_charge", {
+              kills: wildHunterState.awakenKills,
+              required: WILD_HUNTER_RULES.awakenKillsRequired,
+            }),
+      })
     : !isAssassinEquipped()
       ? t("hud_character", { name: formatCatalogName(shopState.equippedCharacter) })
       : player.stealthActive
@@ -7240,7 +9588,10 @@ function drawHud() {
     ctx.fillText(t("hud_factory_hint"), 470, 96);
   } else if (level.theme === "frozen") {
     ctx.fillText(t("hud_clock", { time: formatStageTimer(frozenTimeRemaining) }), 470, 68);
-    ctx.fillText(t("hud_frozen_hint"), 470, 96);
+    ctx.fillText(t("hud_frozen_warden_hint"), 470, 96);
+  } else if (level.theme === "jungle") {
+    ctx.fillText(t("hud_jungle_hint"), 470, 68);
+    ctx.fillText(t("hud_return_lobby"), 470, 96);
   } else {
     ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
@@ -7251,13 +9602,19 @@ function drawHud() {
     ctx.fillText(t("guardian_hint"), 470, 124);
   } else if (isAssassinEquipped()) {
     ctx.fillText(t("assassin_hint"), 470, 124);
+  } else if (isLightnerEquipped()) {
+    ctx.fillText(t("lightner_hint"), 470, 124);
+  } else if (isWildHunterEquipped()) {
+    ctx.fillText(t("wild_hunter_hint"), 470, 124);
   }
 
   if (stageMessageTimer > 0) {
     if (level.theme === "factory") {
       drawCenterPanel(level.name, t("stage_objective_factory", { count: currentShardTarget() }), "");
     } else if (level.theme === "frozen") {
-      drawCenterPanel(level.name, t("stage_objective_frozen", { count: currentShardTarget() }), "");
+      drawCenterPanel(level.name, t("stage_objective_frozen_warden"), "");
+    } else if (level.theme === "jungle") {
+      drawCenterPanel(level.name, t("stage_objective_jungle"), "");
     } else {
       drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
     }
@@ -7267,21 +9624,85 @@ function drawHud() {
     drawCenterPanel(
       t("center_stage_clear"),
       t("center_next_stage"),
-      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) })
+      t("center_now_entering", { name: getStageDisplayName(currentStageIndex + 1) }),
+      stageClearRewardText()
     );
   } else if (gameState === "finished") {
-    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), t("center_restart"));
+    drawCenterPanel(t("center_all_clear"), t("center_all_clear_copy"), stageClearRewardText(), t("center_restart"));
   } else if (gameState === "gameover") {
     drawCenterPanel(t("center_game_over"), t("center_game_over_copy"), t("center_restart"));
   }
 }
 
-function drawCenterPanel(title, line1, line2) {
+function drawJungleMonkey() {
+  const monkey = jungleState.monkey;
+  const pulse = 0.7 + Math.sin(lastTime * 0.012) * 0.18;
+  const angry = monkey.angerTimer > 0;
+  const attacking = monkey.attackTimer > 0;
+  const x = monkey.x;
+  const y = monkey.y;
+
+  if (angry || attacking) {
+    const rect = getJungleMonkeyAttackRect();
+    ctx.fillStyle = attacking ? "rgba(255, 78, 54, 0.28)" : `rgba(255, 220, 65, ${0.14 + pulse * 0.08})`;
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.strokeStyle = attacking ? "rgba(255, 96, 72, 0.75)" : "rgba(255, 230, 90, 0.52)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+  }
+
+  ctx.fillStyle = "rgba(28, 48, 20, 0.5)";
+  ctx.fillRect(x - 12, y + monkey.h - 3, monkey.w + 24, 8);
+
+  ctx.strokeStyle = "#6d4326";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.arc(x + 6, y + 28, 20, Math.PI * 0.65, Math.PI * 1.55);
+  ctx.stroke();
+
+  ctx.fillStyle = angry ? "#8d3d24" : "#7a4a28";
+  ctx.fillRect(x + 8, y + 18, 30, 30);
+  ctx.fillStyle = angry ? "#b75a31" : "#9a6336";
+  ctx.fillRect(x + 4, y + 7, 36, 28);
+  ctx.fillStyle = "#f3c68d";
+  ctx.fillRect(x + 12, y + 16, 18, 14);
+  ctx.fillStyle = angry ? "#ffef5f" : "#fff0bf";
+  ctx.fillRect(x + 10, y + 14, 5, 5);
+  ctx.fillRect(x + 28, y + 14, 5, 5);
+  ctx.fillStyle = angry ? "#d82323" : "#1d130c";
+  ctx.fillRect(x + 12, y + 16, 2, 2);
+  ctx.fillRect(x + 30, y + 16, 2, 2);
+  ctx.fillStyle = angry ? "#3a160e" : "#4b2b19";
+  ctx.fillRect(x + 17, y + 27, 11, 3);
+
+  ctx.fillStyle = "#5f351d";
+  ctx.fillRect(x - 3, y + 21, 10, 22);
+  ctx.fillRect(x + 37, y + 21, 10, 22);
+  ctx.fillStyle = "#3a2316";
+  ctx.fillRect(x + 11, y + 46, 9, 11);
+  ctx.fillRect(x + 26, y + 46, 9, 11);
+
+  if (attacking) {
+    ctx.strokeStyle = "rgba(255, 230, 112, 0.82)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(x + 2, y + 31);
+    ctx.lineTo(x - 28, y + 26);
+    ctx.lineTo(x - 64, y + 31);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < Math.min(3, jungleState.delivered); i += 1) {
+    drawBananaSprite(x + 8 + i * 12, y - 18, 0.75);
+  }
+}
+
+function drawCenterPanel(title, line1, line2, line3) {
   ctx.fillStyle = "rgba(7, 19, 33, 0.72)";
-  ctx.fillRect(180, 140, 600, 190);
+  ctx.fillRect(180, 140, 600, line3 ? 220 : 190);
   ctx.strokeStyle = "#ffe98a";
   ctx.lineWidth = 4;
-  ctx.strokeRect(180, 140, 600, 190);
+  ctx.strokeRect(180, 140, 600, line3 ? 220 : 190);
   ctx.fillStyle = "#fff6ca";
   ctx.textAlign = "center";
   ctx.font = "bold 40px Verdana";
@@ -7291,12 +9712,29 @@ function drawCenterPanel(title, line1, line2) {
   if (line2) {
     ctx.fillText(line2, GAME_WIDTH / 2, 278);
   }
+  if (line3) {
+    ctx.fillText(line3, GAME_WIDTH / 2, 314);
+  }
   ctx.textAlign = "left";
 }
 
 function render() {
+  ctx.save();
+  if (screenShakeTimer > 0) {
+    const shake = Math.ceil(screenShakeTimer * 10);
+    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  }
   drawBackground();
-  drawWorld();
+  if (assassinationEvent.active && assassinationEvent.mode === "wardenQte") {
+    ctx.save();
+    ctx.translate(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    ctx.scale(1.08, 1.08);
+    ctx.translate(-GAME_WIDTH / 2, -GAME_HEIGHT / 2);
+    drawWorld();
+    ctx.restore();
+  } else {
+    drawWorld();
+  }
   drawFrozenAtmosphere();
   drawHud();
   if (assassinationEvent.active) {
@@ -7308,6 +9746,7 @@ function render() {
   } else if (nightmareEvent.active || nightmareEvent.countdown) {
     drawNightmareOverlay();
   }
+  ctx.restore();
 }
 
 function drawFrozenAtmosphere() {
@@ -7343,24 +9782,53 @@ function drawFrozenAtmosphere() {
 
 function drawAssassinationOverlay() {
   const bossFight = assassinationEvent.targetType === "boss";
+  const wardenFight = assassinationEvent.mode === "wardenQte";
   const panelAlpha = 0.48 + assassinationEvent.flash * 0.18;
-  ctx.fillStyle = `rgba(4, 7, 16, ${panelAlpha})`;
+  ctx.fillStyle = wardenFight ? `rgba(2, 10, 22, ${Math.min(0.82, panelAlpha + 0.14)})` : `rgba(4, 7, 16, ${panelAlpha})`;
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  if (wardenFight && assassinationEvent.target) {
+    const bounds = assassinationEvent.targetBounds || getEnemyBounds(assassinationEvent.target, assassinationEvent.target.type);
+    const focusX = bounds.x + bounds.w * 0.5 - camera.x;
+    const focusY = bounds.y + bounds.h * 0.45;
+    if (assassinationEvent.timer <= 0.5) {
+      const tension = 1 - Math.max(0, assassinationEvent.timer / 0.5);
+      ctx.fillStyle = `rgba(153, 230, 255, ${0.12 + tension * 0.18})`;
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
+    ctx.fillStyle = "rgba(112, 229, 255, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(focusX, focusY, 108, 124, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(208, 252, 255, 0.52)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(focusX, focusY, 116, 132, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   ctx.fillStyle = "rgba(10, 15, 28, 0.86)";
   ctx.fillRect(180, 146, 600, 204);
-  ctx.strokeStyle = `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
+  ctx.strokeStyle = wardenFight
+    ? `rgba(126, 229, 255, ${0.62 + assassinationEvent.flash * 0.22})`
+    : `rgba(136, 255, 228, ${0.52 + assassinationEvent.flash * 0.2})`;
   ctx.lineWidth = 4;
   ctx.strokeRect(180, 146, 600, 204);
 
   ctx.fillStyle = "#f7f9ff";
   ctx.textAlign = "center";
   ctx.font = "bold 30px Verdana";
-  ctx.fillText(assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"), GAME_WIDTH / 2, 188);
+  ctx.fillText(
+    wardenFight ? t("assassinate_warden_title") : assassinationEvent.mode === "backstab" ? t("assassinate_silent_kill") : t("assassinate_clash"),
+    GAME_WIDTH / 2,
+    188
+  );
   ctx.font = "18px Verdana";
   ctx.fillStyle = "#d5efff";
   ctx.fillText(
-    assassinationEvent.mode === "backstab"
+    wardenFight
+      ? t("assassinate_warden_copy")
+      : assassinationEvent.mode === "backstab"
       ? t("assassinate_locking")
       : bossFight
         ? t("assassinate_boss_copy")
@@ -7375,11 +9843,20 @@ function drawAssassinationOverlay() {
   const meterH = 24;
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.fillRect(meterX, meterY, meterW, meterH);
-  ctx.fillStyle = assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
+  ctx.fillStyle = wardenFight
+    ? "rgba(107, 222, 255, 0.78)"
+    : assassinationEvent.mode === "backstab" ? "rgba(136, 255, 228, 0.7)" : "rgba(255, 110, 110, 0.7)";
   const fillAmount = assassinationEvent.mode === "backstab"
     ? 1 - Math.max(0, assassinationEvent.timer / ASSASSIN_RULES.strikeWindup)
     : assassinationEvent.gauge;
   ctx.fillRect(meterX, meterY, meterW * fillAmount, meterH);
+  if (wardenFight) {
+    const markerX = meterX + meterW * FROST_WARDEN_QTE.successThreshold;
+    ctx.fillStyle = "rgba(255, 245, 180, 0.72)";
+    ctx.fillRect(markerX - 3, meterY - 7, 6, meterH + 14);
+    ctx.fillStyle = "rgba(255, 110, 110, 0.56)";
+    ctx.fillRect(meterX, meterY, meterW * 0.5, 3);
+  }
   ctx.strokeStyle = "rgba(255, 241, 173, 0.7)";
   ctx.lineWidth = 2;
   ctx.strokeRect(meterX, meterY, meterW, meterH);
@@ -7388,7 +9865,7 @@ function drawAssassinationOverlay() {
   ctx.font = "bold 22px Verdana";
   ctx.fillText(assassinationEvent.successText, GAME_WIDTH / 2, 308);
   ctx.font = "17px Verdana";
-  if (assassinationEvent.mode === "qte") {
+  if (assassinationEvent.mode === "qte" || wardenFight) {
     ctx.fillText(t("assassinate_time", { time: assassinationEvent.timer.toFixed(1) }), GAME_WIDTH / 2, 334);
   }
   ctx.textAlign = "left";
@@ -7719,6 +10196,7 @@ applyLanguage(currentLanguage);
 loadPersistentProgress();
 updateStageSelectLocks();
 applyScreenMode();
+applyControlMode();
 openLobby();
 initializeAuthControls();
 savePersistentProgress(true);
