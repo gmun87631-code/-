@@ -79,6 +79,9 @@ const PATCH_NOTES = [
       "모바일 조작에 X 스킬 버튼 추가",
       "모든 캐릭터 픽셀 스프라이트 디테일과 식별성을 개선",
       "라이트너 이미지 에셋 렌더링을 제거하고 기존 코드 스프라이트로 복구",
+      "4스테이지 하드 댄스머신 입력을 방향키와 모바일 드래그에서도 작동하도록 수정",
+      "라이트너 픽셀 스프라이트가 보유 스킨 팔레트와 특수 스킨 효과를 반영하도록 수정",
+      "4스테이지 하드 댄스머신 트리거를 시작 즉시 카운트다운 방식으로 안정화하고 난이도 동기화 문제를 수정",
     ],
   },
   {
@@ -585,7 +588,7 @@ const STRINGS = {
     claw_copy: "Click the lever to pull and fill the meter.",
     claw_pull: "PULL!",
     dance_title: "Dance Machine",
-    dance_copy: "Follow the lit arrow. Press WASD (6 steps).",
+    dance_copy: "Follow the lit arrow. Press WASD, arrow keys, or drag (6 steps).",
     dance_ready: "Ready...",
     nightmare_title: "Nightmare Ambush",
     nightmare_countdown: "Get ready. The nightmare is closing in.",
@@ -831,7 +834,7 @@ const STRINGS = {
     claw_copy: "레버를 클릭해 게이지를 채우세요.",
     claw_pull: "당기기!",
     dance_title: "댄스 머신",
-    dance_copy: "빛나는 화살표를 따라가세요. WASD 입력 (6단계).",
+    dance_copy: "빛나는 화살표를 따라가세요. WASD/방향키/드래그 입력 (6단계).",
     dance_ready: "준비...",
     nightmare_title: "악몽 습격",
     nightmare_countdown: "준비하세요. 악몽이 다가오고 있습니다.",
@@ -1820,6 +1823,103 @@ function getSimpleSkinPalette() {
     };
   }
   return null;
+}
+
+function getLightnerSkinPalette() {
+  const simpleSkin = getSimpleSkinPalette();
+  if (simpleSkin) {
+    return {
+      hood: simpleSkin.dark,
+      coat: simpleSkin.primary,
+      coatDark: simpleSkin.secondary,
+      mask: simpleSkin.dark,
+      pants: simpleSkin.dark,
+      arm: simpleSkin.secondary,
+      trim: simpleSkin.accent,
+      eye: simpleSkin.glow,
+      lightningRgb: "255, 215, 0",
+      lightningSolid: simpleSkin.glow,
+      awakenRgb: "255, 223, 45",
+    };
+  }
+
+  if (shopState.equippedSkin === "cyber") {
+    return {
+      hood: "#05070e",
+      coat: "#10172a",
+      coatDark: "#1e2750",
+      mask: "#05070e",
+      pants: "#070a14",
+      arm: "#18204a",
+      trim: "#9d67ff",
+      eye: "#77eaff",
+      lightningRgb: "119, 234, 255",
+      lightningSolid: "#77eaff",
+      awakenRgb: "157, 103, 255",
+    };
+  }
+
+  if (shopState.equippedSkin === "voidKing") {
+    return {
+      hood: "#050507",
+      coat: "#111116",
+      coatDark: "#1c1b23",
+      mask: "#050507",
+      pants: "#08080a",
+      arm: "#2e0a0d",
+      trim: "#611318",
+      eye: "#ff9b9b",
+      lightningRgb: "210, 30, 40",
+      lightningSolid: "#ff9b9b",
+      awakenRgb: "255, 76, 76",
+    };
+  }
+
+  if (shopState.equippedSkin === "admin") {
+    return {
+      hood: "#090806",
+      coat: "#1d1720",
+      coatDark: "#352315",
+      mask: "#050506",
+      pants: "#08080a",
+      arm: "#2c2012",
+      trim: "#d3901d",
+      eye: "#fff7b3",
+      lightningRgb: "255, 217, 94",
+      lightningSolid: "#fff7b3",
+      awakenRgb: "255, 247, 179",
+    };
+  }
+
+  if (shopState.equippedSkin === "angelDemon") {
+    return {
+      hood: "#121018",
+      coat: "#f0e7da",
+      coatDark: "#3b235c",
+      mask: "#090711",
+      pants: "#110c1a",
+      arm: "#33204f",
+      trim: "#f3c66b",
+      eye: "#ffe69a",
+      lightningRgb: "169, 78, 255",
+      lightningSolid: "#f3c66b",
+      awakenRgb: "243, 198, 107",
+    };
+  }
+
+  return {
+    hood: "#020304",
+    coat: "#0a0c0f",
+    coatDark: "#121315",
+    mask: "#050506",
+    pants: "#050506",
+    arm: "#0d0d0f",
+    trim: "#ffd700",
+    eye: "#ffd700",
+    lightningRgb: "255, 215, 0",
+    lightningSolid: "#ffd700",
+    awakenRgb: "255, 223, 45",
+  };
 }
 
 function getStartingLives() {
@@ -3220,6 +3320,18 @@ function resetNightmareEvent() {
   resetDanceEvent();
 }
 
+function isArcadeHardDanceStage() {
+  const hardSelected =
+    activeDifficultyKey === "hard" ||
+    difficultySelect.value === "hard" ||
+    difficulty === DIFFICULTIES.hard;
+  const arcadeStage =
+    level.theme === "arcade" ||
+    currentStageIndex === 3 ||
+    selectedStageIndex === 3;
+  return arcadeStage && hardSelected;
+}
+
 function triggerNightmareEvent() {
   nightmareEvent.countdown = true;
   nightmareEvent.countdownTimer = 3;
@@ -3302,11 +3414,49 @@ function triggerDanceEvent() {
   keys.crouch = false;
 
   const steps = ["left", "up", "down", "right"];
+  let previousStep = null;
   for (let i = 0; i < 6; i += 1) {
-    const next = steps[Math.floor(Math.random() * steps.length)];
+    const candidates = steps.filter((step) => step !== previousStep);
+    const next = candidates[Math.floor(Math.random() * candidates.length)];
     danceEvent.sequence.push(next);
+    previousStep = next;
   }
   playSound("coin");
+}
+
+function directionFromDanceKey(key, code) {
+  if (["a", "A", "ArrowLeft"].includes(key) || code === "KeyA") {
+    return "left";
+  }
+  if (["d", "D", "ArrowRight"].includes(key) || code === "KeyD") {
+    return "right";
+  }
+  if (["w", "W", "ArrowUp", " ", "Spacebar"].includes(key) || code === "KeyW" || code === "Space") {
+    return "up";
+  }
+  if (["s", "S", "ArrowDown"].includes(key) || code === "KeyS") {
+    return "down";
+  }
+  return null;
+}
+
+function submitDanceInput(dir) {
+  if (!danceEvent.active || !dir) {
+    return false;
+  }
+
+  if (dir === danceEvent.sequence[danceEvent.index]) {
+    danceEvent.index += 1;
+    danceEvent.stepTimer = danceEvent.stepTimeLimit;
+    danceEvent.flash = 1;
+    playSound("stomp");
+    if (danceEvent.index >= danceEvent.sequence.length) {
+      resolveDanceEvent(true);
+    }
+  } else {
+    resolveDanceEvent(false);
+  }
+  return true;
 }
 
 function resolveDanceEvent(success) {
@@ -3550,10 +3700,14 @@ function loadStage(stageIndex, preserveScore = true) {
   }
 
   clearLightnerState(true);
+  resetNightmareEvent();
   resetPlayerPosition();
   camera.x = 0;
   screenShakeTimer = 0;
   stageMessageTimer = 2.2;
+  if (isArcadeHardDanceStage()) {
+    triggerDanceEvent();
+  }
 }
 
 function addGround(startTile, endTile) {
@@ -3799,6 +3953,7 @@ function hazardHasSerpent(hazard) {
 }
 
 function restartGame() {
+  activeDifficultyKey = DIFFICULTIES[difficultySelect.value] ? difficultySelect.value : activeDifficultyKey;
   difficulty = DIFFICULTIES[activeDifficultyKey];
   score = 0;
   collectedCount = 0;
@@ -4968,32 +5123,13 @@ function handleInput(event, pressed) {
   }
 
   const arcadeHardDanceLive =
-    level.theme === "arcade" &&
-    difficulty.label === "Hard" &&
+    isArcadeHardDanceStage() &&
     (danceEvent.active || danceEvent.countdown);
 
   if (arcadeHardDanceLive) {
     if (pressed && danceEvent.active) {
-      const key = event.key;
-      const dir =
-        ["a", "A"].includes(key) ? "left" :
-        ["d", "D"].includes(key) ? "right" :
-        ["w", "W"].includes(key) ? "up" :
-        ["s", "S"].includes(key) ? "down" :
-        null;
-
-      if (dir) {
-        if (dir === danceEvent.sequence[danceEvent.index]) {
-          danceEvent.index += 1;
-          danceEvent.stepTimer = danceEvent.stepTimeLimit;
-          danceEvent.flash = 1;
-          playSound("stomp");
-          if (danceEvent.index >= danceEvent.sequence.length) {
-            resolveDanceEvent(true);
-          }
-        } else {
-          resolveDanceEvent(false);
-        }
+      const dir = directionFromDanceKey(event.key, event.code);
+      if (submitDanceInput(dir)) {
         return;
       }
     }
@@ -5086,7 +5222,7 @@ function handleInput(event, pressed) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Enter", "Escape", "Spacebar"].includes(event.key)) {
     event.preventDefault();
   }
   handleInput(event, true);
@@ -5140,6 +5276,7 @@ const mobileJoystickState = {
   originX: 0,
   originY: 0,
   jumped: false,
+  danceDir: null,
 };
 
 function resetMobileJoystick() {
@@ -5153,6 +5290,7 @@ function resetMobileJoystick() {
   mobileJoystickState.originX = 0;
   mobileJoystickState.originY = 0;
   mobileJoystickState.jumped = false;
+  mobileJoystickState.danceDir = null;
   if (mobileJoystickKnob) {
     mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
   }
@@ -5178,6 +5316,33 @@ function updateMobileJoystick(event) {
 
   if (mobileJoystickKnob) {
     mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
+  }
+
+  const arcadeHardDanceLive =
+    isArcadeHardDanceStage() &&
+    (danceEvent.active || danceEvent.countdown);
+
+  if (arcadeHardDanceLive) {
+    keys.left = false;
+    keys.right = false;
+    keys.crouch = false;
+    keys.jump = false;
+    keys.jumpQueued = false;
+
+    let dir = null;
+    if (danceEvent.active && Math.hypot(normalizedX, normalizedY) > 0.42) {
+      if (Math.abs(normalizedX) > Math.abs(normalizedY)) {
+        dir = normalizedX < 0 ? "left" : "right";
+      } else {
+        dir = normalizedY < 0 ? "up" : "down";
+      }
+    }
+
+    if (dir && dir !== mobileJoystickState.danceDir) {
+      submitDanceInput(dir);
+    }
+    mobileJoystickState.danceDir = dir;
+    return;
   }
 
   keys.left = normalizedX < -0.32;
@@ -5210,6 +5375,7 @@ function startMobileDrag(clientX, clientY, pointerId = null, touchId = null) {
   mobileJoystickState.originX = clientX;
   mobileJoystickState.originY = clientY;
   mobileJoystickState.jumped = false;
+  mobileJoystickState.danceDir = null;
   updateMobileJoystick({ clientX, clientY });
   return true;
 }
@@ -6472,12 +6638,12 @@ function updateClawEscapeEvent(dt) {
 }
 
 function updateNightmareEvent(dt) {
-  if (difficulty.label !== "Hard") {
+  if (isArcadeHardDanceStage()) {
+    updateDanceEvent(dt);
     return;
   }
 
-  if (level.theme === "arcade") {
-    updateDanceEvent(dt);
+  if (activeDifficultyKey !== "hard") {
     return;
   }
 
@@ -7627,56 +7793,70 @@ function drawPlayer() {
 function drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset) {
   const awakened = lightnerState.awakenTimer > 0;
   const pulse = awakened ? 0.82 + Math.sin(lastTime * 0.03) * 0.18 : 0.62 + Math.sin(lastTime * 0.014) * 0.12;
+  const palette = getLightnerSkinPalette();
+  const spark = (alpha) => `rgba(${palette.lightningRgb}, ${alpha})`;
+  const awakenSpark = (alpha) => `rgba(${palette.awakenRgb}, ${alpha})`;
   const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
   ctx.save();
 
-  ctx.fillStyle = "#020304";
+  ctx.fillStyle = palette.hood;
   r(7, 2, 12, 6);
   r(6, 6, 14, 4);
-  ctx.fillStyle = "#0a0c0f";
+  ctx.fillStyle = palette.coat;
   r(5, 8, 16, 9);
-  ctx.fillStyle = "#161616";
+  ctx.fillStyle = palette.coatDark;
   r(8, 8, 10, 5);
-  ctx.fillStyle = "#050506";
+  ctx.fillStyle = palette.mask;
   r(9, 10, 8, 7);
-  ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
+  ctx.fillStyle = spark(pulse);
   r(11, 11, 2, 2);
   r(16, 11, 2, 2);
   r(13, 15, 4, 1);
 
-  ctx.fillStyle = "#08090b";
+  ctx.fillStyle = palette.pants;
   r(5, 17, 17, 10);
-  ctx.fillStyle = "#121315";
+  ctx.fillStyle = palette.coatDark;
   r(6, 18, 15, 4);
   r(8, 22, 11, 2);
-  ctx.fillStyle = `rgba(255, 215, 0, ${0.85 * pulse})`;
+  ctx.fillStyle = spark(0.85 * pulse);
   r(9, 18, 1, 4);
   r(13, 18, 1, 7);
   r(17, 18, 2, 1);
   r(18, 18 + scarfOffset, 5, 2);
   r(20, 20 + scarfOffset, 3, 1);
 
-  ctx.fillStyle = "#050506";
+  ctx.fillStyle = palette.pants;
   r(4, 27, 7, 4 + legOffset);
   r(15, 27, 7, 4 + (2 - legOffset));
-  ctx.fillStyle = `rgba(255, 215, 0, ${0.72 * pulse})`;
+  ctx.fillStyle = spark(0.72 * pulse);
   r(6, 28, 2, 1);
   r(17, 28, 2, 1);
 
-  ctx.fillStyle = "#0d0d0f";
+  ctx.fillStyle = palette.arm;
   r(2, 19 + armOffset, 2, 8);
   r(22, 19 - armOffset, 2, 8);
-  ctx.fillStyle = `rgba(255, 215, 0, ${0.78 * pulse})`;
+  ctx.fillStyle = spark(0.78 * pulse);
   r(3, 20 + armOffset, 1, 4);
   r(22, 20 - armOffset, 1, 4);
 
+  if (shopState.equippedSkin === "angelDemon") {
+    ctx.fillStyle = "#f0e7da";
+    r(6, 18, 5, 5);
+    ctx.fillStyle = "#3b235c";
+    r(16, 18, 5, 5);
+    ctx.fillStyle = spark(0.74 * pulse);
+    r(13, 18, 1, 7);
+    r(17, 18, 2, 1);
+  }
+
   if (awakened) {
-    ctx.fillStyle = `rgba(255, 223, 45, ${0.28 + pulse * 0.2})`;
+    ctx.fillStyle = awakenSpark(0.28 + pulse * 0.2);
     r(3, 5, 2, 2);
     r(20, 6, 2, 2);
     r(11, 2, 1, 3);
     r(18, 15, 3, 1);
   }
+  drawPlayerSkinAccent();
   ctx.restore();
 }
 
