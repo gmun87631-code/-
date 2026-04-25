@@ -492,6 +492,26 @@ body.classic-mode canvas {
   display: none;
 }
 
+.bgm-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.bgm-volume {
+  gap: 8px;
+}
+
+.bgm-volume input[type="range"] {
+  width: 100%;
+  accent-color: #ffeaa4;
+}
+
+#bgmVolumeValue {
+  color: #d6f7ff;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
 .lobby-divider {
   margin: 20px 0;
   height: 2px;

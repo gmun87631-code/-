@@ -176,6 +176,14 @@
                     </select>
                   </label>
                   <button id="muteButton" type="button">Mute: Off</button>
+                  <div class="bgm-controls">
+                    <button id="bgmToggleButton" type="button">BGM: On</button>
+                    <label class="option bgm-volume" for="bgmVolumeSlider">
+                      <span data-i18n="bgm_volume_label">BGM Volume</span>
+                      <input id="bgmVolumeSlider" type="range" min="0" max="100" value="70">
+                      <span id="bgmVolumeValue">70%</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </section>
@@ -195,7 +203,6 @@
                   <h4 data-i18n="shop_heading">Shop</h4>
                   <div class="shop-tabs" role="tablist" aria-label="Shop tabs">
                     <button id="shopTabCharacters" type="button" class="shop-tab active" aria-pressed="true" data-i18n="characters_tab">Characters</button>
-                    <button id="shopTabSkins" type="button" class="shop-tab" aria-pressed="false" data-i18n="skins_tab">Skins</button>
                     <button id="shopTabBoxes" type="button" class="shop-tab" aria-pressed="false" data-i18n="boxes_tab">Boxes</button>
                   </div>
                 </div>

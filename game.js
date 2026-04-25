@@ -1,8 +1,11 @@
-﻿const canvas = document.getElementById("game");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
 const muteButton = document.getElementById("muteButton");
+const bgmToggleButton = document.getElementById("bgmToggleButton");
+const bgmVolumeSlider = document.getElementById("bgmVolumeSlider");
+const bgmVolumeValue = document.getElementById("bgmVolumeValue");
 const difficultySelect = document.getElementById("difficultySelect");
 const screenModeSelect = document.getElementById("screenModeSelect");
 const controlModeSelect = document.getElementById("controlModeSelect");
@@ -40,7 +43,7 @@ const shopSeasonBadge = document.getElementById("shopSeasonBadge");
 const shopPanel = document.getElementById("shopPanel");
 const shopCatalogList = document.getElementById("shopCatalogList");
 const shopTabCharacters = document.getElementById("shopTabCharacters");
-const shopTabSkins = document.getElementById("shopTabSkins");
+let shopTabSkins = document.getElementById("shopTabSkins");
 const shopTabBoxes = document.getElementById("shopTabBoxes");
 const characterCollection = document.getElementById("characterCollection");
 const skinCollection = document.getElementById("skinCollection");
@@ -56,6 +59,9 @@ const lootboxSummary = document.getElementById("lootboxSummary");
 const lootboxResultGrid = document.getElementById("lootboxResultGrid");
 const metaDescription = document.getElementById("metaDescription");
 
+shopTabSkins?.remove();
+shopTabSkins = null;
+
 const GAME_WIDTH = canvas.width;
 const GAME_HEIGHT = canvas.height;
 const TILE = 32;
@@ -68,10 +74,24 @@ const PLAYER_CROUCH_H = 20;
 const ACCOUNT_KEY = "starling-sprint-accounts-v1";
 const CURRENT_ACCOUNT_KEY = "starling-sprint-current-account-v1";
 const LANGUAGE_KEY = "starling-sprint-language-v1";
+const BGM_SETTINGS_KEY = "starling-sprint-bgm-settings-v1";
 const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const MAX_MONSTER_SPAWNS = 14;
 const PATCH_NOTES = [
+  {
+    version: "Beta v0.8",
+    date: "2026-04-26",
+    items: [
+      "신규 스킨 오버기어: 프로토타입 B-08 추가",
+      "오버기어 B-08 전용 녹슨 브론즈 기계 팔레트와 하늘색 전기 이펙트 적용",
+      "전기 이펙트가 6~8초마다 짧게 꺼졌다 켜지고, 각성 중에는 강하게 유지되도록 조정",
+      "상점 스킨 탭 제거 및 상자/보유 스킨 흐름 유지",
+      "모든 난이도 기본 점프 횟수를 트리플 점프로 통일하고 점프 높이 상향",
+      "인게임 평화로운 배경음악 추가",
+      "BGM ON/OFF와 볼륨 설정 추가 및 저장 지원",
+    ],
+  },
   {
     version: "Beta v0.7",
     date: "2026-04-25",
@@ -284,6 +304,14 @@ const SKIN_DEFS = {
     price: 0,
     tier: "legendary",
   },
+  overgearB08: {
+    name: "Overgear: Prototype B-08",
+    summary: "Rust-bronze machinery with unstable sky-blue current",
+    purchasable: false,
+    defaultOwned: false,
+    price: 0,
+    tier: "legendary",
+  },
   admin: {
     name: "Admin",
     summary: "Crown of control",
@@ -328,6 +356,11 @@ const LOOT_BOX_DEFS = {
 const LOOT_BOX_ORDER = Object.keys(LOOT_BOX_DEFS);
 const LOOTBOX_ELIGIBLE_SKINS = SHOP_CATALOG.skins.filter((item) => !["classic", "admin"].includes(item));
 const LOOTBOX_ANIMATION_DURATION = 5;
+const OVERGEAR_ELECTRIC_MIN_INTERVAL = 6;
+const OVERGEAR_ELECTRIC_MAX_INTERVAL = 8;
+const OVERGEAR_ELECTRIC_MIN_OUTAGE = 0.2;
+const OVERGEAR_ELECTRIC_MAX_OUTAGE = 0.4;
+const OVERGEAR_ELECTRIC_NOISE_DURATION = 0.18;
 const PREMIUM_BOX_PITY_TARGET = 20;
 const BOX_PRICE_VARIANCE = 100;
 const STAGE_BOX_REWARD_CHANCES = {
@@ -382,8 +415,8 @@ const LIGHTNER_RULES = {
   fieldCooldown: 15,
   awakenedFieldCooldown: 5,
   fieldRadius: 96,
-  normalStun: 3.25,
-  bossStun: 2.5,
+  normalStun: 5,
+  bossStun: 5,
   bossSlowMultiplier: 0.45,
   awakenKillsRequired: 5,
   awakenDuration: 10,
@@ -415,7 +448,7 @@ const STRINGS = {
     hero_eyebrow: "Original Retro Platformer",
     language_label: "Language",
     control_move: "A/D or Left/Right Move",
-    control_jump: "W, Up, or Space Double Jump",
+    control_jump: "W, Up, or Space Triple Jump",
     control_skill: "E Skill / Q Skill / X Skill",
     control_restart: "R Restart",
     canvas_label: "Starling Sprint game canvas",
@@ -438,6 +471,7 @@ const STRINGS = {
     stage_select_title: "Stage Select",
     stage_label: "Stage",
     settings_title: "Settings",
+    bgm_volume_label: "BGM Volume",
     difficulty_label: "Difficulty",
     screen_label: "Screen",
     control_mode_label: "Controls",
@@ -659,6 +693,8 @@ const STRINGS = {
     skin_cyber_summary: "Dark neon combat suit",
     skin_voidKing_name: "Void King",
     skin_voidKing_summary: "Ancient black armor split by crimson void cracks",
+    skin_overgearB08_name: "Overgear: Prototype B-08",
+    skin_overgearB08_summary: "Rust-bronze machine armor with unstable sky-blue electricity",
     skin_admin_name: "Admin",
     skin_admin_summary: "Crown of control",
     stage_1_name: "Stage 1 - Sun Meadow",
@@ -675,7 +711,7 @@ const STRINGS = {
     hero_eyebrow: "오리지널 레트로 플랫폼 게임",
     language_label: "언어",
     control_move: "A/D 또는 좌/우 이동",
-    control_jump: "W, 위쪽, 또는 스페이스 이단 점프",
+    control_jump: "W, 위쪽, 또는 스페이스 트리플 점프",
     control_skill: "E 스킬 / Q 스킬 / X 스킬",
     control_restart: "R 다시 시작",
     canvas_label: "스타링 스프린트 게임 화면",
@@ -698,6 +734,7 @@ const STRINGS = {
     stage_select_title: "스테이지 선택",
     stage_label: "스테이지",
     settings_title: "설정",
+    bgm_volume_label: "BGM 볼륨",
     difficulty_label: "난이도",
     screen_label: "화면",
     control_mode_label: "조작",
@@ -919,6 +956,8 @@ const STRINGS = {
     skin_cyber_summary: "검정 바탕의 네온 전투 슈트",
     skin_voidKing_name: "공허의 왕",
     skin_voidKing_summary: "심홍 공허의 균열이 흐르는 고대 흑갑 스킨",
+    skin_overgearB08_name: "오버기어: 프로토타입 B-08",
+    skin_overgearB08_summary: "녹슨 브론즈 기계 장갑과 불안정한 하늘색 전기",
     skin_admin_name: "관리자",
     skin_admin_summary: "통치의 왕관",
     stage_1_name: "스테이지 1 - 태양 초원",
@@ -945,12 +984,14 @@ const audioState = {
   muted: false,
   context: null,
   music: {
+    peaceful: null,
     dance: null,
   },
   sfx: {
     mythicNodes: [],
   },
 };
+const bgmState = loadBgmSettings();
 
 const camera = { x: 0 };
 const authMessageState = {
@@ -981,8 +1022,8 @@ const DIFFICULTIES = {
     lives: 5,
     lifeLoss: 1,
     maxJumps: 3,
-    jumpVelocity: -720,
-    airJumpVelocity: -720,
+    jumpVelocity: -780,
+    airJumpVelocity: -780,
     shardGoal: 11,
     enemyBonus: 0,
     collectibleBonus: 1.1,
@@ -992,9 +1033,9 @@ const DIFFICULTIES = {
     enemySpeed: 1,
     lives: 3,
     lifeLoss: 1,
-    maxJumps: 2,
-    jumpVelocity: -720,
-    airJumpVelocity: -720,
+    maxJumps: 3,
+    jumpVelocity: -780,
+    airJumpVelocity: -780,
     shardGoal: 22,
     enemyBonus: 1,
     collectibleBonus: 1,
@@ -1004,9 +1045,9 @@ const DIFFICULTIES = {
     enemySpeed: 1.3,
     lives: 2,
     lifeLoss: 2,
-    maxJumps: 2,
-    jumpVelocity: -720,
-    airJumpVelocity: -620,
+    maxJumps: 3,
+    jumpVelocity: -780,
+    airJumpVelocity: -780,
     shardGoal: 33,
     enemyBonus: 2,
     collectibleBonus: 0.95,
@@ -1054,14 +1095,14 @@ const STAGE_DEFS = [
     platforms: [
       [6, 12, 2], [12, 10, 3], [18, 8, 2], [26, 9, 3], [34, 7, 3], [43, 10, 2],
       [52, 8, 3], [63, 11, 2], [72, 8, 3], [81, 6, 4], [92, 9, 3], [101, 7, 2],
-      [110, 10, 3], [123, 8, 3], [132, 6, 4],
+      [110, 10, 3], [123, 8, 3], [132, 7, 5],
     ],
     hazards: [
       [8, 2], [14, 3], [21, 3], [29, 3], [38, 3], [46, 4], [58, 3], [67, 3], [74, 3], [84, 4], [95, 3], [105, 3], [115, 3],
     ],
     collectibles: [
       { row: [6, 10, 3] }, { row: [18, 6, 4] }, { row: [34, 5, 5] }, { row: [52, 6, 4] },
-      { row: [72, 6, 4] }, { row: [92, 7, 4] }, { row: [111, 8, 3] }, { row: [132, 4, 4] },
+      { row: [72, 6, 4] }, { row: [92, 7, 4] }, { row: [111, 8, 3] }, { row: [132, 5, 4] },
       { point: [4, 13] }, { point: [40, 13] }, { point: [90, 13] }, { point: [126, 13] },
     ],
     enemies: [
@@ -1081,15 +1122,15 @@ const STAGE_DEFS = [
     ],
     platforms: [
       [5, 12, 2], [13, 10, 2], [19, 8, 3], [27, 7, 3], [34, 10, 2], [42, 8, 3], [50, 6, 3],
-      [58, 9, 2], [67, 7, 3], [76, 5, 4], [86, 8, 2], [94, 6, 3], [103, 9, 2], [112, 7, 3],
-      [122, 5, 4], [134, 8, 3], [145, 6, 4],
+      [58, 9, 2], [67, 7, 3], [76, 6, 5], [86, 8, 2], [94, 7, 3], [103, 9, 2], [112, 7, 3],
+      [122, 6, 5], [134, 8, 3], [145, 7, 4],
     ],
     hazards: [
       [7, 3], [15, 3], [22, 3], [30, 3], [37, 3], [46, 3], [53, 3], [62, 3], [70, 3], [78, 3], [88, 3], [95, 3], [104, 4], [114, 4], [125, 3],
     ],
     collectibles: [
       { row: [5, 10, 3] }, { row: [20, 6, 4] }, { row: [42, 6, 4] }, { row: [58, 7, 3] },
-      { row: [76, 3, 5] }, { row: [94, 4, 4] }, { row: [122, 3, 5] }, { row: [146, 4, 3] },
+      { row: [76, 4, 5] }, { row: [94, 5, 4] }, { row: [122, 4, 5] }, { row: [146, 5, 3] },
       { point: [11, 13] }, { point: [64, 13] }, { point: [108, 13] }, { point: [140, 13] },
     ],
     enemies: [
@@ -1110,8 +1151,8 @@ const STAGE_DEFS = [
     ],
     platforms: [
       [5, 12, 2], [11, 10, 3], [19, 8, 3], [28, 9, 2], [32, 7, 3], [40, 10, 2],
-      [48, 8, 4], [60, 11, 2], [66, 7, 3], [74, 6, 4], [84, 9, 2], [90, 7, 3],
-      [102, 8, 3], [110, 6, 4], [120, 9, 2], [128, 7, 3], [140, 6, 4],
+      [48, 8, 4], [60, 11, 2], [66, 7, 3], [74, 7, 5], [84, 9, 2], [90, 7, 3],
+      [102, 8, 3], [110, 7, 5], [120, 9, 2], [128, 7, 3], [140, 7, 5],
       [150, 10, 2], [158, 8, 3],
     ],
     hazards: [
@@ -1120,8 +1161,8 @@ const STAGE_DEFS = [
     ],
     collectibles: [
       { row: [11, 8, 3] }, { row: [19, 6, 4] }, { row: [32, 5, 4] }, { row: [48, 6, 5] },
-      { row: [66, 5, 4] }, { row: [74, 4, 5] }, { row: [90, 5, 4] }, { row: [110, 4, 5] },
-      { row: [128, 5, 4] }, { row: [140, 4, 5] }, { row: [158, 6, 3] },
+      { row: [66, 5, 4] }, { row: [74, 5, 5] }, { row: [90, 5, 4] }, { row: [110, 5, 5] },
+      { row: [128, 5, 4] }, { row: [140, 5, 5] }, { row: [158, 6, 3] },
       { point: [3, 13] }, { point: [36, 13] }, { point: [79, 13] }, { point: [116, 13] }, { point: [154, 13] },
     ],
     enemies: [
@@ -1143,8 +1184,8 @@ const STAGE_DEFS = [
     ],
     platforms: [
       [6, 12, 2], [14, 10, 3], [23, 8, 3], [34, 9, 2], [45, 7, 4], [56, 10, 2],
-      [66, 8, 3], [79, 6, 4], [92, 9, 2], [104, 7, 3], [116, 5, 4], [128, 8, 3],
-      [140, 6, 4], [153, 9, 2], [165, 7, 3],
+      [66, 8, 3], [79, 7, 5], [92, 9, 2], [104, 7, 3], [116, 6, 5], [128, 8, 3],
+      [140, 7, 5], [153, 9, 2], [165, 7, 3],
     ],
     hazards: [
       [8, 3], [18, 3], [27, 3], [38, 4], [50, 3], [60, 3], [72, 4], [85, 4],
@@ -1152,7 +1193,7 @@ const STAGE_DEFS = [
     ],
     collectibles: [
       { row: [14, 8, 3] }, { row: [23, 6, 4] }, { row: [45, 5, 4] }, { row: [66, 6, 4] },
-      { row: [79, 4, 5] }, { row: [104, 5, 4] }, { row: [116, 3, 5] }, { row: [140, 4, 4] },
+      { row: [79, 5, 5] }, { row: [104, 5, 4] }, { row: [116, 4, 5] }, { row: [140, 5, 4] },
       { row: [165, 5, 3] },
       { point: [4, 13] }, { point: [41, 13] }, { point: [89, 13] }, { point: [129, 13] }, { point: [168, 13] },
     ],
@@ -1218,18 +1259,18 @@ const STAGE_DEFS = [
       [142, 151], [156, 165], [170, 179], [184, 207],
     ],
     platforms: [
-      [7, 12, 2], [16, 10, 3], [29, 8, 3], [42, 6, 4], [54, 9, 3],
-      [67, 7, 4], [80, 10, 2], [93, 8, 3], [106, 6, 4], [120, 9, 3],
-      [134, 7, 4], [148, 5, 4], [162, 8, 3], [176, 6, 4], [191, 8, 3],
+      [7, 12, 2], [16, 10, 3], [29, 8, 3], [42, 7, 5], [54, 9, 3],
+      [67, 7, 4], [80, 10, 2], [93, 8, 3], [106, 7, 5], [120, 9, 3],
+      [134, 7, 4], [148, 6, 5], [162, 8, 3], [176, 7, 5], [191, 8, 3],
     ],
     hazards: [
       [9, 3], [20, 4], [32, 4], [45, 4], [57, 4], [70, 4], [83, 4],
       [96, 5], [110, 4], [123, 5], [137, 5], [151, 5], [165, 5], [179, 5],
     ],
     collectibles: [
-      { row: [16, 8, 4] }, { row: [29, 6, 4] }, { row: [42, 4, 5] }, { row: [67, 5, 5] },
-      { row: [93, 6, 4] }, { row: [106, 4, 5] }, { row: [134, 5, 4] }, { row: [148, 3, 5] },
-      { row: [176, 4, 5] }, { row: [191, 6, 4] },
+      { row: [16, 8, 4] }, { row: [29, 6, 4] }, { row: [42, 5, 5] }, { row: [67, 5, 5] },
+      { row: [93, 6, 4] }, { row: [106, 5, 5] }, { row: [134, 5, 4] }, { row: [148, 4, 5] },
+      { row: [176, 5, 5] }, { row: [191, 6, 4] },
       { point: [4, 13] }, { point: [49, 13] }, { point: [87, 13] }, { point: [128, 13] }, { point: [184, 13] },
     ],
     enemies: [
@@ -1368,6 +1409,11 @@ const wildHunterState = {
   awakenKills: 0,
   awakenTimer: 0,
   effects: [],
+};
+const overgearElectricState = {
+  outageTimer: 0,
+  nextOutageTimer: randomOvergearElectricInterval(),
+  noiseTimer: 0,
 };
 const nightmareEvent = {
   active: false,
@@ -1860,6 +1906,85 @@ function getShopActionLabel({ owned, purchasable, available, canAfford, price })
   return t("shop_buy", { price });
 }
 
+function clampBgmVolume(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 70;
+  }
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+}
+
+function loadBgmSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BGM_SETTINGS_KEY) || "{}");
+    return {
+      enabled: saved.enabled !== false,
+      volume: clampBgmVolume(saved.volume ?? 70),
+    };
+  } catch (_) {
+    return { enabled: true, volume: 70 };
+  }
+}
+
+function saveBgmSettings() {
+  try {
+    localStorage.setItem(BGM_SETTINGS_KEY, JSON.stringify({
+      enabled: bgmState.enabled,
+      volume: bgmState.volume,
+    }));
+  } catch (_) {
+    // Ignore storage failures so audio controls still work in-session.
+  }
+}
+
+function bgmVolumeRatio() {
+  return bgmState.enabled ? bgmState.volume / 100 : 0;
+}
+
+function updateBgmGain(targetGain, fadeSeconds = 0.12) {
+  const audioContext = audioState.context;
+  if (!audioContext) {
+    return;
+  }
+
+  for (const music of [audioState.music.peaceful, audioState.music.dance]) {
+    if (!music?.gain) {
+      continue;
+    }
+    const gainValue = Math.max(0.0001, music.baseGain * bgmVolumeRatio());
+    const now = audioContext.currentTime;
+    music.gain.gain.cancelScheduledValues(now);
+    music.gain.gain.setValueAtTime(Math.max(0.0001, music.gain.gain.value || 0.0001), now);
+    music.gain.gain.exponentialRampToValueAtTime(targetGain ?? gainValue, now + fadeSeconds);
+  }
+}
+
+function updateBgmControls() {
+  if (bgmToggleButton) {
+    bgmToggleButton.textContent = currentLanguage === "ko"
+      ? `BGM: ${bgmState.enabled ? "켜짐" : "꺼짐"}`
+      : `BGM: ${bgmState.enabled ? "On" : "Off"}`;
+    bgmToggleButton.setAttribute("aria-pressed", String(bgmState.enabled));
+  }
+  if (bgmVolumeSlider) {
+    bgmVolumeSlider.value = String(bgmState.volume);
+  }
+  if (bgmVolumeValue) {
+    bgmVolumeValue.textContent = `${bgmState.volume}%`;
+  }
+}
+
+function applyBgmSettings() {
+  updateBgmControls();
+  updateBgmGain();
+  updatePeacefulMusicState();
+  if (!bgmState.enabled || bgmState.volume <= 0) {
+    stopDanceMusic();
+  } else if (danceEvent.active) {
+    startDanceMusic();
+  }
+}
+
 function updateMuteButtonLabel() {
   const stateLabel = audioState.muted ? t("mute_on") : t("mute_off");
   muteButton.textContent = currentLanguage === "ko"
@@ -1903,6 +2028,7 @@ function applyLanguage(nextLanguage) {
   controlModeSelect.querySelector('option[value="desktop"]').textContent = t("control_desktop");
   controlModeSelect.querySelector('option[value="mobile"]').textContent = t("control_mobile");
   updateMuteButtonLabel();
+  updateBgmControls();
 
   for (const option of stageSelect.options) {
     option.textContent = getStageDisplayName(Number(option.value));
@@ -1962,7 +2088,64 @@ function isVoidKingSkinEquipped() {
   return shopState.equippedSkin === "voidKing";
 }
 
+function isOvergearB08SkinEquipped() {
+  return shopState.equippedSkin === "overgearB08";
+}
+
+function isAwakenedStateActive() {
+  return lightnerState.awakenTimer > 0 || wildHunterState.awakenTimer > 0;
+}
+
+function randomOvergearElectricInterval() {
+  return OVERGEAR_ELECTRIC_MIN_INTERVAL + Math.random() * (OVERGEAR_ELECTRIC_MAX_INTERVAL - OVERGEAR_ELECTRIC_MIN_INTERVAL);
+}
+
+function randomOvergearElectricOutage() {
+  return OVERGEAR_ELECTRIC_MIN_OUTAGE + Math.random() * (OVERGEAR_ELECTRIC_MAX_OUTAGE - OVERGEAR_ELECTRIC_MIN_OUTAGE);
+}
+
+function updateOvergearElectricState(dt) {
+  if (!isOvergearB08SkinEquipped()) {
+    overgearElectricState.outageTimer = 0;
+    overgearElectricState.noiseTimer = 0;
+    overgearElectricState.nextOutageTimer = Math.min(overgearElectricState.nextOutageTimer, randomOvergearElectricInterval());
+    return;
+  }
+
+  if (isAwakenedStateActive()) {
+    overgearElectricState.outageTimer = 0;
+    overgearElectricState.noiseTimer = 0;
+    overgearElectricState.nextOutageTimer = Math.max(overgearElectricState.nextOutageTimer, OVERGEAR_ELECTRIC_MIN_INTERVAL);
+    return;
+  }
+
+  if (overgearElectricState.outageTimer > 0) {
+    overgearElectricState.outageTimer = Math.max(0, overgearElectricState.outageTimer - dt);
+    if (overgearElectricState.outageTimer <= 0) {
+      overgearElectricState.noiseTimer = OVERGEAR_ELECTRIC_NOISE_DURATION;
+      overgearElectricState.nextOutageTimer = randomOvergearElectricInterval();
+    }
+    return;
+  }
+
+  overgearElectricState.noiseTimer = Math.max(0, overgearElectricState.noiseTimer - dt);
+  overgearElectricState.nextOutageTimer -= dt;
+  if (overgearElectricState.nextOutageTimer <= 0) {
+    overgearElectricState.outageTimer = randomOvergearElectricOutage();
+    overgearElectricState.noiseTimer = 0;
+  }
+}
+
 function getSimpleSkinPalette() {
+  if (shopState.equippedSkin === "overgearB08") {
+    return {
+      primary: "#8f5d32",
+      secondary: "#5e3a24",
+      dark: "#241915",
+      accent: "#b88745",
+      glow: "#8fefff",
+    };
+  }
   if (shopState.equippedSkin === "desert") {
     return {
       primary: "#c89256",
@@ -1994,6 +2177,22 @@ function getSimpleSkinPalette() {
 }
 
 function getLightnerSkinPalette() {
+  if (shopState.equippedSkin === "overgearB08") {
+    return {
+      hood: "#211613",
+      coat: "#8f5d32",
+      coatDark: "#5e3a24",
+      mask: "#160f0d",
+      pants: "#241915",
+      arm: "#6b4327",
+      trim: "#b88745",
+      eye: "#8fefff",
+      lightningRgb: "143, 239, 255",
+      lightningSolid: "#8fefff",
+      awakenRgb: "175, 248, 255",
+    };
+  }
+
   const simpleSkin = getSimpleSkinPalette();
   if (simpleSkin) {
     return {
@@ -2416,14 +2615,18 @@ function renderShopCatalog() {
     return;
   }
 
+  if (shopUiState.activeTab === "skin" && !shopTabSkins) {
+    shopUiState.activeTab = "character";
+  }
+
   const isCharacterTab = shopUiState.activeTab === "character";
   const isSkinTab = shopUiState.activeTab === "skin";
   const isBoxTab = shopUiState.activeTab === "box";
 
   shopTabCharacters.classList.toggle("active", isCharacterTab);
   shopTabCharacters.setAttribute("aria-pressed", String(isCharacterTab));
-  shopTabSkins.classList.toggle("active", isSkinTab);
-  shopTabSkins.setAttribute("aria-pressed", String(isSkinTab));
+  shopTabSkins?.classList.toggle("active", isSkinTab);
+  shopTabSkins?.setAttribute("aria-pressed", String(isSkinTab));
   shopTabBoxes?.classList.toggle("active", isBoxTab);
   shopTabBoxes?.setAttribute("aria-pressed", String(isBoxTab));
   shopCatalogList.classList.toggle("box-catalog", isBoxTab);
@@ -3862,8 +4065,8 @@ function createPlayer() {
     vx: 0,
     vy: 0,
     speed: 250,
-    jumpVelocity: -720,
-    airJumpVelocity: -720,
+    jumpVelocity: -780,
+    airJumpVelocity: -780,
     onGround: false,
     facing: 1,
     stompBounce: -420,
@@ -3871,8 +4074,8 @@ function createPlayer() {
     stunTimer: 0,
     animationTime: 0,
     state: "idle",
-    maxJumps: 2,
-    jumpsRemaining: 2,
+    maxJumps: 3,
+    jumpsRemaining: 3,
     standH: PLAYER_STAND_H,
     crouchH: PLAYER_CROUCH_H,
     crouching: false,
@@ -4343,6 +4546,7 @@ function hazardHasSerpent(hazard) {
 }
 
 function restartGame() {
+  ensureAudioContext();
   activeDifficultyKey = DIFFICULTIES[difficultySelect.value] ? difficultySelect.value : activeDifficultyKey;
   difficulty = DIFFICULTIES[activeDifficultyKey];
   score = 0;
@@ -4377,6 +4581,7 @@ function nextStage() {
 
 function openLobby() {
   gameState = "lobby";
+  stopPeacefulMusic();
   lobbyOverlay.classList.remove("hidden");
   resetNightmareEvent();
   resetAssassinationEvent();
@@ -4447,6 +4652,121 @@ function midiToHz(midi) {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
+function stopPeacefulMusic() {
+  const existing = audioState.music.peaceful;
+  if (!existing) {
+    return;
+  }
+
+  if (existing.timerId) {
+    clearInterval(existing.timerId);
+  }
+
+  const audioContext = audioState.context;
+  if (audioContext && existing.gain) {
+    const now = audioContext.currentTime;
+    try {
+      existing.gain.gain.cancelScheduledValues(now);
+      existing.gain.gain.setValueAtTime(existing.gain.gain.value || 0.0001, now);
+      existing.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    } catch (_) {
+      // Ignore if the node has already been disconnected.
+    }
+  }
+
+  audioState.music.peaceful = null;
+}
+
+function shouldPlayPeacefulMusic() {
+  return gameState === "playing" && !danceEvent.active && !danceEvent.countdown && bgmState.enabled && bgmState.volume > 0;
+}
+
+function startPeacefulMusic() {
+  if (!shouldPlayPeacefulMusic() || audioState.music.peaceful) {
+    return;
+  }
+
+  ensureAudioContext();
+  const audioContext = audioState.context;
+  if (!audioContext) {
+    return;
+  }
+
+  const masterGain = audioContext.createGain();
+  masterGain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+  masterGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, 0.045 * bgmVolumeRatio()), audioContext.currentTime + 0.8);
+  masterGain.connect(audioContext.destination);
+
+  const tempo = 84;
+  const beatSeconds = 60 / tempo;
+  const stepSeconds = beatSeconds * 0.5;
+  const scheduleAheadSeconds = 0.4;
+  const chords = [
+    [60, 64, 67, 72],
+    [57, 60, 64, 69],
+    [55, 59, 62, 67],
+    [53, 57, 60, 65],
+  ];
+
+  const state = {
+    baseGain: 0.045,
+    gain: masterGain,
+    timerId: null,
+    nextTime: audioContext.currentTime + 0.05,
+    stepIndex: 0,
+  };
+
+  function scheduleTone(time, midi, duration, type, volume) {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(midiToHz(midi), time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.linearRampToValueAtTime(volume, time + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.05);
+  }
+
+  function scheduler() {
+    if (!shouldPlayPeacefulMusic()) {
+      stopPeacefulMusic();
+      return;
+    }
+
+    while (state.nextTime < audioContext.currentTime + scheduleAheadSeconds) {
+      const chord = chords[Math.floor(state.stepIndex / 8) % chords.length];
+      const chordStep = state.stepIndex % 8;
+      const note = chord[chordStep % chord.length] + (chordStep >= 4 ? 12 : 0);
+      const root = chord[0] - 12;
+
+      scheduleTone(state.nextTime, note, stepSeconds * 1.8, "sine", 0.018);
+      if (chordStep === 0 || chordStep === 4) {
+        scheduleTone(state.nextTime, root, beatSeconds * 3.2, "triangle", 0.026);
+      }
+      if (chordStep === 2 || chordStep === 6) {
+        scheduleTone(state.nextTime + stepSeconds * 0.15, chord[2] + 12, beatSeconds * 1.4, "sine", 0.012);
+      }
+
+      state.nextTime += stepSeconds;
+      state.stepIndex += 1;
+    }
+  }
+
+  state.timerId = setInterval(scheduler, 80);
+  audioState.music.peaceful = state;
+}
+
+function updatePeacefulMusicState() {
+  if (shouldPlayPeacefulMusic()) {
+    startPeacefulMusic();
+  } else {
+    stopPeacefulMusic();
+  }
+}
+
 function stopDanceMusic() {
   const existing = audioState.music.dance;
   if (!existing) {
@@ -4473,10 +4793,11 @@ function stopDanceMusic() {
 }
 
 function startDanceMusic() {
-  if (audioState.muted) {
+  if (!bgmState.enabled || bgmState.volume <= 0) {
     return;
   }
 
+  stopPeacefulMusic();
   ensureAudioContext();
   const audioContext = audioState.context;
   if (!audioContext) {
@@ -4489,7 +4810,7 @@ function startDanceMusic() {
 
   const masterGain = audioContext.createGain();
   masterGain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-  masterGain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.06);
+  masterGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, 0.08 * bgmVolumeRatio()), audioContext.currentTime + 0.06);
   masterGain.connect(audioContext.destination);
 
   const tempo = 132;
@@ -4501,6 +4822,7 @@ function startDanceMusic() {
   const hats = [1, 0, 1, 0, 1, 0, 1, 0];
 
   const state = {
+    baseGain: 0.08,
     gain: masterGain,
     timerId: null,
     nextTime: audioContext.currentTime + 0.02,
@@ -4552,7 +4874,7 @@ function startDanceMusic() {
   }
 
   function scheduler() {
-    if (audioState.muted || !danceEvent.active) {
+    if (!bgmState.enabled || bgmState.volume <= 0 || !danceEvent.active) {
       stopDanceMusic();
       return;
     }
@@ -5058,6 +5380,10 @@ function stunEnemyWithLightner(enemy, duration, slow = false) {
     enemy.state = "idle";
     enemy.cooldown = Math.max(enemy.cooldown || 0, 0.65);
   }
+}
+
+function isEnemyStunnedByLightner(enemy) {
+  return (enemy?.lightnerStunTimer || 0) > 0;
 }
 
 function activateLightnerField() {
@@ -6210,11 +6536,18 @@ document.querySelectorAll("[data-mobile-action]").forEach((button) => {
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;
   updateMuteButtonLabel();
-  if (audioState.muted) {
-    stopDanceMusic();
-  } else if (danceEvent.active) {
-    startDanceMusic();
-  }
+});
+
+bgmToggleButton?.addEventListener("click", () => {
+  bgmState.enabled = !bgmState.enabled;
+  saveBgmSettings();
+  applyBgmSettings();
+});
+
+bgmVolumeSlider?.addEventListener("input", () => {
+  bgmState.volume = clampBgmVolume(bgmVolumeSlider.value);
+  saveBgmSettings();
+  applyBgmSettings();
 });
 
 languageSelect?.addEventListener("change", () => {
@@ -6261,11 +6594,6 @@ openShopButton.addEventListener("click", () => {
 
 shopTabCharacters.addEventListener("click", () => {
   shopUiState.activeTab = "character";
-  renderShopCatalog();
-});
-
-shopTabSkins.addEventListener("click", () => {
-  shopUiState.activeTab = "skin";
   renderShopCatalog();
 });
 
@@ -6599,7 +6927,7 @@ function updatePlayer(dt) {
 
   if (!player.stealthActive) {
     for (const enemy of level.enemies) {
-      if (!enemy.alive || enemy.defeated || !overlaps(player, enemy)) {
+      if (!enemy.alive || enemy.defeated || isEnemyStunnedByLightner(enemy) || !overlaps(player, enemy)) {
         continue;
       }
 
@@ -7147,11 +7475,13 @@ function loseLife() {
 
 function update(dt) {
   updateLootBoxAnimation(dt);
+  updatePeacefulMusicState();
   updatePlayer(dt);
   changerState.swapCooldown = Math.max(0, changerState.swapCooldown - dt);
   changerState.effectTimer = Math.max(0, changerState.effectTimer - dt);
   updateLightnerState(dt);
   updateWildHunterState(dt);
+  updateOvergearElectricState(dt);
   player.cloneTransferFlash = Math.max(0, player.cloneTransferFlash - dt);
   screenShakeTimer = Math.max(0, screenShakeTimer - dt);
   if (gameState === "playing") {
@@ -9068,6 +9398,17 @@ function drawChangerSwapEffect() {
 }
 
 function getGuardianPalette() {
+  if (shopState.equippedSkin === "overgearB08") {
+    return {
+      border: "#241915",
+      hood: "#8f5d32",
+      cloak: "#5e3a24",
+      cloth: "#6d4224",
+      metal: "#8a8175",
+      trim: "#b88745",
+      glow: "#8fefff",
+    };
+  }
   if (shopState.equippedSkin === "admin") {
     return {
       border: "#441214",
@@ -9361,6 +9702,80 @@ function drawAssassinPlayerSprite(legOffset, armOffset, cloakOffset) {
 
 function drawPlayerSkinAccent() {
   const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
+
+  if (shopState.equippedSkin === "overgearB08") {
+    const awakened = isAwakenedStateActive();
+    const outage = overgearElectricState.outageTimer > 0 && !awakened;
+    const noise = overgearElectricState.noiseTimer > 0 && !awakened;
+    const weakFlicker = 0.72 + Math.sin(lastTime * 0.041) * 0.12 + (Math.sin(lastTime * 0.127) > 0.72 ? 0.1 : -0.06);
+    const pulse = awakened ? 1 : Math.max(0.42, Math.min(0.92, weakFlicker));
+    const electricAlpha = outage ? 0 : awakened ? 0.95 : pulse;
+    const sparkColor = (alpha) => `rgba(143, 239, 255, ${alpha})`;
+
+    ctx.fillStyle = "#6d4224";
+    r(6, 3, 14, 2);
+    r(4, 17, 18, 2);
+    r(8, 25, 11, 2);
+    ctx.fillStyle = "#b88745";
+    r(7, 2, 3, 2);
+    r(16, 3, 3, 2);
+    r(6, 18, 2, 7);
+    r(18, 18, 2, 7);
+    ctx.fillStyle = "#3a2319";
+    r(5, 29, 17, 2);
+
+    if (outage) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      r(1, 0, 24, 31);
+      ctx.fillStyle = "#241915";
+      r(11, 11, 2, 2);
+      r(16, 11, 2, 2);
+      r(9, 18, 1, 4);
+      r(13, 18, 1, 7);
+      r(17, 18, 2, 1);
+      r(18, 18, 5, 3);
+      r(6, 28, 2, 1);
+      r(17, 28, 2, 1);
+      r(3, 20, 1, 4);
+      r(22, 20, 1, 4);
+      ctx.fillStyle = "#3a2319";
+      r(12, 18, 3, 2);
+      return;
+    }
+
+    ctx.fillStyle = sparkColor(0.45 * electricAlpha);
+    r(9, 10, 9, 4);
+    r(10, 17, 7, 5);
+    ctx.fillStyle = sparkColor(electricAlpha);
+    r(11, 11, 2, 2);
+    r(16, 11, 2, 2);
+    r(12, 18, 3, 2);
+    r(13, 20, 1, 4);
+    r(3, 20, 2, 2);
+    r(21, 20, 2, 2);
+    r(6, 27, 2, 2);
+    r(17, 27, 2, 2);
+    ctx.fillStyle = sparkColor((awakened ? 0.62 : 0.34) * electricAlpha);
+    r(2, 19, 1, 5);
+    r(23, 18, 1, 5);
+    r(8, 28, 4, 1);
+    r(15, 28, 4, 1);
+
+    if (awakened || noise) {
+      const noiseAlpha = awakened ? 0.88 : overgearElectricState.noiseTimer / OVERGEAR_ELECTRIC_NOISE_DURATION;
+      ctx.fillStyle = sparkColor(0.72 * noiseAlpha);
+      r(6, 8, 1, 2);
+      r(19, 7, 1, 3);
+      r(9, 15, 1, 3);
+      r(17, 15, 1, 3);
+      r(5, 24, 3, 1);
+      r(18, 24, 3, 1);
+      ctx.fillStyle = sparkColor(0.34 * noiseAlpha);
+      r(1, 6, 2, 12);
+      r(23, 7, 2, 11);
+    }
+    return;
+  }
 
   if (shopState.equippedSkin === "voidKing") {
     const pulse = 0.6 + Math.sin(lastTime * 0.015) * 0.16;
