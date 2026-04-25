@@ -71,6 +71,14 @@ const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const PATCH_NOTES = [
   {
+    version: "Beta v0.6",
+    date: "2026-04-25",
+    items: [
+      "모바일 터치 조작 버튼 추가: 이동, 점프, 웅크리기, 스킬, 재시작 지원",
+      "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
+    ],
+  },
+  {
     version: "Beta v0.5",
     date: "2026-04-25",
     items: [
@@ -4654,6 +4662,138 @@ canvas.addEventListener("pointerdown", (event) => {
   if (clawEscapeEvent.meter >= 1) {
     resolveClawEscapeEvent();
   }
+});
+
+function setMobileButtonActive(button, active) {
+  button.classList.toggle("active", active);
+}
+
+const mobileJoystick = document.getElementById("mobileJoystick");
+const mobileJoystickKnob = document.getElementById("mobileJoystickKnob");
+const mobileJoystickState = {
+  active: false,
+  pointerId: null,
+  jumped: false,
+};
+
+function resetMobileJoystick() {
+  keys.left = false;
+  keys.right = false;
+  keys.crouch = false;
+  keys.jump = false;
+  mobileJoystickState.active = false;
+  mobileJoystickState.pointerId = null;
+  mobileJoystickState.jumped = false;
+  if (mobileJoystickKnob) {
+    mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
+  }
+}
+
+function updateMobileJoystick(event) {
+  if (!mobileJoystick || !mobileJoystickKnob) {
+    return;
+  }
+  ensureAudioContext();
+  const rect = mobileJoystick.getBoundingClientRect();
+  const centerX = rect.left + rect.width * 0.5;
+  const centerY = rect.top + rect.height * 0.5;
+  const maxDistance = rect.width * 0.34;
+  const dx = event.clientX - centerX;
+  const dy = event.clientY - centerY;
+  const distance = Math.min(maxDistance, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx);
+  const knobX = Math.cos(angle) * distance;
+  const knobY = Math.sin(angle) * distance;
+  const normalizedX = maxDistance > 0 ? knobX / maxDistance : 0;
+  const normalizedY = maxDistance > 0 ? knobY / maxDistance : 0;
+
+  mobileJoystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+  keys.left = normalizedX < -0.32;
+  keys.right = normalizedX > 0.32;
+  keys.crouch = normalizedY > 0.45 && level.theme === "arcade" && gameState !== "lobby";
+  const wantsJump = normalizedY < -0.48;
+  if (wantsJump && !mobileJoystickState.jumped && !keys.jump) {
+    keys.jumpQueued = true;
+    if (gameState === "stageclear") {
+      nextStage();
+    }
+  }
+  keys.jump = wantsJump;
+  mobileJoystickState.jumped = wantsJump;
+}
+
+mobileJoystick?.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  mobileJoystick.setPointerCapture?.(event.pointerId);
+  mobileJoystickState.active = true;
+  mobileJoystickState.pointerId = event.pointerId;
+  updateMobileJoystick(event);
+});
+
+mobileJoystick?.addEventListener("pointermove", (event) => {
+  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(event);
+});
+
+mobileJoystick?.addEventListener("pointerup", (event) => {
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+mobileJoystick?.addEventListener("pointercancel", (event) => {
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+mobileJoystick?.addEventListener("lostpointercapture", resetMobileJoystick);
+
+function applyMobileAction(action, pressed) {
+  ensureAudioContext();
+  if (!pressed) {
+    return;
+  }
+  if (action === "skill-e") {
+    if (isChangerEquipped()) {
+      createChangerClone();
+    } else {
+      activateAssassinStealth();
+    }
+  } else if (action === "skill-q") {
+    if (isGuardianEquipped()) {
+      activateGuardianShield();
+    } else if (isChangerEquipped()) {
+      swapChangerWithClone();
+    } else {
+      beginAssassination();
+    }
+  } else if (action === "restart") {
+    restartGame();
+  }
+}
+
+document.querySelectorAll("[data-mobile-action]").forEach((button) => {
+  const action = button.dataset.mobileAction;
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    button.setPointerCapture?.(event.pointerId);
+    setMobileButtonActive(button, true);
+    applyMobileAction(action, true);
+  });
+  const release = (event) => {
+    event.preventDefault();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+  };
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", () => {
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+  });
 });
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;

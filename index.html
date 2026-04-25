@@ -35,6 +35,17 @@
       </div>
       <div class="game-frame">
         <canvas id="game" width="960" height="540" aria-label="Starling Sprint game canvas" data-i18n-aria-label="canvas_label"></canvas>
+        <div class="mobile-controls" id="mobileControls" aria-hidden="true">
+          <div class="mobile-joystick" id="mobileJoystick" aria-label="Move joystick">
+            <div class="mobile-joystick-ring"></div>
+            <div class="mobile-joystick-knob" id="mobileJoystickKnob"></div>
+          </div>
+          <div class="mobile-actions">
+            <button type="button" class="mobile-control-button small" data-mobile-action="skill-e" aria-label="Skill E">E</button>
+            <button type="button" class="mobile-control-button small" data-mobile-action="skill-q" aria-label="Skill Q">Q</button>
+            <button type="button" class="mobile-control-button small" data-mobile-action="restart" aria-label="Restart">R</button>
+          </div>
+        </div>
         <section class="lobby-overlay" id="lobbyOverlay">
           <div class="lobby-card">
             <section class="auth-panel" id="authPanel">
