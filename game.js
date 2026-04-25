@@ -77,14 +77,8 @@ const PATCH_NOTES = [
     items: [
       "신규 캐릭터 라이트너 추가: 스파크 앵커, 체인 라이트닝 필드, 각성 스킬 구현",
       "모바일 조작에 X 스킬 버튼 추가",
-      "라이트너 얼굴을 살색과 검은 마스크 조합으로 조정하고 번개 연출/효과음 개선",
       "모든 캐릭터 픽셀 스프라이트 디테일과 식별성을 개선",
-      "라이트너 픽셀 스프라이트를 검은 머리, 살색 얼굴, 흰 재킷 중심 디자인으로 재작업",
-      "라이트너 픽셀 스프라이트를 참고 이미지에 맞춰 더 크게 재정비",
-      "라이트너 픽셀 스프라이트를 참고 이미지 실루엣에 맞춰 전면 재작업",
-      "라이트너 픽셀 스프라이트를 참고 이미지 오른쪽 아래 형태에 맞춰 재구성",
-      "라이트너 스프라이트를 비픽셀 일러스트 방식으로 재작업",
-      "라이트너 스프라이트를 참고 이미지의 정면 흰 코트 전격 포즈로 재작업",
+      "라이트너 이미지 에셋 렌더링을 제거하고 기존 코드 스프라이트로 복구",
     ],
   },
   {
@@ -7633,217 +7627,56 @@ function drawPlayer() {
 function drawLightnerPlayerSprite(legOffset, armOffset, scarfOffset) {
   const awakened = lightnerState.awakenTimer > 0;
   const pulse = awakened ? 0.82 + Math.sin(lastTime * 0.03) * 0.18 : 0.62 + Math.sin(lastTime * 0.014) * 0.12;
+  const r = (dx, dy, dw, dh) => ctx.fillRect(dx * 2, dy * 2, dw * 2, dh * 2);
   ctx.save();
-  ctx.translate(26, 34);
-  ctx.scale(1.28, 1.28);
 
-  const boltAlpha = awakened ? 0.75 : 0.34;
-  ctx.strokeStyle = `rgba(255, 215, 0, ${boltAlpha})`;
-  ctx.lineWidth = awakened ? 2.6 : 1.6;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  const lightning = (points) => {
-    ctx.beginPath();
-    ctx.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i += 1) {
-      ctx.lineTo(points[i][0], points[i][1]);
-    }
-    ctx.stroke();
-  };
-  lightning([[-24, -22], [-33, -5], [-26, -6], [-36, 20]]);
-  lightning([[20, -24], [32, -4], [24, -5], [36, 20]]);
-  lightning([[-22, 29], [-4, 36], [18, 30], [28, 36]]);
-
-  const shadow = ctx.createRadialGradient(0, 12, 8, 0, 12, 42);
-  shadow.addColorStop(0, "rgba(255, 213, 0, 0.18)");
-  shadow.addColorStop(1, "rgba(255, 213, 0, 0)");
-  ctx.fillStyle = shadow;
-  ctx.beginPath();
-  ctx.ellipse(0, 18, 40, 48, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Back legs and boots.
+  ctx.fillStyle = "#020304";
+  r(7, 2, 12, 6);
+  r(6, 6, 14, 4);
+  ctx.fillStyle = "#0a0c0f";
+  r(5, 8, 16, 9);
+  ctx.fillStyle = "#161616";
+  r(8, 8, 10, 5);
   ctx.fillStyle = "#050506";
-  ctx.beginPath();
-  ctx.moveTo(-11, 9);
-  ctx.lineTo(-3, 10);
-  ctx.lineTo(-7 + legOffset * 0.55, 34);
-  ctx.lineTo(-18, 34);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(3, 10);
-  ctx.lineTo(11, 9);
-  ctx.lineTo(18, 34 + (2 - legOffset) * 0.55);
-  ctx.lineTo(7, 34);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#ffd700";
-  ctx.fillRect(-18, 32, 12, 2);
-  ctx.fillRect(7, 32, 12, 2);
+  r(9, 10, 8, 7);
+  ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
+  r(11, 11, 2, 2);
+  r(16, 11, 2, 2);
+  r(13, 15, 4, 1);
 
-  // White coat, wide and open like the reference.
-  ctx.fillStyle = "#4d535f";
-  ctx.beginPath();
-  ctx.moveTo(-25, -10);
-  ctx.quadraticCurveTo(-18, -24, -4, -18);
-  ctx.lineTo(0, 31);
-  ctx.lineTo(-24, 29);
-  ctx.quadraticCurveTo(-32, 12, -25, -10);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(25, -10);
-  ctx.quadraticCurveTo(18, -24, 4, -18);
-  ctx.lineTo(0, 31);
-  ctx.lineTo(24, 29);
-  ctx.quadraticCurveTo(32, 12, 25, -10);
-  ctx.fill();
+  ctx.fillStyle = "#08090b";
+  r(5, 17, 17, 10);
+  ctx.fillStyle = "#121315";
+  r(6, 18, 15, 4);
+  r(8, 22, 11, 2);
+  ctx.fillStyle = `rgba(255, 215, 0, ${0.85 * pulse})`;
+  r(9, 18, 1, 4);
+  r(13, 18, 1, 7);
+  r(17, 18, 2, 1);
+  r(18, 18 + scarfOffset, 5, 2);
+  r(20, 20 + scarfOffset, 3, 1);
 
-  ctx.fillStyle = "#f4efe4";
-  ctx.beginPath();
-  ctx.moveTo(-26, -10);
-  ctx.quadraticCurveTo(-18, -20, -5, -16);
-  ctx.quadraticCurveTo(-9, 7, -3, 31);
-  ctx.lineTo(-22, 28);
-  ctx.quadraticCurveTo(-29, 10, -26, -10);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(26, -10);
-  ctx.quadraticCurveTo(18, -20, 5, -16);
-  ctx.quadraticCurveTo(9, 7, 3, 31);
-  ctx.lineTo(22, 28);
-  ctx.quadraticCurveTo(29, 10, 26, -10);
-  ctx.fill();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.moveTo(-20, -8);
-  ctx.quadraticCurveTo(-14, 2, -15, 23);
-  ctx.lineTo(-21, 25);
-  ctx.quadraticCurveTo(-24, 6, -20, -8);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(20, -8);
-  ctx.quadraticCurveTo(14, 2, 15, 23);
-  ctx.lineTo(21, 25);
-  ctx.quadraticCurveTo(24, 6, 20, -8);
-  ctx.fill();
-  ctx.fillStyle = "#bfc4cc";
-  ctx.beginPath();
-  ctx.moveTo(-12, -7);
-  ctx.lineTo(-6, 4);
-  ctx.lineTo(-5, 26);
-  ctx.lineTo(-14, 24);
-  ctx.quadraticCurveTo(-17, 7, -12, -7);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(12, -7);
-  ctx.lineTo(6, 4);
-  ctx.lineTo(5, 26);
-  ctx.lineTo(14, 24);
-  ctx.quadraticCurveTo(17, 7, 12, -7);
-  ctx.fill();
-
-  // Black suit and yellow chest bolt.
-  ctx.fillStyle = "#07080b";
-  ctx.beginPath();
-  ctx.moveTo(-9, -12);
-  ctx.lineTo(9, -12);
-  ctx.lineTo(13, 30);
-  ctx.lineTo(-13, 30);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#202126";
-  ctx.fillRect(-8, -8, 16, 11);
-  ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 * pulse})`;
-  ctx.lineWidth = 1.8;
-  lightning([[-8, -9], [-8, 3], [-6, 11], [-7, 20]]);
-  lightning([[8, -9], [8, 4], [6, 12], [7, 20]]);
-  ctx.fillStyle = "#ffd700";
-  ctx.beginPath();
-  ctx.moveTo(-1, -8);
-  ctx.lineTo(6, -8);
-  ctx.lineTo(1, 1);
-  ctx.lineTo(7, 1);
-  ctx.lineTo(-3, 16);
-  ctx.lineTo(0, 4);
-  ctx.lineTo(-6, 4);
-  ctx.closePath();
-  ctx.fill();
-
-  // Sleeves and dark gloves.
-  ctx.fillStyle = "#f4efe4";
-  ctx.beginPath();
-  ctx.moveTo(-23, -4 + armOffset);
-  ctx.quadraticCurveTo(-33, 3 + armOffset, -30, 19 + armOffset);
-  ctx.lineTo(-21, 20 + armOffset);
-  ctx.quadraticCurveTo(-18, 5 + armOffset, -15, -7 + armOffset);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(23, -4 - armOffset);
-  ctx.quadraticCurveTo(33, 3 - armOffset, 30, 19 - armOffset);
-  ctx.lineTo(21, 20 - armOffset);
-  ctx.quadraticCurveTo(18, 5 - armOffset, 15, -7 - armOffset);
-  ctx.closePath();
-  ctx.fill();
   ctx.fillStyle = "#050506";
-  ctx.fillRect(-31, 18 + armOffset, 8, 5);
-  ctx.fillRect(23, 18 - armOffset, 8, 5);
-  ctx.fillStyle = "#ffd700";
-  ctx.fillRect(-26, 3 + armOffset, 2, 11);
-  ctx.fillRect(24, 3 - armOffset, 2, 11);
+  r(4, 27, 7, 4 + legOffset);
+  r(15, 27, 7, 4 + (2 - legOffset));
+  ctx.fillStyle = `rgba(255, 215, 0, ${0.72 * pulse})`;
+  r(6, 28, 2, 1);
+  r(17, 28, 2, 1);
 
-  // Head and hair. This is intentionally drawn last so it reads like the reference portrait.
-  ctx.fillStyle = "#d79b6d";
-  ctx.beginPath();
-  ctx.ellipse(0, -22, 11.5, 13, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#f1bf8a";
-  ctx.beginPath();
-  ctx.ellipse(-4, -23, 4.5, 6.2, 0.18, 0, Math.PI * 2);
-  ctx.ellipse(5, -23, 3.8, 5.7, -0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#050506";
-  ctx.beginPath();
-  ctx.moveTo(-14, -27);
-  ctx.quadraticCurveTo(-8, -43, 8, -38);
-  ctx.quadraticCurveTo(22, -35, 15, -20);
-  ctx.lineTo(9, -28);
-  ctx.lineTo(4, -18);
-  ctx.lineTo(-2, -30);
-  ctx.lineTo(-8, -19);
-  ctx.lineTo(-12, -25);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#222329";
-  ctx.beginPath();
-  ctx.moveTo(-8, -35);
-  ctx.quadraticCurveTo(1, -39, 10, -34);
-  ctx.quadraticCurveTo(1, -35, -8, -31);
-  ctx.fill();
-  ctx.fillStyle = "#34343a";
-  ctx.beginPath();
-  ctx.moveTo(-13, -26);
-  ctx.quadraticCurveTo(-7, -32, -1, -31);
-  ctx.quadraticCurveTo(-7, -29, -13, -23);
-  ctx.fill();
+  ctx.fillStyle = "#0d0d0f";
+  r(2, 19 + armOffset, 2, 8);
+  r(22, 19 - armOffset, 2, 8);
+  ctx.fillStyle = `rgba(255, 215, 0, ${0.78 * pulse})`;
+  r(3, 20 + armOffset, 1, 4);
+  r(22, 20 - armOffset, 1, 4);
 
-  ctx.strokeStyle = "#2a180f";
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(-8, -23);
-  ctx.lineTo(-2, -23);
-  ctx.moveTo(4, -23);
-  ctx.lineTo(10, -23);
-  ctx.stroke();
-  ctx.fillStyle = "#ffd700";
-  ctx.beginPath();
-  ctx.ellipse(-5, -22, 2.3, 1.5, 0, 0, Math.PI * 2);
-  ctx.ellipse(7, -22, 2.3, 1.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#2a180f";
-  ctx.fillRect(-2, -15, 5, 1.2);
+  if (awakened) {
+    ctx.fillStyle = `rgba(255, 223, 45, ${0.28 + pulse * 0.2})`;
+    r(3, 5, 2, 2);
+    r(20, 6, 2, 2);
+    r(11, 2, 1, 3);
+    r(18, 15, 3, 1);
+  }
   ctx.restore();
 }
 
