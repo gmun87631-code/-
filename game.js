@@ -70,6 +70,7 @@ const CURRENT_ACCOUNT_KEY = "starling-sprint-current-account-v1";
 const LANGUAGE_KEY = "starling-sprint-language-v1";
 const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
+const MAX_MONSTER_SPAWNS = 14;
 const PATCH_NOTES = [
   {
     version: "Beta v0.7",
@@ -84,6 +85,7 @@ const PATCH_NOTES = [
       "8스테이지 정글 추가: 바나나 수집/운반, 원숭이 제출, 화남 예고 공격 시스템 구현",
       "원숭이 정글에서는 모든 난이도에서 펜타 점프가 가능하도록 변경",
       "신규 캐릭터 와일드헌터 추가: 사냥 본능, 헌트 블래스트, 내려찍기, 짐승화 구현",
+      "몬스터 최대 소환 수를 14마리로 제한하고 와일드헌터 짐승화 조건을 5킬로 완화",
     ],
   },
   {
@@ -401,7 +403,7 @@ const WILD_HUNTER_RULES = {
   slamHitBounce: -420,
   slamMissDelay: 0.65,
   slamCooldown: 0.45,
-  awakenKillsRequired: 7,
+  awakenKillsRequired: 5,
   awakenDuration: 4,
   awakenSpeedMultiplier: 1.35,
   awakenBossDps: 50,
@@ -4167,7 +4169,19 @@ function addCollectibleRow(startTileX, tileY, count) {
   }
 }
 
+function currentMonsterSpawnCount() {
+  return level.enemies.length + level.serpentEnemies.length;
+}
+
+function canAddMonsterSpawn() {
+  return currentMonsterSpawnCount() < MAX_MONSTER_SPAWNS;
+}
+
 function addEnemy(tileX, tileY) {
+  if (!canAddMonsterSpawn()) {
+    return;
+  }
+
   const x = tileX * TILE + 3;
   const y = tileY * TILE + 2;
   const stageFactor = stageDifficultyFactor(currentStageIndex);
@@ -4211,6 +4225,10 @@ function findSafeExcavatorTile(tileX) {
 }
 
 function addExcavatorEnemy(tileX, tileY, facing = "right", minRange = 48, maxRange = 144) {
+  if (!canAddMonsterSpawn()) {
+    return;
+  }
+
   const safeTileX = findSafeExcavatorTile(tileX);
   if (safeTileX === null) {
     return;
@@ -4245,6 +4263,10 @@ function addExcavatorEnemy(tileX, tileY, facing = "right", minRange = 48, maxRan
 }
 
 function addFrostWarden(tileX, tileY) {
+  if (!canAddMonsterSpawn()) {
+    return;
+  }
+
   const x = tileX * TILE;
   const y = tileY * TILE - 32;
   const stageFactor = stageDifficultyFactor(currentStageIndex);
@@ -4275,6 +4297,10 @@ function addFrostWarden(tileX, tileY) {
 }
 
 function addSerpentEnemy(tileX) {
+  if (!canAddMonsterSpawn()) {
+    return;
+  }
+
   const stageFactor = stageDifficultyFactor(currentStageIndex);
   level.serpentEnemies.push({
     type: "seaMonster",
