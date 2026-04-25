@@ -79,6 +79,8 @@ const PATCH_NOTES = [
       "모바일 방향 버튼을 드래그형 조이스틱 조작으로 변경",
       "모바일 조이스틱 감지와 터치 이벤트 호환성 개선",
       "로비에서 컴퓨터 버전과 모바일 버전을 직접 선택하는 설정 추가",
+      "모바일 Q 버튼으로 어쌔신 연타 QTE를 진행할 수 있도록 수정",
+      "모바일 조이스틱 시각 요소를 숨기고 화면 드래그 방향으로 조작하도록 변경",
     ],
   },
   {
@@ -4705,6 +4707,8 @@ const mobileJoystickState = {
   active: false,
   pointerId: null,
   touchId: null,
+  originX: 0,
+  originY: 0,
   jumped: false,
 };
 
@@ -4716,6 +4720,8 @@ function resetMobileJoystick() {
   mobileJoystickState.active = false;
   mobileJoystickState.pointerId = null;
   mobileJoystickState.touchId = null;
+  mobileJoystickState.originX = 0;
+  mobileJoystickState.originY = 0;
   mobileJoystickState.jumped = false;
   if (mobileJoystickKnob) {
     mobileJoystickKnob.style.transform = "translate(-50%, -50%)";
@@ -4723,14 +4729,14 @@ function resetMobileJoystick() {
 }
 
 function updateMobileJoystick(event) {
-  if (!mobileJoystick || !mobileJoystickKnob) {
+  if (!mobileJoystick) {
     return;
   }
   ensureAudioContext();
   const rect = mobileJoystick.getBoundingClientRect();
-  const centerX = rect.left + rect.width * 0.5;
-  const centerY = rect.top + rect.height * 0.5;
-  const maxDistance = rect.width * 0.34;
+  const centerX = mobileJoystickState.originX || rect.left + rect.width * 0.5;
+  const centerY = mobileJoystickState.originY || rect.top + rect.height * 0.5;
+  const maxDistance = Math.max(34, rect.width * 0.34);
   const dx = event.clientX - centerX;
   const dy = event.clientY - centerY;
   const distance = Math.min(maxDistance, Math.hypot(dx, dy));
@@ -4740,7 +4746,9 @@ function updateMobileJoystick(event) {
   const normalizedX = maxDistance > 0 ? knobX / maxDistance : 0;
   const normalizedY = maxDistance > 0 ? knobY / maxDistance : 0;
 
-  mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
+  if (mobileJoystickKnob) {
+    mobileJoystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, ${knobY}px)`;
+  }
 
   keys.left = normalizedX < -0.32;
   keys.right = normalizedX > 0.32;
@@ -4756,12 +4764,25 @@ function updateMobileJoystick(event) {
   mobileJoystickState.jumped = wantsJump;
 }
 
+function startMobileDrag(clientX, clientY, pointerId = null, touchId = null) {
+  if (controlMode !== "mobile" || gameState === "lobby" || clawEscapeEvent.active || lootBoxState.active) {
+    return false;
+  }
+  ensureAudioContext();
+  mobileJoystickState.active = true;
+  mobileJoystickState.pointerId = pointerId;
+  mobileJoystickState.touchId = touchId;
+  mobileJoystickState.originX = clientX;
+  mobileJoystickState.originY = clientY;
+  mobileJoystickState.jumped = false;
+  updateMobileJoystick({ clientX, clientY });
+  return true;
+}
+
 mobileJoystick?.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   mobileJoystick.setPointerCapture?.(event.pointerId);
-  mobileJoystickState.active = true;
-  mobileJoystickState.pointerId = event.pointerId;
-  updateMobileJoystick(event);
+  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
 });
 
 mobileJoystick?.addEventListener("pointermove", (event) => {
@@ -4799,9 +4820,7 @@ mobileJoystick?.addEventListener("touchstart", (event) => {
   if (!touch) {
     return;
   }
-  mobileJoystickState.active = true;
-  mobileJoystickState.touchId = touch.identifier;
-  updateMobileJoystick(touch);
+  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
 }, { passive: false });
 
 mobileJoystick?.addEventListener("touchmove", (event) => {
@@ -4831,6 +4850,78 @@ mobileJoystick?.addEventListener("touchcancel", (event) => {
   resetMobileJoystick();
 }, { passive: false });
 
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.target?.closest?.("[data-mobile-action]") || controlMode !== "mobile" || gameState === "lobby") {
+    return;
+  }
+  event.preventDefault();
+  canvas.setPointerCapture?.(event.pointerId);
+  startMobileDrag(event.clientX, event.clientY, event.pointerId, null);
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (!mobileJoystickState.active || event.pointerId !== mobileJoystickState.pointerId || controlMode !== "mobile") {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(event);
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+canvas.addEventListener("pointercancel", (event) => {
+  if (event.pointerId !== mobileJoystickState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+});
+
+canvas.addEventListener("touchstart", (event) => {
+  if (controlMode !== "mobile" || gameState === "lobby") {
+    return;
+  }
+  const touch = event.changedTouches[0];
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  startMobileDrag(touch.clientX, touch.clientY, null, touch.identifier);
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!mobileJoystickState.active || !touch || controlMode !== "mobile") {
+    return;
+  }
+  event.preventDefault();
+  updateMobileJoystick(touch);
+}, { passive: false });
+
+canvas.addEventListener("touchend", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
+canvas.addEventListener("touchcancel", (event) => {
+  const touch = findActiveJoystickTouch(event.changedTouches);
+  if (!touch) {
+    return;
+  }
+  event.preventDefault();
+  resetMobileJoystick();
+}, { passive: false });
+
 function applyMobileAction(action, pressed) {
   ensureAudioContext();
   if (!pressed) {
@@ -4843,6 +4934,10 @@ function applyMobileAction(action, pressed) {
       activateAssassinStealth();
     }
   } else if (action === "skill-q") {
+    if (assassinationEvent.active) {
+      tapAssassinationQte();
+      return;
+    }
     if (isGuardianEquipped()) {
       activateGuardianShield();
     } else if (isChangerEquipped()) {
@@ -4857,7 +4952,11 @@ function applyMobileAction(action, pressed) {
 
 document.querySelectorAll("[data-mobile-action]").forEach((button) => {
   const action = button.dataset.mobileAction;
+  let handledTouch = false;
   button.addEventListener("pointerdown", (event) => {
+    if (handledTouch) {
+      return;
+    }
     event.preventDefault();
     button.setPointerCapture?.(event.pointerId);
     setMobileButtonActive(button, true);
@@ -4874,6 +4973,28 @@ document.querySelectorAll("[data-mobile-action]").forEach((button) => {
     setMobileButtonActive(button, false);
     applyMobileAction(action, false);
   });
+  button.addEventListener("touchstart", (event) => {
+    handledTouch = true;
+    event.preventDefault();
+    setMobileButtonActive(button, true);
+    applyMobileAction(action, true);
+  }, { passive: false });
+  button.addEventListener("touchend", (event) => {
+    event.preventDefault();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+    window.setTimeout(() => {
+      handledTouch = false;
+    }, 0);
+  }, { passive: false });
+  button.addEventListener("touchcancel", (event) => {
+    event.preventDefault();
+    setMobileButtonActive(button, false);
+    applyMobileAction(action, false);
+    window.setTimeout(() => {
+      handledTouch = false;
+    }, 0);
+  }, { passive: false });
 });
 muteButton.addEventListener("click", () => {
   audioState.muted = !audioState.muted;

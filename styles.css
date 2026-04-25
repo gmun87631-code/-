@@ -1705,3 +1705,16 @@ body.touch-controls-enabled .mobile-control-button.active {
     height: auto;
   }
 }
+
+body:not(.touch-controls-enabled) .mobile-controls {
+  display: none;
+}
+
+body.touch-controls-enabled .mobile-joystick {
+  opacity: 0;
+}
+
+body.touch-controls-enabled .mobile-joystick-ring,
+body.touch-controls-enabled .mobile-joystick-knob {
+  display: none;
+}
