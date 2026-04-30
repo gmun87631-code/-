@@ -10,6 +10,8 @@ const { safeString } = require("./online/util");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
+const INVITE_REJECT_COOLDOWN_MS = 10000;
+const inviteRejectCooldowns = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -83,6 +85,21 @@ function broadcastRoomUpdate(room) {
     type: "online.room.update",
     room: roomSnapshot(room, userStore, onlineIds),
   });
+}
+
+function inviteCooldownKey(fromId, toId) {
+  return `${fromId}:${toId}`;
+}
+
+function inviteCooldownRemaining(fromId, toId) {
+  const key = inviteCooldownKey(fromId, toId);
+  const until = inviteRejectCooldowns.get(key) || 0;
+  const remaining = until - Date.now();
+  if (remaining <= 0) {
+    inviteRejectCooldowns.delete(key);
+    return 0;
+  }
+  return remaining;
 }
 
 function sendSelfSnapshot(client) {
@@ -257,6 +274,16 @@ network = new NetworkManager({
 
     if (type === "online.friend.invite") {
       const toId = safeString(message.userId, 64, "");
+      const cooldownMs = inviteCooldownRemaining(client.userId, toId);
+      if (cooldownMs > 0) {
+        network.send(client, {
+          type: "online.friend.invite.cooldown",
+          requestId,
+          userId: toId,
+          remainingMs: cooldownMs,
+        });
+        return;
+      }
       const toClient = lobbyManager.onlineByUserId.get(toId);
       if (!toClient) {
         sendError(client, requestId, "offline");
@@ -282,6 +309,24 @@ network = new NetworkManager({
         code: room.visibility === "private" ? room.code : null,
       });
       network.send(client, { type: "online.friend.invite.ok", requestId });
+      return;
+    }
+
+    if (type === "online.friend.invite.reject") {
+      const fromId = safeString(message.fromId, 64, "");
+      if (fromId) {
+        inviteRejectCooldowns.set(inviteCooldownKey(fromId, client.userId), Date.now() + INVITE_REJECT_COOLDOWN_MS);
+        const fromClient = lobbyManager.onlineByUserId.get(fromId);
+        if (fromClient) {
+          network.send(fromClient, {
+            type: "online.friend.invite.rejected",
+            userId: client.userId,
+            nickname: client.nickname,
+            cooldownMs: INVITE_REJECT_COOLDOWN_MS,
+          });
+        }
+      }
+      network.send(client, { type: "online.friend.invite.reject.ok", requestId });
       return;
     }
 

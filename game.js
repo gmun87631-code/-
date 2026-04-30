@@ -107,6 +107,10 @@ const MULTIPLAYER_ROOM_KEY = "starling-sprint-multiplayer-room-v1";
 const BETA_REWARDS_ACTIVE = true;
 const STARLING_JUMP_MULTIPLIER = 1.12;
 const MAX_MONSTER_SPAWNS = 14;
+const SURVIVAL_DURATION = 75;
+const FULL_INFECTION_DURATION = 20;
+const ZOMBIE_JUMP_VELOCITY = -760;
+const ZOMBIE_EXTRA_BITE_TIMER_PENALTY = 4;
 const PATCH_NOTES = [
   {
     version: "Beta v0.9",
@@ -649,6 +653,11 @@ const STRINGS = {
     hud_frozen_warden_hint: "Defeat the Frost Warden, then reach the relay gate",
     hud_jungle_hint: "Carry up to 3 bananas and feed the monkey",
     hud_jungle_bananas: "Bananas {delivered}/{target} | Carry {carried}/{capacity}",
+    hud_survival_time: "Escape route open",
+    hud_infection_clean: "Infection Clear",
+    hud_infection_stage: "Infection Stage {stage}/2",
+    hud_infection_full: "Full infection {time}",
+    hud_survival_hint: "Reach the exit. Vaccines clear infection.",
     difficulty_bonus: "Difficulty bonus: x{value}",
     stage_clear_coins: "Clear coins: {coins}",
     hud_character: "Character {name}",
@@ -684,6 +693,7 @@ const STRINGS = {
     stage_objective_frozen_warden: "Defeat the Frost Warden before the relay freezes.",
     stage_objective_normal: "Collect {count} shards and reach the gate.",
     stage_objective_jungle: "Deliver 15 bananas to the monkey. Carry only 3 at once.",
+    stage_objective_survival: "Reach the exit before infection takes over. Vaccines clear infection.",
     center_stage_clear: "Stage Clear",
     center_next_stage: "Press Enter for the next stage.",
     center_now_entering: "Now entering {name}",
@@ -747,6 +757,7 @@ const STRINGS = {
     stage_6_name: "Stage 6 - Frozen Relay",
     stage_7_name: "Stage 7 - Storm Grove",
     stage_8_name: "Stage 8 - Monkey Jungle",
+    stage_9_name: "Stage 9 - Ruined City",
   },
   ko: {
     meta_description: "스타링 스프린트는 여러 스테이지, 난이도 설정, 특수 적, 아케이드 감각의 액션을 담은 오리지널 레트로풍 2D 횡스크롤 플랫폼 게임입니다.",
@@ -914,6 +925,11 @@ const STRINGS = {
     hud_frozen_warden_hint: "서리 워든을 처치한 뒤 중계 게이트에 도달하세요",
     hud_jungle_hint: "바나나는 3개까지 들고 원숭이에게 전달하세요",
     hud_jungle_bananas: "바나나 {delivered}/{target} | 소지 {carried}/{capacity}",
+    hud_survival_time: "탈출로 개방",
+    hud_infection_clean: "감염 없음",
+    hud_infection_stage: "감염 {stage}/2단계",
+    hud_infection_full: "완전 감염 {time}",
+    hud_survival_hint: "출구까지 탈출하세요. 백신은 감염을 해제합니다.",
     difficulty_bonus: "난이도 보너스: x{value}",
     stage_clear_coins: "클리어 코인: {coins}",
     hud_character: "캐릭터 {name}",
@@ -949,6 +965,7 @@ const STRINGS = {
     stage_objective_frozen_warden: "중계탑이 완전히 얼기 전에 서리 워든을 처치하세요.",
     stage_objective_normal: "파편 {count}개를 모으고 게이트에 도달하세요.",
     stage_objective_jungle: "바나나 15개를 원숭이에게 전달하세요. 한 번에 3개까지만 소지합니다.",
+    stage_objective_survival: "감염이 퍼지기 전에 출구까지 탈출하세요. 백신으로 감염을 해제할 수 있습니다.",
     center_stage_clear: "스테이지 클리어",
     center_next_stage: "Enter를 눌러 다음 스테이지로 이동",
     center_now_entering: "다음 구역: {name}",
@@ -1012,6 +1029,7 @@ const STRINGS = {
     stage_6_name: "스테이지 6 - 얼어붙은 중계탑",
     stage_7_name: "스테이지 7 - 폭풍 숲길",
     stage_8_name: "스테이지 8 - 원숭이 정글",
+    stage_9_name: "스테이지 9 - 폐허가 된 도시",
   },
 };
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ko";
@@ -1053,6 +1071,7 @@ const onlineState = {
   rooms: [],
   room: null,
   invites: [],
+  inviteCooldowns: new Map(),
   startedRoomId: "",
   gamePeers: new Map(),
   sendTimer: 0,
@@ -1377,6 +1396,31 @@ const STAGE_DEFS = [
     ],
     serpentSpawns: [51, 110, 174],
   },
+  {
+    name: "Stage 9 - Ruined City",
+    widthTiles: 176,
+    theme: "ruinedCity",
+    start: { x: 4, y: 11 },
+    goal: { x: 168, y: 9 },
+    groundSegments: [
+      [0, 22], [25, 44], [47, 68], [72, 96], [100, 124], [128, 151], [155, 175],
+    ],
+    platforms: [
+      [10, 12, 4], [18, 9, 3], [31, 11, 4], [42, 8, 5], [57, 10, 4],
+      [75, 12, 3], [86, 8, 5], [103, 10, 4], [118, 7, 4], [136, 11, 5],
+      [149, 8, 4], [162, 10, 3],
+    ],
+    hazards: [
+      [22, 3], [44, 3], [68, 4], [96, 4], [124, 4], [151, 4],
+    ],
+    collectibles: [
+      { vaccine: [18, 7] }, { vaccine: [57, 8] }, { vaccine: [103, 8] }, { vaccine: [149, 6] },
+    ],
+    enemies: [
+      [14, 14], [28, 14], [43, 7], [61, 14], [82, 14], [104, 9], [122, 14], [140, 14], [160, 9],
+    ],
+    serpentSpawns: [],
+  },
 ];
 
 const player = createPlayer();
@@ -1397,6 +1441,7 @@ let screenMode = screenModeSelect.value;
 let controlMode = controlModeSelect.value;
 let factoryTimeRemaining = 0;
 let frozenTimeRemaining = 0;
+let survivalTimeRemaining = 0;
 let lastStageClearReward = null;
 let screenShakeTimer = 0;
 let lastSavedStateJson = "";
@@ -1530,6 +1575,14 @@ const jungleState = {
   },
 };
 
+const survivalState = {
+  infectionStage: 0,
+  fullInfectionTimer: 0,
+  fullInfectionRate: 1,
+  hitCooldown: 0,
+  warningFlash: 0,
+};
+
 const clawEscapeEvent = {
   active: false,
   meter: 0,
@@ -1558,6 +1611,9 @@ function currentShardTarget() {
   }
   if (level.theme === "jungle") {
     return JUNGLE_BANANA_TARGET;
+  }
+  if (level.theme === "ruinedCity") {
+    return 0;
   }
   return difficulty.shardGoal;
 }
@@ -1616,6 +1672,9 @@ function currentCollectibleLabel() {
   }
   if (level.theme === "jungle") {
     return t("collectible_bananas");
+  }
+  if (level.theme === "ruinedCity") {
+    return t("hud_infection_clean");
   }
   return t("collectible_shards");
 }
@@ -2214,6 +2273,102 @@ function onlineClear(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
 
+function onlineInviteKey(invite) {
+  return `${invite.fromId || ""}:${invite.roomId || ""}`;
+}
+
+function onlineInviteCooldownRemaining(userId) {
+  const until = onlineState.inviteCooldowns.get(userId) || 0;
+  const remaining = until - Date.now();
+  if (remaining <= 0) {
+    onlineState.inviteCooldowns.delete(userId);
+    return 0;
+  }
+  return remaining;
+}
+
+function removeOnlineInvite(invite) {
+  const key = onlineInviteKey(invite);
+  onlineState.invites = onlineState.invites.filter((item) => onlineInviteKey(item) !== key);
+}
+
+function joinOnlineInvite(invite) {
+  const roomId = String(invite.roomId || "");
+  if (!roomId) return;
+  removeOnlineInvite(invite);
+  renderOnlineAll();
+  sendOnlineMessage({
+    type: "online.room.join",
+    requestId: onlineNextRequestId(),
+    roomId,
+    code: invite.code || "",
+  });
+}
+
+function rejectOnlineInvite(invite) {
+  removeOnlineInvite(invite);
+  renderOnlineAll();
+  if (invite.fromId) {
+    sendOnlineMessage({
+      type: "online.friend.invite.reject",
+      requestId: onlineNextRequestId(),
+      fromId: invite.fromId,
+    });
+  }
+}
+
+function ensureOnlineInviteToastHost() {
+  let host = document.getElementById("onlineInviteToasts");
+  if (host) return host;
+  host = document.createElement("div");
+  host.id = "onlineInviteToasts";
+  host.className = "online-invite-toasts";
+  document.body.append(host);
+  return host;
+}
+
+function showOnlineInviteToast(invite) {
+  const host = ensureOnlineInviteToastHost();
+  if (!host) return;
+  const existing = Array.from(host.children).find((node) => node.dataset.inviteKey === onlineInviteKey(invite));
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = "online-invite-toast";
+  toast.dataset.inviteKey = onlineInviteKey(invite);
+
+  const meta = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = currentLanguage === "ko"
+    ? `${invite.fromNickname || "친구"}님의 로비 초대`
+    : `Lobby invite from ${invite.fromNickname || "Friend"}`;
+  const sub = document.createElement("span");
+  sub.textContent = invite.roomName || "Room";
+  meta.append(title, sub);
+
+  const actions = document.createElement("div");
+  actions.className = "online-invite-actions";
+  const accept = document.createElement("button");
+  accept.type = "button";
+  accept.textContent = currentLanguage === "ko" ? "수락" : "Accept";
+  accept.addEventListener("click", () => {
+    toast.remove();
+    joinOnlineInvite(invite);
+  });
+  const reject = document.createElement("button");
+  reject.type = "button";
+  reject.className = "secondary-button";
+  reject.textContent = currentLanguage === "ko" ? "거절" : "Reject";
+  reject.addEventListener("click", () => {
+    toast.remove();
+    rejectOnlineInvite(invite);
+  });
+  actions.append(accept, reject);
+
+  toast.append(meta, actions);
+  host.append(toast);
+}
+
 function onlineServerUrl() {
   const override = (localStorage.getItem("ONLINE_SERVER_URL") || "").trim();
   if (override.startsWith("ws://") || override.startsWith("wss://")) {
@@ -2242,12 +2397,12 @@ function setOnlineStatus(status, detail = "") {
   if (onlineStatus) {
     onlineStatus.textContent = currentLanguage === "ko"
       ? isOnline
-        ? "온라인"
+        ? detail ? `온라인 | ${detail}` : "온라인"
         : status === "connecting"
           ? "연결 중..."
           : detail || "오프라인"
       : isOnline
-        ? "Online"
+        ? detail ? `Online | ${detail}` : "Online"
         : status === "connecting"
           ? "Connecting..."
           : detail || "Offline";
@@ -2330,7 +2485,13 @@ function renderOnlineFriends() {
       const invite = document.createElement("button");
       invite.type = "button";
       invite.textContent = currentLanguage === "ko" ? "초대" : "Invite";
-      invite.disabled = !onlineIsConnected() || !friend.online;
+      const cooldownRemaining = onlineInviteCooldownRemaining(friend.id);
+      invite.disabled = !onlineIsConnected() || !friend.online || cooldownRemaining > 0;
+      if (cooldownRemaining > 0) {
+        invite.textContent = currentLanguage === "ko"
+          ? `대기 ${Math.ceil(cooldownRemaining / 1000)}초`
+          : `Wait ${Math.ceil(cooldownRemaining / 1000)}s`;
+      }
       invite.addEventListener("click", () => {
         sendOnlineMessage({ type: "online.friend.invite", requestId: onlineNextRequestId(), userId: friend.id });
       });
@@ -2390,13 +2551,19 @@ function renderOnlineFriends() {
       join.textContent = currentLanguage === "ko" ? "참가" : "Join";
       join.disabled = !onlineIsConnected();
       join.addEventListener("click", () => {
-        const roomId = String(inv.roomId || "");
-        if (!roomId) return;
-        const code = inv.code || "";
-        sendOnlineMessage({ type: "online.room.join", requestId: onlineNextRequestId(), roomId, code });
+        joinOnlineInvite(inv);
       });
 
-      row.append(meta, join);
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "secondary-button";
+      reject.textContent = currentLanguage === "ko" ? "거절" : "Reject";
+      reject.disabled = !onlineIsConnected();
+      reject.addEventListener("click", () => {
+        rejectOnlineInvite(inv);
+      });
+
+      row.append(meta, join, reject);
       onlineInvitesList.append(row);
     }
   }
@@ -2449,6 +2616,14 @@ function renderOnlineAll() {
   renderOnlineRoom();
 }
 
+function addOnlineInvite(invite) {
+  const key = onlineInviteKey(invite);
+  onlineState.invites = onlineState.invites.filter((item) => onlineInviteKey(item) !== key);
+  onlineState.invites.push(invite);
+  showOnlineInviteToast(invite);
+  renderOnlineFriends();
+}
+
 function handleOnlineMessage(message) {
   const type = typeof message?.type === "string" ? message.type : "";
 
@@ -2492,8 +2667,31 @@ function handleOnlineMessage(message) {
   }
 
   if (type === "online.friend.invite") {
-    onlineState.invites.push(message);
-    renderOnlineFriends();
+    addOnlineInvite(message);
+    return;
+  }
+
+  if (type === "online.friend.invite.cooldown") {
+    const userId = String(message.userId || "");
+    const remainingMs = Math.max(0, Number(message.remainingMs) || 0);
+    if (userId && remainingMs > 0) {
+      onlineState.inviteCooldowns.set(userId, Date.now() + remainingMs);
+      renderOnlineFriends();
+      setTimeout(renderOnlineFriends, remainingMs + 100);
+    }
+    setOnlineStatus("online", currentLanguage === "ko" ? "상대가 방금 거절했습니다" : "Invite recently rejected");
+    return;
+  }
+
+  if (type === "online.friend.invite.rejected") {
+    const userId = String(message.userId || "");
+    const cooldownMs = Math.max(0, Number(message.cooldownMs) || 10000);
+    if (userId) {
+      onlineState.inviteCooldowns.set(userId, Date.now() + cooldownMs);
+      renderOnlineFriends();
+      setTimeout(renderOnlineFriends, cooldownMs + 100);
+    }
+    setOnlineStatus("online", currentLanguage === "ko" ? "초대가 거절되었습니다" : "Invite rejected");
     return;
   }
 }
@@ -2517,6 +2715,7 @@ function disconnectOnline(detail = "") {
   onlineState.rooms = [];
   onlineState.room = null;
   onlineState.invites = [];
+  onlineState.inviteCooldowns.clear();
   onlineState.gamePeers.clear();
   onlineState.startedRoomId = "";
   setOnlineStatus("offline", detail);
@@ -3883,6 +4082,9 @@ function resetProgressState() {
   screenMode = screenModeSelect.value;
   controlMode = controlModeSelect.value;
   factoryTimeRemaining = 0;
+  frozenTimeRemaining = 0;
+  survivalTimeRemaining = 0;
+  resetSurvivalState();
   shopState.ownedCharacters = getDefaultOwnedCharacters();
   shopState.ownedSkins = getDefaultOwnedSkins();
   shopState.coins = 0;
@@ -4848,6 +5050,8 @@ function loadStage(stageIndex, preserveScore = true) {
   collectedCount = 0;
   factoryTimeRemaining = level.theme === "factory" ? 80 : 0;
   frozenTimeRemaining = level.theme === "frozen" ? 25 : 0;
+  survivalTimeRemaining = level.theme === "ruinedCity" ? SURVIVAL_DURATION : 0;
+  resetSurvivalState();
   setupJungleState(stageDef);
 
   // Each stage is defined as data so we can scale the route count cleanly.
@@ -4862,6 +5066,10 @@ function loadStage(stageIndex, preserveScore = true) {
     addHazard(x, width);
   }
   for (const item of stageDef.collectibles) {
+    if (item.vaccine) {
+      addVaccineItem(item.vaccine[0], item.vaccine[1]);
+      continue;
+    }
     if (level.theme === "frozen") {
       break;
     }
@@ -4880,7 +5088,7 @@ function loadStage(stageIndex, preserveScore = true) {
   }
 
   for (const enemy of stageDef.enemies) {
-    addEnemy(enemy[0], enemy[1]);
+    addEnemy(enemy[0], enemy[1], level.theme === "ruinedCity" ? "zombie" : "walker");
   }
   for (const excavator of stageDef.excavators || []) {
     addExcavatorEnemy(excavator[0], excavator[1], excavator[2], excavator[3], excavator[4]);
@@ -4896,7 +5104,7 @@ function loadStage(stageIndex, preserveScore = true) {
   const bonusEnemies = difficulty.enemyBonus;
   for (let i = 0; i < bonusEnemies && stageDef.enemies.length > 0; i += 1) {
     const seed = stageDef.enemies[(i * 2 + stageIndex) % stageDef.enemies.length];
-    addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]));
+    addEnemy(seed[0] + 2 + i * 3, Math.max(5, seed[1]), level.theme === "ruinedCity" ? "zombie" : "walker");
   }
 
   clearLightnerState(true);
@@ -5003,6 +5211,18 @@ function addCollectibleRow(startTileX, tileY, count) {
   }
 }
 
+function addVaccineItem(tileX, tileY) {
+  level.collectibles.push({
+    x: tileX * TILE + 5,
+    y: tileY * TILE + 2,
+    w: 22,
+    h: 26,
+    bob: Math.random() * Math.PI * 2,
+    collected: false,
+    style: "vaccine",
+  });
+}
+
 function currentMonsterSpawnCount() {
   return level.enemies.length + level.serpentEnemies.length;
 }
@@ -5011,7 +5231,7 @@ function canAddMonsterSpawn() {
   return currentMonsterSpawnCount() < MAX_MONSTER_SPAWNS;
 }
 
-function addEnemy(tileX, tileY) {
+function addEnemy(tileX, tileY, type = "walker") {
   if (!canAddMonsterSpawn()) {
     return;
   }
@@ -5019,19 +5239,24 @@ function addEnemy(tileX, tileY) {
   const x = tileX * TILE + 3;
   const y = tileY * TILE + 2;
   const stageFactor = stageDifficultyFactor(currentStageIndex);
+  const isZombie = type === "zombie";
   level.enemies.push({
-    type: "walker",
+    type,
     x,
     y,
-    w: 26,
-    h: 26,
-    vx: 70 * difficulty.enemySpeed * stageFactor,
-    patrolSpeed: 70 * difficulty.enemySpeed * stageFactor,
+    w: isZombie ? 28 : 26,
+    h: isZombie ? 30 : 26,
+    vx: (isZombie ? 46 : 70) * difficulty.enemySpeed * (isZombie ? 1 : stageFactor),
+    patrolSpeed: (isZombie ? 46 : 70) * difficulty.enemySpeed * (isZombie ? 1 : stageFactor),
     vy: 0,
-    leftBound: x - TILE * 2,
-    rightBound: x + TILE * 2,
+    leftBound: isZombie ? TILE : x - TILE * 2,
+    rightBound: isZombie ? worldWidth - TILE * 2 : x + TILE * 2,
     alive: true,
     squishTimer: 0,
+    biteCooldown: 0,
+    jumpCooldown: isZombie ? 0.4 + Math.random() * 0.5 : 0,
+    stuckTimer: 0,
+    lastX: x,
     animationTime: Math.random() * 2,
   });
 }
@@ -5654,6 +5879,17 @@ function playSound(type) {
     osc2.start(now);
     oscillator.stop(now + 0.22);
     osc2.stop(now + 0.3);
+    return;
+  }
+
+  if (type === "hurt") {
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(260, now);
+    oscillator.frequency.exponentialRampToValueAtTime(110, now + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.075, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    oscillator.start(now);
+    oscillator.stop(now + 0.22);
     return;
   }
 
@@ -7616,6 +7852,12 @@ function updatePlayer(dt) {
     for (const collectible of level.collectibles) {
       if (!collectible.collected && overlaps(player, collectible)) {
         collectible.collected = true;
+        if (collectible.style === "vaccine") {
+          cureInfection();
+          score += 150;
+          playSound("coin");
+          continue;
+        }
         score += Math.round(100 * difficulty.collectibleBonus);
         if (level.theme !== "frozen") {
           awardCoins(level.theme === "factory" ? 8 : 6);
@@ -7651,6 +7893,11 @@ function updatePlayer(dt) {
           break;
         }
         loseLife();
+        break;
+      }
+
+      if (enemy.type === "zombie") {
+        infectPlayerByZombie(enemy);
         break;
       }
 
@@ -7735,7 +7982,9 @@ function updatePlayer(dt) {
     }
   }
 
-  const canUseGoal = level.theme === "frozen" || level.theme === "jungle" ? false : collectedCount >= currentShardTarget();
+  const canUseGoal = level.theme === "frozen" || level.theme === "jungle"
+    ? false
+    : level.theme === "ruinedCity" || collectedCount >= currentShardTarget();
   if (gameState === "playing" && overlaps(player, level.goal) && canUseGoal) {
     awardStageClearCoins();
     rollStageClearBoxReward();
@@ -7832,6 +8081,11 @@ function updateEnemies(dt) {
 
     if (enemy.type === "frostWarden") {
       updateFrostWardenEnemy(enemy, dt);
+      continue;
+    }
+
+    if (enemy.type === "zombie") {
+      updateZombieEnemy(enemy, dt);
       continue;
     }
 
@@ -8142,6 +8396,164 @@ function updateFrostProjectiles(dt) {
   }
 }
 
+function resetSurvivalState() {
+  survivalState.infectionStage = 0;
+  survivalState.fullInfectionTimer = 0;
+  survivalState.fullInfectionRate = 1;
+  survivalState.hitCooldown = 0;
+  survivalState.warningFlash = 0;
+}
+
+function cureInfection() {
+  survivalState.infectionStage = 0;
+  survivalState.fullInfectionTimer = 0;
+  survivalState.fullInfectionRate = 1;
+  survivalState.warningFlash = 0.45;
+  player.invulnerableTime = Math.max(player.invulnerableTime, 0.9);
+}
+
+function infectPlayerByZombie(enemy) {
+  if (survivalState.hitCooldown > 0 || player.invulnerableTime > 0 || gameState !== "playing") {
+    return;
+  }
+  if (consumeGuardianPassive() || transferToChangerClone()) {
+    return;
+  }
+
+  breakAssassinStealth();
+  resetAssassinationEvent();
+  const wasFullyInfected = survivalState.infectionStage >= 2;
+  survivalState.infectionStage = Math.min(2, survivalState.infectionStage + 1);
+  if (!wasFullyInfected && survivalState.infectionStage >= 2 && survivalState.fullInfectionTimer <= 0) {
+    survivalState.fullInfectionTimer = FULL_INFECTION_DURATION;
+    survivalState.fullInfectionRate = 1;
+  } else if (wasFullyInfected) {
+    survivalState.fullInfectionTimer = Math.max(2.5, survivalState.fullInfectionTimer - ZOMBIE_EXTRA_BITE_TIMER_PENALTY);
+    survivalState.fullInfectionRate = Math.min(2.8, survivalState.fullInfectionRate + 0.35);
+  }
+  survivalState.hitCooldown = 1.3;
+  survivalState.warningFlash = 0.65;
+  player.invulnerableTime = Math.max(player.invulnerableTime, 1.1);
+  player.stunTimer = Math.max(player.stunTimer, 0.18);
+  player.vx = (player.x + player.w * 0.5 < enemy.x + enemy.w * 0.5 ? -1 : 1) * 250;
+  player.vy = Math.min(player.vy, -220);
+  playSound("hurt");
+}
+
+function updateSurvivalStage(dt) {
+  if (level.theme !== "ruinedCity") {
+    return;
+  }
+  survivalState.hitCooldown = Math.max(0, survivalState.hitCooldown - dt);
+  survivalState.warningFlash = Math.max(0, survivalState.warningFlash - dt);
+  if (survivalState.infectionStage >= 2) {
+    survivalState.fullInfectionTimer = Math.max(0, survivalState.fullInfectionTimer - dt * survivalState.fullInfectionRate);
+    if (survivalState.fullInfectionTimer <= 0) {
+      lives = 0;
+      gameState = "gameover";
+      player.vx = 0;
+      player.vy = 0;
+      return;
+    }
+  }
+}
+
+function survivalInfectionText() {
+  if (survivalState.infectionStage >= 2) {
+    return t("hud_infection_full", { time: formatStageTimer(survivalState.fullInfectionTimer) });
+  }
+  if (survivalState.infectionStage === 1) {
+    return t("hud_infection_stage", { stage: 1 });
+  }
+  return t("hud_infection_clean");
+}
+
+function updateZombieEnemy(enemy, dt) {
+  const playerCenterX = player.x + player.w * 0.5;
+  const enemyCenterX = enemy.x + enemy.w * 0.5;
+  const dx = playerCenterX - enemyCenterX;
+  const distance = Math.abs(dx);
+  const direction = Math.sign(dx) || Math.sign(enemy.vx) || 1;
+  const chaseBoost = distance < 180 ? 1.22 : 1;
+  const previousX = enemy.x;
+  enemy.vx = direction * enemy.patrolSpeed * chaseBoost;
+  enemy.facing = direction;
+  enemy.biteCooldown = Math.max(0, (enemy.biteCooldown || 0) - dt);
+  enemy.jumpCooldown = Math.max(0, (enemy.jumpCooldown || 0) - dt);
+  enemy.vy += GRAVITY * dt;
+  enemy.x += enemy.vx * dt;
+
+  if (enemy.x <= enemy.leftBound) {
+    enemy.x = enemy.leftBound;
+    enemy.vx = Math.abs(enemy.vx);
+  } else if (enemy.x >= enemy.rightBound) {
+    enemy.x = enemy.rightBound;
+    enemy.vx = -Math.abs(enemy.vx);
+  }
+
+  enemy.y += enemy.vy * dt;
+  let onFloor = false;
+  for (const solid of level.solids) {
+    if (!overlaps(enemy, solid)) {
+      continue;
+    }
+    if (enemy.vy > 0) {
+      enemy.y = solid.y - enemy.h;
+      enemy.vy = 0;
+      onFloor = true;
+    } else if (enemy.vy < 0) {
+      enemy.y = solid.y + solid.h;
+      enemy.vy = 0;
+    }
+  }
+
+  if (zombieTouchesHazard(enemy)) {
+    enemy.x = previousX - direction * 6;
+    enemy.vx = 0;
+    if (enemy.jumpCooldown <= 0.2) {
+      enemy.vy = ZOMBIE_JUMP_VELOCITY;
+      enemy.jumpCooldown = 1.05 + Math.random() * 0.25;
+    }
+  }
+
+  if (onFloor) {
+    const moved = Math.abs(enemy.x - (enemy.lastX ?? previousX));
+    enemy.stuckTimer = moved < 1 ? (enemy.stuckTimer || 0) + dt : 0;
+    const jumpReason = zombieJumpReason(enemy, direction);
+    if (enemy.jumpCooldown <= 0 && (jumpReason || enemy.stuckTimer > 0.28)) {
+      enemy.vy = ZOMBIE_JUMP_VELOCITY;
+      enemy.jumpCooldown = 1.05 + Math.random() * 0.35;
+      enemy.stuckTimer = 0;
+      enemy.x += direction * 8;
+    } else if (jumpReason) {
+      enemy.vx = 0;
+      enemy.x = previousX;
+    }
+  }
+  enemy.lastX = enemy.x;
+}
+
+function zombieJumpReason(enemy, direction) {
+  const frontX = direction > 0 ? enemy.x + enemy.w + 6 : enemy.x - 6;
+  const footY = enemy.y + enemy.h + 5;
+  const headY = enemy.y + 8;
+  const chestY = enemy.y + enemy.h * 0.55;
+  const ledgeAhead = !hasSolidAt(frontX, footY);
+  const hazardAhead = hasHazardAt(frontX, enemy.y + enemy.h - 2) || hasHazardAt(frontX + direction * 18, footY);
+  const wallAhead = hasSolidAt(frontX, chestY) || hasSolidAt(frontX, headY);
+  const playerAbove = player.y + player.h < enemy.y + enemy.h - 12 && Math.abs(player.x - enemy.x) < 180;
+  return ledgeAhead || hazardAhead || wallAhead || playerAbove;
+}
+
+function zombieTouchesHazard(enemy) {
+  for (const hazard of level.hazards) {
+    if (overlaps(enemy, hazard)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function updateCamera() {
   const target = player.x - GAME_WIDTH * 0.35;
   camera.x += (target - camera.x) * 0.1;
@@ -8231,6 +8643,14 @@ function update(dt) {
 
     if (level.theme === "jungle") {
       updateJungleStage(dt);
+      if (gameState !== "playing") {
+        updateCamera();
+        return;
+      }
+    }
+
+    if (level.theme === "ruinedCity") {
+      updateSurvivalStage(dt);
       if (gameState !== "playing") {
         updateCamera();
         return;
@@ -8520,6 +8940,22 @@ function getThemeColors() {
     };
   }
 
+  if (level.theme === "ruinedCity") {
+    return {
+      skyTop: "#090b12",
+      skyMid: "#171923",
+      skyBottom: "#34333a",
+      hillBack: "#20212a",
+      hillFront: "#11131a",
+      cloud: "rgba(180, 188, 196, 0.18)",
+      platformTop: "#8b8f78",
+      groundTop: "#5c6253",
+      hazardMain: "#2e4835",
+      hazardGlow: "#9be072",
+      goal: "#7fe0ff",
+    };
+  }
+
   if (level.theme === "sunset") {
     return {
       skyTop: "#ff9966",
@@ -8569,6 +9005,11 @@ function drawBackground() {
 
   if (level.theme === "frozen") {
     drawFrozenBackground();
+    return;
+  }
+
+  if (level.theme === "ruinedCity") {
+    drawRuinedCityBackground();
     return;
   }
 
@@ -8681,6 +9122,40 @@ function drawFrozenBackground() {
     ctx.lineTo(x + 206, 236);
     ctx.stroke();
   }
+}
+
+function drawRuinedCityBackground() {
+  const palette = getThemeColors();
+  const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+  gradient.addColorStop(0, palette.skyTop);
+  gradient.addColorStop(0.58, palette.skyMid);
+  gradient.addColorStop(1, palette.skyBottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  const scroll = (camera.x * 0.16) % 260;
+  for (let i = -1; i < 6; i += 1) {
+    const x = i * 260 - scroll;
+    const h1 = 190 + (i % 3) * 38;
+    const h2 = 240 + (i % 2) * 44;
+    ctx.fillStyle = "rgba(8, 10, 16, 0.78)";
+    ctx.fillRect(x + 24, 360 - h1, 72, h1);
+    ctx.fillRect(x + 126, 360 - h2, 86, h2);
+    ctx.fillStyle = "rgba(224, 220, 160, 0.09)";
+    for (let w = 0; w < 5; w += 1) {
+      ctx.fillRect(x + 38 + (w % 2) * 28, 190 + w * 32, 12, 14);
+      ctx.fillRect(x + 144 + (w % 3) * 22, 150 + w * 36, 10, 13);
+    }
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.fillRect(x + 22, 360 - h1, 76, 10);
+    ctx.fillRect(x + 124, 360 - h2, 90, 10);
+  }
+
+  const fog = 0.12 + Math.sin(lastTime * 0.002) * 0.025;
+  ctx.fillStyle = `rgba(130, 138, 126, ${fog})`;
+  ctx.fillRect(0, 320, GAME_WIDTH, 130);
+  ctx.fillStyle = "rgba(6, 8, 12, 0.26)";
+  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 }
 
 function drawArcadeBackground() {
@@ -8976,6 +9451,8 @@ function drawSolids() {
       ctx.fillStyle = solid.ice ? "#7dcdeb" : (isGround ? "#31516d" : "#4f7895");
     } else if (level.theme === "jungle") {
       ctx.fillStyle = isGround ? "#4f3b25" : "#6a4b24";
+    } else if (level.theme === "ruinedCity") {
+      ctx.fillStyle = isGround ? "#3b3d3a" : "#53564f";
     } else {
       ctx.fillStyle = isGround ? "#7f5c43" : "#9a733f";
     }
@@ -8988,6 +9465,8 @@ function drawSolids() {
       ctx.fillStyle = solid.ice ? "#3a87ad" : "#203b52";
     } else if (level.theme === "jungle") {
       ctx.fillStyle = isGround ? "#2f2418" : "#3d2c17";
+    } else if (level.theme === "ruinedCity") {
+      ctx.fillStyle = isGround ? "#222421" : "#353831";
     } else {
       ctx.fillStyle = isGround ? "#5b3e2a" : "#6d512c";
     }
@@ -9023,6 +9502,12 @@ function drawSolids() {
       ctx.fillStyle = "rgba(208, 245, 112, 0.22)";
       ctx.fillRect(solid.x + 12, solid.y + 8, 10, 4);
       ctx.fillRect(solid.x + 20, solid.y + 14, 8, 3);
+    } else if (level.theme === "ruinedCity") {
+      ctx.fillStyle = "rgba(210, 214, 190, 0.1)";
+      ctx.fillRect(solid.x + 4, solid.y + 8, 11, 4);
+      ctx.fillRect(solid.x + 20, solid.y + 16, 8, 3);
+      ctx.fillStyle = "rgba(10, 12, 10, 0.22)";
+      ctx.fillRect(solid.x + 15, solid.y + 6, 2, solid.h - 10);
     } else {
       ctx.fillStyle = "rgba(255,255,255,0.12)";
       ctx.fillRect(solid.x + 4, solid.y + 8, 6, 6);
@@ -9227,6 +9712,21 @@ function drawCollectibles() {
 
     if (collectible.style === "banana") {
       drawBananaSprite(x, y, 1);
+    } else if (collectible.style === "vaccine") {
+      const pulse = 0.74 + Math.sin(lastTime * 0.012 + collectible.bob) * 0.2;
+      ctx.fillStyle = `rgba(111, 255, 188, ${0.18 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(x + 11, y + 13, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#d7fff0";
+      ctx.fillRect(x + 8, y + 3, 7, 18);
+      ctx.fillStyle = "#79f7bd";
+      ctx.fillRect(x + 7, y + 10, 9, 9);
+      ctx.fillStyle = "#3a5260";
+      ctx.fillRect(x + 6, y + 1, 11, 4);
+      ctx.fillRect(x + 9, y + 21, 5, 3);
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.fillRect(x + 9, y + 5, 2, 5);
     } else if (level.theme === "factory") {
       const pulse = 0.82 + Math.sin(lastTime * 0.01 + collectible.bob) * 0.08;
       ctx.fillStyle = "#d8dadd";
@@ -9299,6 +9799,11 @@ function drawEnemySprite(enemy) {
     return;
   }
 
+  if (enemy.type === "zombie") {
+    drawZombieSprite(enemy);
+    return;
+  }
+
   const bounce = Math.sin(enemy.animationTime * 8) > 0 ? 1 : 0;
   const x = enemy.x;
   const y = enemy.y;
@@ -9326,6 +9831,29 @@ function drawEnemySprite(enemy) {
   ctx.fillRect(x + 7, y + 8, 2, 2);
   ctx.fillRect(x + 17, y + 8, 2, 2);
   ctx.fillRect(x + 10, y + 12, 6, 2);
+}
+
+function drawZombieSprite(enemy) {
+  if (!enemy.alive && enemy.squishTimer <= 0) {
+    return;
+  }
+  const x = enemy.x;
+  const y = enemy.y;
+  const limp = Math.sin(enemy.animationTime * 7) > 0 ? 1 : -1;
+  ctx.fillStyle = "#1f2f26";
+  ctx.fillRect(x + 5, y + 12, 18, 16);
+  ctx.fillStyle = "#7fa06d";
+  ctx.fillRect(x + 7, y + 2, 14, 12);
+  ctx.fillStyle = "#53634a";
+  ctx.fillRect(x + 3, y + 15 + limp, 5, 11);
+  ctx.fillRect(x + 20, y + 15 - limp, 5, 11);
+  ctx.fillStyle = "#a9d98d";
+  ctx.fillRect(x + 10, y + 6, 3, 3);
+  ctx.fillRect(x + 17, y + 6, 3, 3);
+  ctx.fillStyle = "#121711";
+  ctx.fillRect(x + 9, y + 18, 10, 3);
+  ctx.fillStyle = "rgba(111, 255, 160, 0.28)";
+  ctx.fillRect(x + 6, y + 27, 18, 3);
 }
 
 function drawExcavatorSprite(enemy) {
@@ -10566,6 +11094,23 @@ function drawPlayerSkinAccent() {
 function drawGoal() {
   const palette = getThemeColors();
   const { x, y, h } = level.goal;
+  if (level.theme === "ruinedCity") {
+    const pulse = 0.62 + Math.sin(lastTime * 0.01) * 0.18;
+    ctx.fillStyle = "rgba(8, 11, 15, 0.94)";
+    ctx.fillRect(x + 8, y + 6, 54, h - 4);
+    ctx.fillStyle = `rgba(126, 224, 255, ${0.16 + pulse * 0.12})`;
+    ctx.fillRect(x + 18, y + 18, 34, h - 34);
+    ctx.strokeStyle = `rgba(126, 224, 255, ${0.52 + pulse * 0.25})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 8, y + 6, 54, h - 4);
+    ctx.fillStyle = "#2f343a";
+    ctx.fillRect(x - 18, y + h - 38, 26, 30);
+    ctx.fillStyle = "#9be072";
+    ctx.fillRect(x - 12, y + h - 30, 14, 8);
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    ctx.fillRect(x + 24, y + 28, 10, 4);
+    return;
+  }
   if (level.theme === "factory") {
     const doorOpen = collectedCount >= currentShardTarget();
     const pulse = 0.7 + Math.sin(lastTime * 0.008) * 0.18;
@@ -10690,6 +11235,8 @@ function drawHud() {
       carried: jungleState.carried,
       capacity: JUNGLE_BANANA_CAPACITY,
     })
+    : level.theme === "ruinedCity"
+      ? survivalInfectionText()
     : level.theme === "frozen"
       ? `${currentCollectibleLabel()} ${collectedCount}`
       : `${currentCollectibleLabel()} ${collectedCount}/${currentShardTarget()}`;
@@ -10776,6 +11323,9 @@ function drawHud() {
   } else if (level.theme === "jungle") {
     ctx.fillText(t("hud_jungle_hint"), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
+  } else if (level.theme === "ruinedCity") {
+    ctx.fillText(t("hud_survival_time"), 470, 68);
+    ctx.fillText(t("hud_survival_hint"), 470, 96);
   } else {
     ctx.fillText(t("hud_stage_rank", { value: stageDifficultyFactor(currentStageIndex).toFixed(1) }), 470, 68);
     ctx.fillText(t("hud_return_lobby"), 470, 96);
@@ -10799,6 +11349,8 @@ function drawHud() {
       drawCenterPanel(level.name, t("stage_objective_frozen_warden"), "");
     } else if (level.theme === "jungle") {
       drawCenterPanel(level.name, t("stage_objective_jungle"), "");
+    } else if (level.theme === "ruinedCity") {
+      drawCenterPanel(level.name, t("stage_objective_survival"), "");
     } else {
       drawCenterPanel(level.name, t("stage_objective_normal", { count: currentShardTarget() }), "");
     }
@@ -10920,6 +11472,7 @@ function render() {
     drawWorld();
   }
   drawFrozenAtmosphere();
+  drawSurvivalAtmosphere();
   drawHud();
   if (assassinationEvent.active) {
     drawAssassinationOverlay();
@@ -10962,6 +11515,27 @@ function drawFrozenAtmosphere() {
       ctx.stroke();
     }
   }
+}
+
+function drawSurvivalAtmosphere() {
+  if (level.theme !== "ruinedCity") {
+    return;
+  }
+  const infectionPulse = survivalState.infectionStage >= 2
+    ? 0.16 + Math.sin(lastTime * 0.018) * 0.05
+    : survivalState.infectionStage === 1
+      ? 0.07
+      : 0;
+  if (infectionPulse > 0) {
+    ctx.fillStyle = `rgba(74, 196, 92, ${infectionPulse})`;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+  }
+  if (survivalState.warningFlash > 0) {
+    ctx.fillStyle = `rgba(160, 255, 120, ${Math.min(0.28, survivalState.warningFlash * 0.42)})`;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+  }
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillRect(0, 0, GAME_WIDTH, 86);
 }
 
 function drawAssassinationOverlay() {
